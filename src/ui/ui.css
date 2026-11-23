@@ -1,0 +1,130 @@
+/* Apocalypse Tycoon UI: chunky pixel-panel look, no external assets. */
+:root {
+  --at-bg: #14110f;
+  --at-panel: #241f1a;
+  --at-panel-2: #2f2821;
+  --at-border: #0a0807;
+  --at-hi: #4a3f33;
+  --at-ink: #f2e6c9;
+  --at-dim: #a8977a;
+  --at-gold: #f5c542;
+  --at-green: #7ed957;
+  --at-red: #ff5a4f;
+  --at-amber: #ff9f1c;
+  --at-paper: #efe4c6;
+  --at-paper-ink: #2a2118;
+  --at-font: 'Courier New', ui-monospace, monospace;
+}
+
+.at-ui { font-family: var(--at-font); color: var(--at-ink); background: var(--at-bg); image-rendering: pixelated; }
+
+.at-ui [hidden] { display: none !important; }
+
+.hud {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px;
+  padding: 6px; background: var(--at-panel);
+  border-bottom: 4px solid var(--at-border);
+  box-shadow: inset 0 -2px 0 var(--at-hi);
+}
+.hud-brand {
+  font-weight: 900; font-size: 11px; letter-spacing: 1px; color: var(--at-gold);
+  writing-mode: horizontal-tb; align-self: center; padding: 0 6px; max-width: 90px; line-height: 1.2;
+}
+.hud-stat {
+  display: flex; flex-direction: column; justify-content: center; gap: 2px;
+  min-width: 110px; padding: 4px 8px; background: var(--at-panel-2);
+  border: 2px solid var(--at-border); box-shadow: inset 2px 2px 0 var(--at-hi);
+  position: relative;
+}
+.hud-label { font-size: 10px; font-weight: 700; color: var(--at-dim); letter-spacing: 1px; }
+.hud-value { font-size: 13px; font-weight: 700; }
+.hud-big { font-size: 18px; }
+.hud-cash .hud-value { color: var(--at-gold); }
+.hud-cash[data-negative='true'] .hud-value { color: var(--at-red); }
+.hud-delta { position: absolute; right: 6px; top: 4px; font-size: 11px; font-weight: 700; opacity: 0; }
+.hud-delta[data-dir='up'] { color: var(--at-green); }
+.hud-delta[data-dir='down'] { color: var(--at-red); }
+.hud-delta.flash { animation: at-delta 1.2s steps(6) forwards; }
+@keyframes at-delta { 0% { opacity: 1; transform: translateY(6px); } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-4px); } }
+
+.hud-pips { display: flex; gap: 2px; }
+.pip { width: 6px; height: 6px; background: var(--at-border); display: block; }
+.pip.done { background: var(--at-dim); }
+.pip.now { background: var(--at-gold); }
+
+.hud-meter { min-width: 140px; }
+.hud-bar { height: 8px; background: var(--at-border); border: 1px solid var(--at-hi); }
+.hud-bar-fill { height: 100%; width: 0; background: var(--at-green); transition: width 0.3s steps(8); }
+.hud-meter[data-zone='uneasy'] .hud-bar-fill { background: var(--at-gold); }
+.hud-meter[data-zone='edge'] .hud-bar-fill { background: var(--at-amber); }
+.hud-meter[data-zone='edge'] .hud-value { color: var(--at-amber); }
+.hud-meter[data-zone='tipping'] .hud-bar-fill { background: var(--at-red); }
+.hud-meter[data-zone='tipping'] .hud-value { color: var(--at-red); animation: at-blink 0.8s steps(2) infinite; }
+@keyframes at-blink { 50% { opacity: 0.3; } }
+.hud-meter .hud-value { font-size: 11px; }
+
+.hud-board .hud-bar-fill { background: var(--at-dim); }
+.hud-board[data-met='true'] .hud-bar-fill { background: var(--at-green); }
+
+.view-toggle { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+.view-btn, .report-continue {
+  font-family: var(--at-font); font-weight: 900; font-size: 12px; letter-spacing: 1px;
+  color: var(--at-ink); background: var(--at-panel-2); cursor: pointer;
+  padding: 8px 10px; border: 2px solid var(--at-border);
+  box-shadow: inset -2px -2px 0 var(--at-border), inset 2px 2px 0 var(--at-hi);
+}
+.view-btn:hover { background: var(--at-hi); }
+.view-btn.active { background: var(--at-gold); color: var(--at-paper-ink); box-shadow: inset 2px 2px 0 rgba(0,0,0,.35); }
+.view-hint { font-size: 10px; color: var(--at-dim); }
+
+/* ---------- Quarter report ---------- */
+.report-overlay {
+  position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 8, 7, 0.78); padding: 16px; overflow: auto;
+}
+.report {
+  width: min(520px, 100%); max-height: calc(100vh - 32px); overflow: auto;
+  background: var(--at-paper); color: var(--at-paper-ink);
+  border: 4px solid var(--at-border); box-shadow: 8px 8px 0 rgba(0,0,0,.5), inset -3px -3px 0 #c9b98f;
+  padding: 18px 20px; animation: at-slide 0.25s steps(5);
+}
+@keyframes at-slide { from { transform: translateY(24px); opacity: 0; } }
+.report-head { text-align: center; border-bottom: 3px double var(--at-paper-ink); padding-bottom: 8px; margin-bottom: 8px; }
+.report-company { font-size: 11px; letter-spacing: 2px; }
+.report-title { font-size: 20px; font-weight: 900; letter-spacing: 2px; }
+.report-sub { font-size: 10px; font-style: italic; opacity: 0.7; }
+
+.report-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.report-table td { padding: 2px 0; }
+.r-amount { text-align: right; white-space: nowrap; font-weight: 700; }
+.r-amount[data-dir='up'] { color: #2f7a1c; }
+.r-amount[data-dir='down'] { color: #b3261e; }
+.r-group td { padding-top: 8px; font-weight: 900; border-bottom: 1px dashed rgba(42,33,24,.4); }
+.r-line .r-label { padding-left: 16px; }
+.r-count { opacity: 0.6; font-size: 11px; }
+.r-opening td, .r-total td { opacity: 0.85; }
+.r-opening td { border-bottom: 1px solid var(--at-paper-ink); }
+.r-total:first-of-type td, .r-total td { padding-top: 4px; }
+.r-net td { border-top: 2px solid var(--at-paper-ink); font-weight: 900; padding-top: 4px; }
+.r-closing td { font-weight: 900; border-bottom: 3px double var(--at-paper-ink); }
+.r-empty td { font-style: italic; opacity: 0.6; padding: 8px 0; }
+
+.report-verdict { margin: 12px 0; text-align: center; }
+.v-stamp {
+  display: inline-block; font-size: 18px; font-weight: 900; letter-spacing: 3px; padding: 4px 10px;
+  border: 3px solid currentColor; transform: rotate(-3deg); margin-bottom: 6px;
+}
+.report-verdict[data-met='true'] .v-stamp { color: #2f7a1c; }
+.report-verdict[data-met='false'] .v-stamp { color: #b3261e; }
+.v-text, .v-vitals, .v-note { font-size: 12px; }
+.v-vitals { opacity: 0.7; margin-top: 4px; }
+.report-continue { display: block; margin: 0 auto; background: var(--at-panel); color: var(--at-gold); padding: 10px 18px; }
+.report-continue:hover { background: var(--at-panel-2); }
+
+@media (max-width: 640px) {
+  .hud-brand { display: none; }
+  .hud-stat { min-width: 0; flex: 1 1 40%; }
+  .view-toggle { margin-left: 0; flex: 1 1 100%; }
+  .view-btn { flex: 1; }
+}
