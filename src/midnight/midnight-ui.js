@@ -101,7 +101,9 @@ export function showMidnight({ root = document.body, result, onRestart } = {}) {
   const kindWhy = el(
     'div',
     'mn-kind-why',
-    result.type === 'engineered'
+    result.cause
+      ? `${result.cause} Every shelter needed ${Math.round((result.needMultiplier - 1) * 100)}% more to survive.`
+      : result.type === 'engineered'
       ? `Control ${result.control}/100: the end of the world arrived on your schedule.`
       : `Control ${result.control}/100: ${result.world.runaways} runaway cris${result.world.runaways === 1 ? 'is' : 'es'} got there first. Every shelter needed ${Math.round((result.needMultiplier - 1) * 100)}% more to survive.`,
   );
