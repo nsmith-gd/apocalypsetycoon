@@ -1,0 +1,41 @@
+Apocalypse Tycoon: design brief (stand-in for the GDD body)
+
+NOTE: The full GDD lives in a Claude Doc (https://claude.ai/artifact/Dw847XC8FhHFLKkbjDxUPY).
+Its body can only be read through the Claude Docs connector, and agent sessions don't have
+that connector. The text below is the design brief as the team was given it, copied word for
+word. It is NOT the full GDD: it has no scheme list, no client types and no numbers beyond
+those shown. Replace this file with a full export of the doc when one is available.
+
+Pitch
+You don't survive the apocalypse. You sell it.
+
+Overview
+Apocalypse Tycoon is a pixel-art management sim about building luxury doomsday shelters for
+the ultra-wealthy while quietly stoking the crises that sell them. One continuous campaign runs
+5 to 6.5 hours across 12 in-game quarters and ends at Midnight: the apocalypse you either
+engineer on your terms or fail to contain.
+
+Player fantasy
+You found Last Resort Holdings, a shelter builder with one shovel crew and a board that expects
+growth every quarter. Calm worlds don't buy bunkers, so you learn to make the world a little
+less calm. The whole game asks one question: how close to the edge do you dare run it?
+
+Design pillars
+1. Profit lives at the edge. Crises fund your research and inflate your prices, and the richest
+   zone sits just below each tipping point.
+2. Two canvases, one ledger. The shelter grid is what you build and the world map is what you
+   sell. Every scheme changes demand, and every sale needs more crisis.
+3. Build what they want, grade what they need. Clients pay for gold taps and cryo pods. Midnight
+   grades air, water and food.
+4. Nothing is free. Heat, runaway tension, client leverage and the board push back on every
+   move, so power always feels precarious.
+
+Systems named in the brief (from the task list)
+- Project skeleton, game loop and 12-quarter campaign clock
+- Shelter grid: place rooms and amenities
+- World map with regional demand, crisis levels and shelter sales
+- Crisis-stoking schemes with tipping points and the profit-at-the-edge curve
+- Pushback systems: heat, runaway tension, client leverage and board expectations
+- Midnight ending graded on air, water and food
+- HUD, quarter report and ledger screen (cash, quarter, heat, tension, board target; ledger
+  lines for builds, sales, schemes and fines; grid / world map toggle)
