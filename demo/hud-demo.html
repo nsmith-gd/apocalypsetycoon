@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Apocalypse Tycoon Prototype</title>
 <link rel="stylesheet" href="../src/ui/ui.css">
+<link rel="stylesheet" href="../src/worldmap/worldmap.css">
 <style>
   html, body { margin: 0; height: 100%; background: #14110f; }
   #game { min-height: 100vh; display: flex; flex-direction: column; }
@@ -32,7 +33,7 @@
       <aside class="palette" id="palette"></aside>
       <canvas id="grid" width="160" height="96"></canvas>
     </main>
-    <main class="stage" id="map-view" hidden><canvas id="map" width="320" height="192"></canvas></main>
+    <main id="map-view" hidden></main>
     <div class="at-rail-host" id="rail"></div>
   </div>
   <footer class="actions" id="actions"></footer>
@@ -43,7 +44,9 @@ import { createGameUI } from '../src/ui/hud.js';
 import { ResearchTree } from '../src/research/research.js';
 import { createResearchPanel } from '../src/ui/researchPanel.js';
 import { drawShelter, nextFreeSlot } from '../src/art/shelterView.js';
-import { drawWorldMap } from '../src/art/worldmap.js';
+import { LeadMarket } from '../src/demand/demand.js';
+import { MapSales } from '../src/worldmap/sales.js';
+import { createWorldMapScreen } from '../src/worldmap/worldmap-ui.js';
 import { fitIntegerScale, drawSprite } from '../src/art/render.js';
 import { TILES, AMENITIES as AMENITY_SPRITES } from '../src/art/sprites-shelter.js';
 
@@ -118,25 +121,27 @@ function drawGrid() {
   const cv = document.getElementById('grid');
   drawShelter(cv.getContext('2d'), { cols: 10, rows: 6, rooms, frame });
 }
-const MAP_OFFSETS = { na: -6, sa: -14, eu: 4, af: -2, as: 10, oc: -20 };
-const MAP_CRISIS = { na: 'unrest', sa: 'flood', eu: 'pandemic', af: 'fire', as: 'radiation', oc: 'crash' };
-function drawMap() {
-  const cv = document.getElementById('map');
-  const crisis = Object.fromEntries(Object.entries(MAP_OFFSETS).map(([k, o]) => [k, clamp(state.tension + o)]));
-  const bunkers = [[9, 4], [20, 4], [33, 4], [36, 17]].slice(0, sales);
-  drawWorldMap(cv.getContext('2d'), { crisis, crisisType: MAP_CRISIS, frame, bunkers });
-}
+// ---- world map: regional crisis, buyers (#27's weekly leads) and shelter sales ----
+// The prototype has one world tension; each crisis track sits a little above or below it.
+const TRACK_OFFSETS = { pandemic: 8, climate: 0, unrest: -4, markets: 4, war: -12 };
+const tensions = () => Object.fromEntries(Object.entries(TRACK_OFFSETS).map(([k, o]) => [k, clamp(state.tension + o)]));
+const market = new LeadMarket({ seed: 7 });
+market.ownSite('nam'); // HQ
+market.week({ tensions: Object.fromEntries(Object.keys(TRACK_OFFSETS).map((k) => [k, 0])) });
+market.week({ tensions: tensions() }); // the world's unease so far
+const mapSales = new MapSales({ market, ledger, getTensions: tensions, getQuarter: () => state.quarter });
+const mapScreen = createWorldMapScreen({ root: document.getElementById('map-view'), sales: mapSales });
+const WEEK_SECONDS = 30; // game-seconds per in-game week (13 weeks a quarter)
+let weekClock = 0;
 function fitCanvases() {
   const railW = window.innerWidth > 760 && !ui.ledgerRail?.collapsed ? 244 : 0;
   const avail = Math.min(window.innerWidth - 32 - railW, 1280);
   const palW = window.innerWidth > 700 ? 240 : 0;
   fitIntegerScale(document.getElementById('grid'), avail - palW, window.innerHeight - 220);
-  fitIntegerScale(document.getElementById('map'), avail, window.innerHeight - 220);
 }
 window.addEventListener('resize', fitCanvases);
-setInterval(() => { frame++; drawGrid(); drawMap(); }, 500);
-const redraw = () => { drawGrid(); drawMap(); ui.update(state); research.render(); };
-let sales = 0;
+setInterval(() => { frame++; drawGrid(); }, 500);
+const redraw = () => { drawGrid(); mapScreen.refresh(); ui.update(state); research.render(); };
 
 // ---- actions (schemes etc.) ----
 const SCHEMES = [
@@ -166,8 +171,15 @@ function renderActions() {
   calm.textContent = 'World calms down';
   calm.onclick = () => { state.tension = clamp(state.tension - 15); redraw(); };
   const sell = document.createElement('button');
-  sell.textContent = 'Sell shelter';
-  sell.onclick = () => { sales++; ledger.record('sales', `Shelter sold (tension ${state.tension})`, Math.round(180_000 * (1 + state.tension / 50))); redraw(); };
+  sell.id = 'finish-shelter';
+  sell.textContent = 'Finish shelter';
+  sell.title = 'Hand the shelter over: it goes into stock, ready to sell on the WORLD MAP (2)';
+  sell.onclick = () => {
+    if (!rooms.length) return;
+    mapSales.addFinished({ name: `Shelter #${mapSales.stock.length + mapSales.sold.length + 1}`, rooms: rooms.map((r) => r.amenity), occupants: Math.max(2, rooms.filter((r) => r.amenity === 'bunk').length * 3) });
+    rooms.length = 0;
+    redraw();
+  };
   const fine = document.createElement('button');
   fine.textContent = 'Regulator fine';
   fine.onclick = () => { ledger.record('fines', 'Regulator fine', -Math.round(20_000 + state.heat * 1_000)); state.heat = clamp(state.heat - 15); redraw(); };
@@ -200,7 +212,11 @@ setInterval(() => {
   const now = performance.now();
   const dt = (now - last) / 1000;
   last = now;
-  if (!paused) tree.tick(dt * speed, state.tension);
+  if (!paused) {
+    tree.tick(dt * speed, state.tension);
+    weekClock += dt * speed;
+    while (weekClock >= WEEK_SECONDS) { weekClock -= WEEK_SECONDS; market.week({ tensions: tensions() }); }
+  }
 }, 250);
 
 renderPalette();
@@ -208,7 +224,7 @@ renderActions();
 fitCanvases();
 document.querySelector('.lr-collapse')?.addEventListener('click', fitCanvases);
 redraw();
-window.__demo = { ledger, ui, state, tree, research, redraw };
+window.__demo = { ledger, ui, state, tree, research, redraw, market, mapSales, mapScreen };
 </script>
 </body>
 </html>
