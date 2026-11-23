@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Midnight Demo</title>
+<link rel="stylesheet" href="../src/ui/ui.css">
+<link rel="stylesheet" href="../src/pushback/pushback.css">
+<link rel="stylesheet" href="../src/midnight/midnight.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #14110f; }
+  #game { min-height: 100vh; display: flex; flex-direction: column; }
+  .stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; gap: 8px; }
+  .stage canvas { image-rendering: pixelated; width: min(560px, 100%); border: 4px solid #0a0807; }
+  .stage .cap { color: #a8977a; font: 700 11px 'Courier New', monospace; letter-spacing: 1px; text-align: center; }
+  .actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; justify-content: center; background: #241f1a; border-top: 4px solid #0a0807; position: sticky; bottom: 0; z-index: 45; }
+  .actions .group { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding-right: 6px; border-right: 2px solid #0a0807; }
+  .actions .group span { color: #a8977a; font: 700 10px 'Courier New', monospace; }
+  .actions button { font-family: 'Courier New', monospace; font-weight: 700; font-size: 12px; padding: 7px; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; cursor: pointer; }
+  .actions button.end { background: #f5c542; color: #2a2118; }
+  .actions button.ff { background: #7a2a3a; }
+  .actions button.scheme { color: #ff9f1c; }
+  .actions button.sell { color: #7ed957; }
+</style>
+</head>
+<body>
+<div id="game">
+  <main class="stage" id="grid-view"><canvas id="grid" width="160" height="96"></canvas><div class="cap" id="hq-cap"></div></main>
+  <main class="stage" id="map-view" hidden><canvas id="map" width="160" height="96"></canvas></main>
+  <footer class="actions" id="actions"></footer>
+</div>
+<script type="module">
+import { Ledger } from '../src/ledger/ledger.js';
+import { createGameUI } from '../src/ui/hud.js';
+import { Pushback } from '../src/pushback/pushback.js';
+import { createPushbackUI } from '../src/pushback/pushback-ui.js';
+import { computeMidnight, gradeShelter } from '../src/midnight/midnight.js';
+import { showMidnight } from '../src/midnight/midnight-ui.js';
+
+// Stand-in campaign so Midnight can be reached before the real grid, map and clock are wired in.
+const params = new URLSearchParams(location.search);
+const ledger = new Ledger({ startingCash: 400_000 });
+const pb = new Pushback({ ledger, seed: Number(params.get('seed') ?? 7) });
+const root = document.getElementById('game');
+const ui = createGameUI({ root, ledger, views: { grid: document.getElementById('grid-view'), map: document.getElementById('map-view') } });
+const pbui = createPushbackUI({ root, pushback: pb });
+const state = { quarter: 1, totalQuarters: 12 };
+
+// Your own HQ shelter (the grid you build) plus every shelter you sell.
+const hq = { id: 'hq', name: 'Last Resort HQ', owner: 'your board', occupants: 6, rooms: [], sold: false };
+const shelters = [hq];
+
+const ROOMS = {
+  air_vent: ['Air vent', 15_000, '#b8d8c8'],
+  water_tank: ['Water tank', 15_000, '#4a8ad8'],
+  pantry: ['Pantry', 12_000, '#c8743a'],
+  mil_scrubber: ['Air scrubber', 70_000, '#d8f0e0'],
+  water_recycler: ['Water recycler', 45_000, '#2f6fb8'],
+  hydroponics: ['Hydroponics', 35_000, '#7ed957'],
+  gold_taps: ['Gold taps', 40_000, '#f5c542'],
+  cryo_pod: ['Cryo pods', 120_000, '#8fd3ff'],
+  wine_cellar: ['Wine cellar', 90_000, '#7a2a3a'],
+};
+// Shelter packages clients can buy. Luxury pays far better (pillar 3); survival is what Midnight grades.
+const PACKAGES = {
+  luxury: { label: 'Luxury package', base: 320_000, occupants: 8, rooms: ['gold_taps', 'cryo_pod', 'wine_cellar', 'air_vent', 'water_tank', 'pantry'] },
+  balanced: { label: 'Balanced package', base: 220_000, occupants: 8, rooms: ['gold_taps', 'mil_scrubber', 'water_tank', 'water_tank', 'hydroponics'] },
+  survival: { label: 'Survival package', base: 150_000, occupants: 8, rooms: ['mil_scrubber', 'water_recycler', 'hydroponics'] },
+};
+const CLIENTS = ['Mr. Vance', 'Duchess Okoro', 'Chad Remington IV', 'The Halvorsen Twins', 'Senator Pike', 'Mrs. Abernathy-Lux', 'DJ Bunkr', 'Count Velasquez', 'Lady Graves', 'The Kessler Trust', 'Bishop Oduya', 'Ms. Tanaka-Ruiz'];
+
+const hudState = () => ({ ...state, heat: pb.heat, tension: pb.tension, boardTarget: pb.board.target, boardProgress: ledger.summary(state.quarter).net, boardStrikes: pb.board.strikes });
+
+function build(id) {
+  const [name, cost] = ROOMS[id];
+  ledger.record('builds', `HQ: ${name}`, -Math.round(cost * pb.board.buildCostMultiplier));
+  hq.rooms.push(id);
+}
+function sell(kind) {
+  const p = PACKAGES[kind];
+  const client = CLIENTS[(shelters.length - 1) % CLIENTS.length];
+  const price = Math.round(p.base * (1 + pb.tension / 60));
+  const s = { id: `s${shelters.length}`, name: `${p.label.split(' ')[0]} bunker #${shelters.length}`, owner: client, occupants: p.occupants, rooms: [...p.rooms], sold: true };
+  shelters.push(s);
+  ledger.record('sales', `${p.label} sold to ${client}`, price);
+  pb.onSale({ client, price });
+}
+function scheme(name, cost, heat, tension) {
+  ledger.record('schemes', name, -cost);
+  pb.onScheme({ label: name, heat, tension });
+}
+
+// ---- canvases ----
+function drawGrid() {
+  const c = document.getElementById('grid').getContext('2d');
+  c.fillStyle = '#3b2a1e'; c.fillRect(0, 0, 160, 96);
+  c.fillStyle = '#5a7a3a'; c.fillRect(0, 0, 160, 10);
+  c.fillStyle = '#2a1d14';
+  for (let x = 0; x < 160; x += 16) for (let y = 16; y < 96; y += 16) c.fillRect(x, y, 15, 15);
+  hq.rooms.forEach((id, i) => { c.fillStyle = ROOMS[id][2]; c.fillRect((i % 10) * 16, 16 + Math.floor(i / 10) * 16, 15, 15); });
+  const g = gradeShelter(hq);
+  document.getElementById('hq-cap').textContent = `LAST RESORT HQ · ${hq.occupants} people · Midnight forecast: AIR ${g.grades.air}  WATER ${g.grades.water}  FOOD ${g.grades.food} · ${shelters.length - 1} shelters sold`;
+}
+const regions = [[20, 30, 30, 20], [60, 20, 30, 25], [100, 35, 35, 25], [40, 60, 30, 20], [120, 70, 25, 15]];
+function drawMap() {
+  const c = document.getElementById('map').getContext('2d');
+  c.fillStyle = '#16324a'; c.fillRect(0, 0, 160, 96);
+  regions.forEach(([x, y, w, h], i) => {
+    const t = Math.max(0, Math.min(100, pb.tension + (i - 2) * 8)) / 100;
+    c.fillStyle = `rgb(${80 + t * 175}, ${140 - t * 90}, 60)`;
+    c.fillRect(x, y, w, h);
+  });
+}
+const redraw = () => { drawGrid(); drawMap(); ui.update(hudState()); };
+pb.on('change', redraw);
+ledger.onChange(() => ui.update(hudState()));
+
+// ---- Midnight ----
+async function midnight() {
+  const result = computeMidnight({ shelters, world: { tension: pb.tension, heat: pb.heat, runaways: pb.runaways }, cash: ledger.cash });
+  window.__demo.result = result;
+  await showMidnight({ root: document.body, result, onRestart: () => location.reload() });
+}
+
+async function endQuarter() {
+  if (pb.board.ousted) return;
+  ledger.record('upkeep', 'Crew payroll', -45_000);
+  const q = state.quarter;
+  pbui.hold();
+  const r = pb.endQuarter({ quarter: q, profit: ledger.summary(q).net });
+  await ui.showQuarterReport({ quarter: q, board: r.board, heat: pb.heat, tension: pb.tension, notes: r.lines.slice(1) });
+  await pbui.drain();
+  if (pb.board.ousted) return;
+  if (q >= state.totalQuarters) return midnight();
+  state.quarter += 1;
+  redraw();
+}
+// Fast-forward: jump the clock to Q12 with the world as it stands (testing / preview).
+function fastForward() {
+  state.quarter = state.totalQuarters;
+  redraw();
+}
+
+// ---- actions ----
+const bar = document.getElementById('actions');
+function group(label, buttons) {
+  const g = document.createElement('div'); g.className = 'group';
+  const s = document.createElement('span'); s.textContent = label; g.append(s);
+  for (const [text, fn, cls] of buttons) {
+    const b = document.createElement('button');
+    b.textContent = text; if (cls) b.className = cls;
+    b.onclick = () => { if (pb.board.ousted) return; fn(); redraw(); };
+    g.append(b);
+  }
+  bar.append(g);
+}
+group('BUILD HQ', ['air_vent', 'water_tank', 'pantry', 'mil_scrubber', 'water_recycler', 'hydroponics', 'gold_taps'].map((id) => [ROOMS[id][0], () => build(id)]));
+group('SELL', Object.entries(PACKAGES).map(([k, p]) => [p.label.replace(' package', ''), () => sell(k), 'sell']));
+group('SCHEME', [
+  ['Doom podcast', () => scheme('Fund doom podcast', 15_000, 4, 7), 'scheme'],
+  ['Pandemic leak', () => scheme('Leak pandemic memo', 30_000, 14, 18), 'scheme'],
+  ['Bankroll riots', () => scheme('Bankroll riots', 60_000, 22, 26), 'scheme'],
+]);
+const ff = document.createElement('button'); ff.className = 'ff'; ff.id = 'fast-forward'; ff.textContent = '>> Q12'; ff.title = 'Fast-forward to the last quarter'; ff.onclick = fastForward;
+const end = document.createElement('button'); end.className = 'end'; end.id = 'end-quarter'; end.textContent = 'END QUARTER'; end.onclick = endQuarter;
+bar.append(ff, end);
+
+// ---- presets for quick checks: ?preset=architect|gilded|ark|nobody ----
+const PRESETS = {
+  architect: { sells: ['survival', 'survival', 'balanced', 'survival', 'survival'], hq: ['mil_scrubber', 'water_recycler', 'hydroponics'], tension: 78, heat: 25, runaways: 0 },
+  gilded: { sells: ['luxury', 'luxury', 'luxury', 'balanced', 'luxury'], hq: ['gold_taps', 'air_vent', 'water_tank', 'pantry'], tension: 82, heat: 30, runaways: 0 },
+  ark: { sells: ['survival', 'survival', 'survival', 'survival'], hq: ['mil_scrubber', 'water_recycler', 'hydroponics', 'hydroponics'], tension: 96, heat: 75, runaways: 2 },
+  nobody: { sells: ['luxury', 'luxury', 'balanced', 'luxury', 'luxury', 'luxury'], hq: ['gold_taps', 'air_vent'], tension: 99, heat: 80, runaways: 3 },
+};
+const preset = PRESETS[params.get('preset')];
+if (preset) {
+  preset.hq.forEach((id) => hq.rooms.push(id));
+  preset.sells.forEach(sell);
+  pb.tension = preset.tension; pb.heat = preset.heat; pb.runaways = preset.runaways;
+  state.quarter = state.totalQuarters;
+}
+redraw();
+window.__demo = { ledger, ui, pb, pbui, state, shelters, hq, build, sell, scheme, endQuarter, fastForward, midnight, redraw };
+</script>
+</body>
+</html>
