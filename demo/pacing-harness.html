@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pacing Harness</title>
+<link rel="stylesheet" href="../src/ui/ui.css">
+<style>
+  html, body { margin: 0; background: #14110f; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 16px; font-family: 'Courier New', monospace; color: #f2e6c9; }
+  h1 { font-size: 18px; letter-spacing: 3px; color: #f5c542; margin: 4px 0; }
+  .sub { color: #a8977a; font-size: 12px; margin-bottom: 12px; }
+  .checks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+  .check { background: #241f1a; border: 3px solid #0a0807; padding: 8px; text-align: center; }
+  .check b { display: block; font-size: 20px; }
+  .check[data-ok=true] b { color: #7ed957; } .check[data-ok=false] b { color: #ff5a4f; }
+  .check span { font-size: 10px; color: #a8977a; letter-spacing: 1px; }
+  .timeline { background: #241f1a; border: 3px solid #0a0807; padding: 10px; margin-bottom: 12px; }
+  .tl-row { display: grid; grid-template-columns: 150px 1fr 170px; align-items: center; gap: 8px; font-size: 11px; margin: 3px 0; cursor: pointer; }
+  .tl-row:hover .tl-label { color: #f5c542; }
+  .tl-bar { position: relative; height: 12px; background: #0a0807; }
+  .tl-fill { position: absolute; left: 0; top: 0; bottom: 0; }
+  .tl-fill[data-type=engineered] { background: #c8a8ff; } .tl-fill[data-type=failed] { background: #ff9f1c; } .tl-fill[data-type=ousted] { background: #ff5a4f; }
+  .tl-band { position: absolute; top: -2px; bottom: -2px; border-left: 2px dashed #7ed957; border-right: 2px dashed #7ed957; }
+  .tl-end { font-size: 10px; }
+  .legend { font-size: 10px; color: #a8977a; margin-top: 6px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; vertical-align: middle; margin: 0 4px 0 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 11px; background: #241f1a; border: 3px solid #0a0807; }
+  th { color: #a8977a; font-size: 10px; padding: 4px 6px; text-align: right; border-bottom: 2px solid #0a0807; }
+  td { padding: 3px 6px; text-align: right; white-space: nowrap; border-bottom: 1px solid #2f2821; }
+  tr[data-miss=true] td { color: #ff5a4f; }
+  .log-title { margin: 12px 0 4px; color: #f5c542; font-weight: 700; letter-spacing: 1px; }
+  .scroll { overflow-x: auto; }
+  @media (max-width: 640px) { .checks { grid-template-columns: repeat(2, 1fr); } .tl-row { grid-template-columns: 90px 1fr 90px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>CAMPAIGN PACING HARNESS</h1>
+  <div class="sub" id="sub"></div>
+  <div class="checks" id="checks"></div>
+  <div class="timeline" id="timeline"></div>
+  <div class="log-title" id="log-title"></div>
+  <div class="scroll"><table id="log"></table></div>
+</div>
+<script type="module">
+import { runHarness, BOTS } from '../src/debug/sim.js';
+import { PACING } from '../src/debug/pacing.js';
+
+const h = runHarness();
+const [lo, hi] = PACING.targetHours;
+const k = (n) => (Math.abs(n) >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : `${Math.round(n / 1e3)}K`);
+document.getElementById('sub').textContent = `${h.runs.length} simulated campaigns (${Object.keys(BOTS).length} player bots × 5 seeds). Clock model: ${PACING.quarterMinutes} min per quarter, paused during reports and choice cards. Target ${lo}–${hi} h.`;
+
+const checks = [
+  [h.checks.allCompletedInTarget, `${h.checks.hoursRange?.[0]}–${h.checks.hoursRange?.[1]} h`, 'FULL RUNS IN TARGET'],
+  [h.checks.engineeredReachable, h.runs.filter((r) => r.summary.ending.type === 'engineered').length + ' runs', 'ENGINEERED MIDNIGHT'],
+  [h.checks.failedReachable, h.runs.filter((r) => r.summary.ending.type === 'failed').length + ' runs', 'FAILED TO CONTAIN'],
+  [h.checks.ousted <= h.runs.length / 2, `${h.checks.ousted}/${h.runs.length}`, 'OUSTED BY BOARD'],
+];
+document.getElementById('checks').innerHTML = checks.map(([ok, v, l]) => `<div class="check" data-ok="${ok}"><b>${v}</b><span>${l}</span></div>`).join('');
+
+const maxH = 7;
+const tl = document.getElementById('timeline');
+tl.innerHTML = h.runs.map((r, i) => {
+  const s = r.summary;
+  return `<div class="tl-row" data-i="${i}"><span class="tl-label">${BOTS[r.bot].label} #${r.seed}</span>
+    <div class="tl-bar"><div class="tl-band" style="left:${(lo / maxH) * 100}%;width:${((hi - lo) / maxH) * 100}%"></div>
+    <div class="tl-fill" data-type="${s.ending.type}" style="width:${(s.hours / maxH) * 100}%"></div></div>
+    <span class="tl-end">${s.hours.toFixed(2)} h · ${s.ending.type === 'ousted' ? `ousted Q${s.quarters}` : s.ending.title}</span></div>`;
+}).join('') + `<div class="legend">Bar = modelled hours (0–${maxH} h); dashed box = ${lo}–${hi} h target.<i style="background:#c8a8ff"></i>engineered<i style="background:#ff9f1c"></i>failed to contain<i style="background:#ff5a4f"></i>ousted by the board. Click a run for its per-quarter log.</div>`;
+
+const COLS = [['Q', 'quarter'], ['HOURS', 'hours'], ['CASH', 'cash', k], ['NET', 'net', k], ['CRISIS', 'crisis'], ['HEAT', 'heat'], ['SALES', 'sales'], ['REVENUE', 'salesRevenue', k], ['SCHEMES', 'schemes'], ['FINES', 'fines', k], ['BOARD', 'boardMet', (v) => (v ? 'MET' : 'MISS')], ['STRIKES', 'strikes'], ['RUNAWAYS', 'runaways'], ['EVENTS', 'events']];
+function showLog(i) {
+  const r = h.runs[i];
+  document.getElementById('log-title').textContent = `PER-QUARTER LOG · ${BOTS[r.bot].label} #${r.seed} · ${r.summary.hours} h · ${r.summary.ending.title}`;
+  document.getElementById('log').innerHTML = `<tr>${COLS.map(([t]) => `<th>${t}</th>`).join('')}</tr>` + r.rows.map((row) => `<tr data-miss="${row.boardMet === false}">${COLS.map(([, key, f]) => `<td>${f ? f(row[key]) : row[key] || '-'}</td>`).join('')}</tr>`).join('');
+}
+tl.addEventListener('click', (e) => { const row = e.target.closest('.tl-row'); if (row) showLog(Number(row.dataset.i)); });
+showLog(h.runs.findIndex((r) => r.bot === 'edge'));
+window.__harness = h;
+</script>
+</body>
+</html>

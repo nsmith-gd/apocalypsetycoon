@@ -42,6 +42,7 @@ export const PUSHBACK_DEFAULTS = Object.freeze({
     runawayAt: 100,
     runawayDamagePct: 0.15, // runaway costs 15% of cash (min floor below) in damages
     runawayDamageMin: 60_000,
+    runawayDamageMax: 600_000, // cap: uncapped, a rich late game lost millions per runaway (pacing harness)
     runawayResetTo: 70,
   },
   leverage: {
@@ -53,10 +54,12 @@ export const PUSHBACK_DEFAULTS = Object.freeze({
   },
   board: {
     firstTarget: 50_000, // quarterly profit expected in Q1
-    growth: 0.25, // each target is 25% above the previous one (or last profit, if higher)
+    growth: 0.08, // each target is 8% above the previous one (pacing harness: 25% ousted every bot by Q7)
+    ratchet: 0.25, // a beaten target also moves 25% of the way toward the profit that beat it
     strikesToOust: 3,
     missClawbackPct: 0.10, // executive clawback: 10% of cash (min floor)
     missClawbackMin: 25_000,
+    missClawbackMax: 200_000, // cap: uncapped, one miss snowballed into three (pacing harness)
     freezeMultiplier: 1.25, // second strike: builds cost 25% more next quarter
     beatBonusPct: 0.05, // beating the target pays a bonus of 5% of profit
   },
@@ -208,7 +211,15 @@ export class Pushback {
     const before = this.tension;
     this.tension = clamp(this.tension + amount);
     if (amount > 0) this._note('tension', `${source}: tension +${amount}`, { amount });
-    if (this.tension >= t.runawayAt && before < t.runawayAt) fired.push(this._runaway(source));
+    // One runaway per quarter: past that the world is already on fire and tension just sits at the cap.
+    if (this.tension >= t.runawayAt && before < t.runawayAt) {
+      if (!this._runawayThisQuarter) {
+        this._runawayThisQuarter = true;
+        fired.push(this._runaway(source));
+      } else {
+        this.tension = t.runawayAt - 1; // held just under the line until next quarter
+      }
+    }
     return fired;
   }
 
@@ -255,7 +266,7 @@ export class Pushback {
 
   _runaway(source) {
     const t = this.cfg.tension;
-    const damage = Math.max(t.runawayDamageMin, round(this.cash * t.runawayDamagePct));
+    const damage = Math.min(t.runawayDamageMax, Math.max(t.runawayDamageMin, round(this.cash * t.runawayDamagePct)));
     this._pay('fines', 'Runaway crisis damages', -damage);
     this.tension = t.runawayResetTo;
     this.runaways += 1;
@@ -376,7 +387,7 @@ export class Pushback {
       lines.push(`Board target MET (${fmt(profit)} vs ${fmt(target)}). Bonus ${fmt(bonus)}.${this.board.strikes ? ` Strikes now ${this.board.strikes}.` : ''}`);
     } else {
       this.board.strikes += 1;
-      const clawback = Math.max(B.missClawbackMin, round(Math.max(0, this.cash) * B.missClawbackPct));
+      const clawback = Math.min(B.missClawbackMax, Math.max(B.missClawbackMin, round(Math.max(0, this.cash) * B.missClawbackPct)));
       this._pay('fines', `Board penalty: missed target (strike ${this.board.strikes})`, -clawback);
       boardResult = { met, target, profit, clawback, strikes: this.board.strikes };
       lines.push(`Board target MISSED (${fmt(profit)} vs ${fmt(target)}). Strike ${this.board.strikes}/${B.strikesToOust}: ${fmt(clawback)} clawed back.`);
@@ -400,10 +411,16 @@ export class Pushback {
         this._emit('ousted', boardResult);
       }
     }
-    // Next target: growth on top of the last target, raised halfway toward any overperformance
-    // (a great quarter makes the board greedier, but not all at once).
-    const base = target + Math.max(0, profit - target) * 0.5;
-    this.board.target = round(base * (1 + B.growth), 5_000);
+    // Next target: after a hit, growth on top of the last target, nudged toward any overperformance
+    // (a great quarter makes the board greedier, but not all at once). After a miss the board
+    // recalibrates halfway toward what you actually made (never below the first target), so one
+    // record quarter can't set a bar that the rest of the campaign can never clear.
+    if (met) {
+      const base = target + Math.max(0, profit - target) * B.ratchet;
+      this.board.target = round(base * (1 + B.growth), 5_000);
+    } else {
+      this.board.target = round(Math.max(B.firstTarget, (target + Math.max(0, profit)) / 2), 5_000);
+    }
 
     // 2. Heat: fines if you end the quarter hot, then natural cooling.
     if (this.heat >= H.fineAt) {
@@ -427,6 +444,7 @@ export class Pushback {
 
     this.quarter = quarter + 1;
     this._investigatedThisQuarter = false;
+    this._runawayThisQuarter = false;
     this._quarterProfit = 0;
     for (const l of lines) this._note('quarter', l);
     this._changed();

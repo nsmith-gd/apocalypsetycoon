@@ -140,3 +140,22 @@ test('board uses ledger net profit when profit is not passed', () => {
   assert.equal(r.board.profit, 400_000);
   assert.equal(r.board.met, true);
 });
+
+test('after a miss the board recalibrates toward what you made instead of compounding', () => {
+  const pb = new Pushback({ ledger: fakeLedger() });
+  pb.board.target = 1_000_000;
+  pb.endQuarter({ quarter: 1, profit: 200_000 });
+  assert.equal(pb.board.target, 600_000);
+});
+
+test('only one runaway per quarter', () => {
+  const pb = new Pushback({ ledger: fakeLedger() });
+  let n = 0;
+  pb.on('runaway', () => n++);
+  pb.onScheme({ label: 'a', tension: 100 });
+  pb.onScheme({ label: 'b', tension: 100 });
+  assert.equal(n, 1);
+  pb.endQuarter({ quarter: 1, profit: 1e9 });
+  pb.onScheme({ label: 'c', tension: 100 });
+  assert.equal(n, 2);
+});

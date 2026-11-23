@@ -1,0 +1,132 @@
+Pacing model: fixed clock, 27 min per quarter, target 5-6.5 h
+
+bot        seed  quarters  hours  paced-h  sales  final cash  peak crisis  ending
+cautious      1        12   5.85     1.92     35       6.39M           45  engineered/architect (89% survive)
+cautious      2        12   5.85     1.92     35       6.62M           45  engineered/architect (87% survive)
+cautious      3        12   5.85     1.93     36       6.60M           45  engineered/architect (90% survive)
+cautious      4         8   3.94     1.39     26       5.49M           44  ousted/ousted
+cautious      5         6   2.99     0.99     14       2.36M           43  ousted/ousted
+edge          1        12   5.84     2.31     53      22.93M           94  engineered/managed (61% survive)
+edge          2        12   5.83     2.32     54      23.79M           94  engineered/managed (62% survive)
+edge          3        11   5.37     2.15     49      21.53M           94  ousted/ousted
+edge          4        12   5.83     2.30     53      23.24M           94  engineered/managed (62% survive)
+edge          5        11   5.37     2.07     45      18.75M           94  ousted/ousted
+luxury        1        12   5.83     2.27     51      29.80M           90  engineered/gilded (13% survive)
+luxury        2        11   5.37     2.12     47      26.64M           90  ousted/ousted
+luxury        3        12   5.84     2.30     52      30.54M           90  engineered/gilded (13% survive)
+luxury        4        11   5.37     2.12     47      27.06M           90  ousted/ousted
+luxury        5        12   5.83     2.19     47      27.02M           90  engineered/gilded (13% survive)
+arsonist      1        12   5.90     2.27     44      16.80M           99  failed/ashes (51% survive)
+arsonist      2        12   5.90     2.27     44      16.61M           99  failed/ashes (51% survive)
+arsonist      3        12   5.91     2.28     44      16.91M           99  failed/ashes (51% survive)
+arsonist      4        12   5.91     2.28     44      16.75M           99  failed/ashes (51% survive)
+arsonist      5        12   5.91     2.28     44      16.30M           99  failed/ashes (51% survive)
+reckless      1        12   6.21     2.55     42       7.70M           99  failed/nobody (13% survive)
+reckless      2        12   6.23     2.58     42       7.53M           99  failed/nobody (13% survive)
+reckless      3        12   6.23     2.58     42       7.58M           99  failed/nobody (13% survive)
+reckless      4        12   6.23     2.58     42       7.28M           99  failed/nobody (13% survive)
+reckless      5        12   6.21     2.55     42       7.43M           99  failed/nobody (13% survive)
+
+--- Cautious builder, seed 1 ---
+ Q  hours   cash    net  crisis  heat  sales  revenue  schemes  fines  board  X  runaway  events
+ 1   0.54   854K   454K      38     9      2     749K        3     0K    MET  0        0  -
+ 2   1.02  1.38M   527K      42     5      2     765K        1     0K    MET  0        0  -
+ 3   1.49  1.87M   490K      39     0      2     749K        0     0K    MET  0        0  -
+ 4   1.97  2.98M  1.11M      43     0      4    1.49M        1     0K    MET  0        0  -
+ 5   2.44  3.79M   813K      40     0      3    1.12M        0     0K    MET  0        0  -
+ 6   2.92  3.99M   196K      37     0      3     745K        0   200K   MISS  1        0  board
+ 7   3.40  4.73M   743K      44     0      3    1.17M        1     0K    MET  0        0  -
+ 8   3.88  5.13M   403K      41     0      4    1.05M        0   200K   MISS  1        0  board
+ 9   4.37  5.16M    29K      38     0      2     534K        0   200K   MISS  2        0  board
+10   4.84  5.78M   617K      45     0      4    1.10M        1     0K    MET  1        0  -
+11   5.33  5.85M    67K      42     0      2     552K        0   200K   MISS  2        0  board
+12   5.80  6.39M   548K      39     0      4    1.01M        0     0K    MET  1        0  -
+
+--- Edge runner, seed 1 ---
+ Q  hours    cash    net  crisis  heat  sales  revenue  schemes  fines  board  X  runaway  events
+ 1   0.54   1.24M   842K      82    29      2    1.25M        8     0K    MET  0        0  -
+ 2   1.02   2.89M  1.65M      88    21      4    2.06M        0     0K    MET  0        0  -
+ 3   1.49   4.91M  2.02M      94    13      4    2.45M        0     0K    MET  0        0  -
+ 4   1.97   6.41M  1.50M      86     0      4    1.93M        1     0K    MET  0        0  -
+ 5   2.44   8.23M  1.82M      92     0      4    2.20M        0     0K    MET  0        0  -
+ 6   2.92  10.08M  1.85M      84     0      4    2.37M        1     0K    MET  0        0  -
+ 7   3.39  12.81M  2.73M      90     0      6    3.36M        0     0K    MET  0        0  -
+ 8   3.88  14.62M  1.80M      82     0      5    2.71M        1   200K   MISS  1        0  board
+ 9   4.35  17.29M  2.68M      88     0      6    3.27M        0     0K    MET  0        0  -
+10   4.83  19.12M  1.83M      94     0      4    2.59M        0   200K   MISS  1        0  board
+11   5.31  21.64M  2.52M      86     0      6    3.15M        1     0K    MET  0        0  -
+12   5.79  22.93M  1.29M      92     0      4    1.98M        0   200K   MISS  1        0  board
+
+--- Luxury dealer, seed 1 ---
+ Q  hours    cash    net  crisis  heat  sales  revenue  schemes  fines  board  X  runaway  events
+ 1   0.54   1.45M  1.05M      82    29      2    1.47M        8     0K    MET  0        0  -
+ 2   1.02   2.69M  1.24M      88    21      2    1.50M        0     0K    MET  0        0  -
+ 3   1.49   5.00M  2.31M      71     7      4    2.88M        1     0K    MET  0        0  -
+ 4   1.97   6.62M  1.62M      68     0      3    2.04M        0     0K    MET  0        0  -
+ 5   2.44   8.86M  2.24M      84     0      4    2.81M        1     0K    MET  0        0  -
+ 6   2.92  12.74M  3.88M      90     0      6    4.66M        0     0K    MET  0        0  -
+ 7   3.39  15.70M  2.96M      82     0      5    3.67M        1     0K    MET  0        0  -
+ 8   3.87  19.59M  3.89M      88     0      6    4.64M        0     0K    MET  0        0  -
+ 9   4.35  22.14M  2.54M      71     0      5    3.60M        1   200K   MISS  1        0  board
+10   4.83  23.99M  1.85M      68     0      4    2.75M        0   200K   MISS  2        0  board
+11   5.31  26.87M  2.88M      84     0      5    3.78M        1     0K    MET  1        0  -
+12   5.78  29.80M  2.93M      90     0      5    3.60M        0     0K    MET  0        0  -
+
+--- Late arsonist, seed 1 ---
+ Q  hours    cash    net  crisis  heat  sales  revenue  schemes  fines  board  X  runaway  events
+ 1   0.54   1.05M   648K      82    29      2    1.01M        8     0K    MET  0        0  -
+ 2   1.02   1.87M   826K      88    21      2    1.03M        0     0K    MET  0        0  -
+ 3   1.49   3.71M  1.83M      94    13      4    2.19M        0     0K    MET  0        0  -
+ 4   1.97   5.33M  1.62M      86     0      4    2.02M        1     0K    MET  0        0  -
+ 5   2.44   7.09M  1.76M      92     0      4    2.10M        0     0K    MET  0        0  -
+ 6   2.92   8.72M  1.63M      84     0      4    2.02M        1     0K    MET  0        0  -
+ 7   3.39  10.47M  1.75M      90     0      4    2.14M        0     0K    MET  0        0  -
+ 8   3.88  11.85M  1.38M      82     0      4    2.08M        1   200K   MISS  1        0  board
+ 9   4.35  13.65M  1.80M      88     0      4    2.15M        0     0K    MET  0        0  -
+10   4.84  14.96M  1.31M      70     0      4    2.30M        1   600K    MET  0        1  runaway demand
+11   5.35  15.79M   834K      99    10      4    2.30M        6   800K   MISS  1        2  runaway board demand demand
+12   5.85  16.80M  1.01M      70     2      4    2.36M        0  1.03M    MET  0        3  runaway blackmail blackmail
+
+--- Reckless arsonist, seed 1 ---
+ Q  hours   cash    net  crisis  heat  sales  revenue  schemes  fines  board  X  runaway  events
+ 1   0.54  1.45M  1.05M      82    29      2    1.47M        8     0K    MET  0        0  -
+ 2   1.03  2.53M  1.08M      99    46      2    1.68M        5   210K    MET  0        1  runaway demand
+ 3   1.52  3.38M   849K      70    48      2    1.70M        0   596K    MET  0        2  runaway demand
+ 4   2.04  4.32M   944K      70    55      4    3.23M        1  1.72M    MET  0        3  investigation runaway blackmail blackmail raid
+ 5   2.55  5.00M   678K      99    55      4    3.33M        2  1.91M    MET  0        4  runaway blackmail blackmail raid
+ 6   3.07  5.82M   817K      70    55      4    3.39M        0  2.05M    MET  0        5  runaway blackmail blackmail investigation raid
+ 7   3.58  6.33M   519K      99    55      4    3.48M        2  2.26M    MET  0        6  runaway blackmail blackmail raid
+ 8   4.09  6.89M   551K      70    55      4    3.37M        0  2.32M    MET  0        7  runaway blackmail blackmail investigation raid
+ 9   4.61  6.93M    45K      99    55      4    3.47M        2  2.62M   MISS  1        8  runaway board blackmail blackmail raid
+10   5.13  7.45M   517K      70    55      4    3.49M        0  2.46M    MET  0        9  runaway blackmail blackmail investigation raid
+11   5.64  7.23M  -217K      99    55      4    3.32M        2  2.70M   MISS  1       10  runaway board blackmail blackmail raid
+12   6.16  7.70M   474K      70    55      4    3.49M        0  2.53M    MET  0       11  runaway blackmail blackmail investigation raid
+
+Checks: {
+ "allCompletedInTarget": true,
+ "hoursRange": [
+  5.83,
+  6.23
+ ],
+ "pacedHoursRange": [
+  1.92,
+  2.58
+ ],
+ "target": [
+  5,
+  6.5
+ ],
+ "engineeredReachable": true,
+ "failedReachable": true,
+ "ousted": 6,
+ "endings": [
+  "architect",
+  "ousted",
+  "managed",
+  "gilded",
+  "ashes",
+  "nobody"
+ ]
+}
+
+PASS

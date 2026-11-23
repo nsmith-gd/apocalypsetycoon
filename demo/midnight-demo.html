@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="../src/ui/ui.css">
 <link rel="stylesheet" href="../src/pushback/pushback.css">
 <link rel="stylesheet" href="../src/midnight/midnight.css">
+<link rel="stylesheet" href="../src/debug/debug.css">
 <style>
   html, body { margin: 0; height: 100%; background: #14110f; }
   #game { min-height: 100vh; display: flex; flex-direction: column; }
@@ -37,6 +38,10 @@ import { createPushbackUI } from '../src/pushback/pushback-ui.js';
 import { createAudio, wireAudio, createSoundToggle, startOnFirstGesture, midnightTimes } from '../src/audio/audio.js';
 import { computeMidnight, gradeShelter } from '../src/midnight/midnight.js';
 import { showMidnight, showClockStrike } from '../src/midnight/midnight-ui.js';
+import { ResearchTree } from '../src/research/research.js';
+import { PacingLog, PACING } from '../src/debug/pacing.js';
+import { SIM } from '../src/debug/sim.js';
+import { createDebugPanel } from '../src/debug/debug-panel.js';
 
 // Stand-in campaign so Midnight can be reached before the real grid, map and clock are wired in.
 const params = new URLSearchParams(location.search);
@@ -132,12 +137,19 @@ async function midnight() {
   await showMidnight({ root: document.body, result, onRestart: () => location.reload() });
 }
 
+// Research and the pacing log (the debug panel, [`] key, reads the log and can auto-play with a bot).
+const tree = new ResearchTree();
+const log = new PacingLog({ ledger, pushback: pb, research: tree, label: 'midnight demo' });
+
 async function endQuarter() {
   if (pb.board.ousted) return;
   ledger.record('upkeep', 'Crew payroll', -45_000);
   const q = state.quarter;
+  for (let m = 0; m < PACING.quarterMinutes; m++) tree.tick(60, pb.tension); // a quarter of research
   pbui.hold();
   const r = pb.endQuarter({ quarter: q, profit: ledger.summary(q).net });
+  log.endQuarter(q, r.board);
+  if (q >= state.totalQuarters) log.finish(null);
   if (r.board.met) audio.play('boardMet');
   await ui.showQuarterReport({ quarter: q, board: r.board, heat: pb.heat, tension: pb.tension, notes: r.lines.slice(1) });
   await pbui.drain();
@@ -190,8 +202,20 @@ if (preset) {
   pb.tension = preset.tension; pb.heat = preset.heat; pb.runaways = preset.runaways;
   state.quarter = state.totalQuarters;
 }
+// What the debug bots need to play this demo.
+const botGame = {
+  ledger, pb, tree, hq, shelters,
+  get quarter() { return state.quarter + (document.querySelector('.mn-overlay, .mn-strike') ? 1 : 0); },
+  schemesAvailable: () => SIM.schemes.filter((s) => !s.research || tree.isUnlocked(s.id)),
+  scheme: (s) => scheme(s.name, s.cost, s.heat, s.tension),
+  sell, build,
+  demand: () => 1 + Math.floor(pb.tension / SIM.demandPerCrisis),
+  capacity: () => tree.crewCount * SIM.sellsPerCrew,
+};
+const debug = createDebugPanel({ root: document.body, log, game: botGame, endQuarter: async () => { await endQuarter(); redraw(); } });
+if (params.has('debug')) debug.show();
 redraw();
-window.__demo = { audio, ledger, ui, pb, pbui, state, shelters, hq, build, sell, scheme, endQuarter, fastForward, midnight, redraw };
+window.__demo = { log, debug, tree, audio, ledger, ui, pb, pbui, state, shelters, hq, build, sell, scheme, endQuarter, fastForward, midnight, redraw };
 </script>
 </body>
 </html>
