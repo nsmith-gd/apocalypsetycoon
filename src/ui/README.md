@@ -8,7 +8,12 @@
   `state` = `{ quarter, totalQuarters, heat (0-100), tension (0-100), boardTarget }`.
   `showQuarterReport()` resolves when the player clicks Continue — the campaign clock should await it
   before advancing the quarter. TAB toggles shelter grid / world map.
+- `src/ui/ledgerRail.js` — the ledger on screen at all times: a HUD chip (always, in every page using
+  `createGameUI`), an optional docked rail (`createGameUI({ ..., rail: hostEl })`, host inside
+  `<div class="at-body">` next to the views) and the full ledger screen (L key, any quarter + net history).
+  Keys: 1 shelter, 2 world map, TAB toggle, L ledger. Money made on the hidden canvas lights its button.
 - `src/ui/ui.css` — styles (include once).
+- `index.html` at the repo root is the front page: PLAY opens the prototype, plus links to every demo.
 - Demo with stand-in systems: serve the repo root (`python3 -m http.server`) and open `demo/hud-demo.html`.
 - Tests: `node --test tests/*.test.js`.
 
