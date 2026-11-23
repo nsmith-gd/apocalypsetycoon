@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Art Style Guide</title>
+<style>
+  :root { --bg: #14110f; --ink: #f2e6c9; --dim: #a8977a; --gold: #f5c542; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 'Courier New', monospace; }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  h1 { color: var(--gold); letter-spacing: 3px; margin: 8px 0; }
+  h2 { color: var(--gold); letter-spacing: 2px; border-bottom: 2px solid #3b2f26; padding-bottom: 4px; margin-top: 32px; }
+  p, li { color: var(--dim); max-width: 75ch; }
+  canvas { image-rendering: pixelated; display: block; }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+  .sw { border: 2px solid #0a0807; background: #241f1a; }
+  .sw b { display: block; height: 36px; }
+  .sw span { display: block; padding: 4px 6px; font-size: 11px; }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+  .cell { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+  .cell small { color: var(--dim); font-size: 11px; }
+  .scroll { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>LAST RESORT 28: ART STYLE GUIDE</h1>
+  <p>Every pixel in Apocalypse Tycoon comes from this page's palette and sprite sets. All art is drawn at 1x and shown only at whole-number scales (1x, 2x, 3x...), never stretched or smoothed.</p>
+
+  <h2>PALETTE</h2>
+  <div class="swatches" id="swatches"></div>
+
+  <h2>SHELTER TILES &amp; AMENITIES (16PX)</h2>
+  <p>Light from the top-left. Objects carry a 1px near-black outline; terrain doesn't. Luxury uses gold and chrome. Survival kit (air, water, food) is utilitarian steel with a single accent colour: mint, blue, green.</p>
+  <div class="row" id="shelter"></div>
+  <h2>SHELTER CROSS-SECTION (3X)</h2>
+  <div class="scroll"><canvas id="shelter-view" width="160" height="96"></canvas></div>
+
+  <h2>WORLD MAP (8PX TERRAIN)</h2>
+  <p>A retro war-room map. Terrain is low-contrast so crisis marks read on top. Each region's crisis level shows as a dither overlay: none when calm, sparse gold when uneasy, orange at the edge, shimmering red at the tipping point.</p>
+  <div class="row" id="map-sprites"></div>
+  <h2>CRISIS LEVELS ON THE MAP (2X)</h2>
+  <div class="scroll"><canvas id="map-view" width="320" height="192"></canvas></div>
+
+  <h2>UI FRAMES &amp; ICONS</h2>
+  <p>Nine-slice frames tile their edges, never stretch. Dark riveted panels for the bunker, paper for reports.</p>
+  <div class="scroll"><canvas id="ui-view" width="360" height="120"></canvas></div>
+  <div class="row" id="ui-icons"></div>
+</main>
+<script type="module">
+import { PALETTE } from '../src/art/palette.js';
+import { drawSprite, drawNineSlice } from '../src/art/render.js';
+import { TILES, AMENITIES } from '../src/art/sprites-shelter.js';
+import { MAP_TILES, MAP_MARKERS, CRISIS_ICONS, CRISIS_OVERLAYS } from '../src/art/sprites-map.js';
+import { UI_FRAMES, UI_ICONS, UI_CURSOR, LOGO } from '../src/art/sprites-ui.js';
+import { drawShelter } from '../src/art/shelterView.js';
+import { drawWorldMap } from '../src/art/worldmap.js';
+import { drawText } from '../src/art/font.js';
+
+const sw = document.getElementById('swatches');
+for (const [key, { hex, name }] of Object.entries(PALETTE)) {
+  const d = document.createElement('div'); d.className = 'sw';
+  d.innerHTML = `<b style="background:${hex}"></b><span>${key} · ${hex}<br>${name}</span>`;
+  sw.append(d);
+}
+
+const animated = [];
+function spriteCells(container, group, scale) {
+  for (const [name, s] of Object.entries(group)) {
+    const cell = document.createElement('div'); cell.className = 'cell';
+    const cv = document.createElement('canvas'); cv.width = s.w; cv.height = s.h;
+    cv.style.width = `${s.w * scale}px`; cv.style.height = `${s.h * scale}px`;
+    const ctx = cv.getContext('2d');
+    const draw = (f) => { ctx.clearRect(0, 0, s.w, s.h); if (group === AMENITIES) drawSprite(ctx, TILES.roomEmpty, 0, 0); drawSprite(ctx, s, 0, 0, { frame: f }); };
+    draw(0);
+    if (s.frames) animated.push(draw);
+    const label = document.createElement('small'); label.textContent = name;
+    cell.append(cv, label);
+    container.append(cell);
+  }
+}
+spriteCells(document.getElementById('shelter'), TILES, 4);
+spriteCells(document.getElementById('shelter'), AMENITIES, 4);
+spriteCells(document.getElementById('map-sprites'), MAP_TILES, 5);
+spriteCells(document.getElementById('map-sprites'), MAP_MARKERS, 5);
+spriteCells(document.getElementById('map-sprites'), CRISIS_ICONS, 5);
+spriteCells(document.getElementById('map-sprites'), CRISIS_OVERLAYS, 5);
+spriteCells(document.getElementById('ui-icons'), UI_ICONS, 4);
+spriteCells(document.getElementById('ui-icons'), UI_CURSOR, 4);
+spriteCells(document.getElementById('ui-icons'), { LOGO }, 4);
+
+const shelterCv = document.getElementById('shelter-view');
+shelterCv.style.width = `${160 * 3}px`;
+const rooms = Object.keys(AMENITIES).map((amenity, i) => ({ col: 1 + (i % 9), row: 1 + Math.floor(i / 9) * 2, amenity }));
+const mapCv = document.getElementById('map-view');
+mapCv.style.width = `${320 * 2}px`;
+const uiCv = document.getElementById('ui-view');
+uiCv.style.width = `${360 * 3}px`;
+
+function drawUI() {
+  const ctx = uiCv.getContext('2d');
+  ctx.clearRect(0, 0, 360, 120);
+  const f = UI_FRAMES;
+  drawNineSlice(ctx, f.panel.sprite, 0, 0, 120, 70, f.panel.border);
+  drawText(ctx, 'PANEL 120X70', 10, 10);
+  drawNineSlice(ctx, f.paper.sprite, 126, 0, 90, 70, f.paper.border);
+  drawText(ctx, 'PAPER', 136, 10, '#2a2118', null);
+  let x = 222;
+  for (const k of ['button', 'buttonPressed', 'buttonActive']) {
+    drawNineSlice(ctx, f[k].sprite, x, 0, 44, 18, f[k].border);
+    x += 46;
+  }
+  drawNineSlice(ctx, f.meter.sprite, 222, 24, 136, 8, f.meter.border);
+  drawNineSlice(ctx, f.tooltip.sprite, 222, 38, 100, 24, f.tooltip.border);
+  drawText(ctx, 'TOOLTIP', 230, 47);
+  drawSprite(ctx, LOGO, 10, 24);
+  let ix = 0;
+  for (const s of Object.values(UI_ICONS)) { drawSprite(ctx, s, ix * 14 + 4, 80); ix++; }
+  ix = 0;
+  for (const s of Object.values(CRISIS_ICONS)) { drawSprite(ctx, s, ix * 14 + 4, 98); ix++; }
+}
+
+let frame = 0;
+function tick() {
+  drawShelter(shelterCv.getContext('2d'), { cols: 10, rows: 6, rooms, frame });
+  drawWorldMap(mapCv.getContext('2d'), {
+    crisis: { na: 20, sa: 45, eu: 75, af: 55, as: 95, oc: 30 },
+    crisisType: { sa: 'flood', eu: 'pandemic', af: 'fire', as: 'radiation', oc: 'crash', na: 'unrest' },
+    frame, selected: 'eu', bunkers: [[9, 4], [20, 4], [36, 17]],
+  });
+  animated.forEach((d) => d(frame));
+  frame++;
+}
+drawUI();
+tick();
+setInterval(tick, 500);
+window.__galleryReady = true;
+</script>
+</body>
+</html>
