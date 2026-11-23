@@ -13,6 +13,7 @@
 // PANIC PREMIUM per region scales the same way: full / half / quarter by exposure.
 //
 // Pure rules, no DOM. #3 owns the world map; it reads `regionDemand()` and calls `ownSite()`.
+// #4's schemes call `addLeads()` (local panic) and `flee()` (runaway crisis).
 // Feed tensions weekly with `week({ tensions, breaching })`, or `attachCrisis(market, crisisSystem)`.
 
 export const EXPOSURE = Object.freeze({ high: 1, medium: 0.5, low: 0.25 });
@@ -161,13 +162,7 @@ export class LeadMarket {
       const n = regionLeads(r, this.fear, { siteOwned: !!this.sites[r.id], referrals: this.referrals[r.id] ?? 0 }, this.cfg);
       this.carry[r.id] += n;
       perRegion[r.id] = n;
-      while (this.carry[r.id] >= 1) {
-        this.carry[r.id] -= 1;
-        const lead = { id: ++this._ids, region: r.id, type: this._pickType(r), wealth: this._wealthFor(r), week: this.weekNo };
-        this.leads.push(lead);
-        fresh.push(lead);
-      }
-      this.carry[r.id] = r2(this.carry[r.id]);
+      fresh.push(...this._spawn(r));
     }
     // Unworked leads go to a rival after 4 weeks.
     const expired = this.leads.filter((x) => this.weekNo - x.week >= this.cfg.rivalAfterWeeks);
@@ -180,6 +175,39 @@ export class LeadMarket {
     this.history.push({ week: this.weekNo, fear: { ...this.fear }, leads: perRegion, total, open: this.leads.length, lost: expired.length });
     this._emit('week', { fear: { ...this.fear }, fresh, expired, total });
     return { fear: { ...this.fear }, leads: fresh, expired, total };
+  }
+
+  _spawn(r) {
+    const out = [];
+    while (this.carry[r.id] >= 1) {
+      this.carry[r.id] -= 1;
+      const lead = { id: ++this._ids, region: r.id, type: this._pickType(r), wealth: this._wealthFor(r), week: this.weekNo };
+      this.leads.push(lead);
+      out.push(lead);
+    }
+    this.carry[r.id] = r2(this.carry[r.id]);
+    return out;
+  }
+
+  /** Extra leads right now (local panic from a scheme, #4). Fractions carry over. Returns the new leads. */
+  addLeads(regionId, n) {
+    const r = this.region(regionId);
+    if (!r || !(n > 0)) return [];
+    this.carry[r.id] += n;
+    const fresh = this._spawn(r);
+    if (fresh.length) this._emit('leads', { region: regionId, fresh });
+    return fresh;
+  }
+
+  /** A share of a region's open leads flee to rivals at once (runaway crisis, #4). Returns them. */
+  flee(regionId, share = 0.5) {
+    const here = this.leads.filter((x) => x.region === regionId);
+    const gone = here.slice(0, Math.ceil(here.length * share));
+    if (!gone.length) return [];
+    this.leads = this.leads.filter((x) => !gone.includes(x));
+    this.lost.push(...gone);
+    this._emit('lost', gone);
+    return gone;
   }
 
   /** The player works a lead (a sales call); it leaves the inbox. */

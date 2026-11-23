@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>World Map Sales</title>
+<title>World Map and Schemes</title>
 <link rel="stylesheet" href="../src/ui/ui.css">
 <link rel="stylesheet" href="../src/worldmap/worldmap.css">
+<link rel="stylesheet" href="../src/crisis/breach.css">
 <style>
   html, body { margin: 0; background: #14110f; }
   #game { min-height: 100vh; display: flex; flex-direction: column; }
@@ -23,7 +24,8 @@
   <div class="dev"><div class="dev-row" id="dev"><b>WEEK <span id="wk">0</span></b>
     <button id="week" class="hot">ADVANCE 1 WEEK</button><button id="month">+4 WEEKS</button><span class="sep"></span>
     <span>STOKE (dev):</span><span id="stoke"></span><span class="sep"></span>
-    <button id="finish">FINISH A SHELTER (dev)</button>
+    <button id="finish">FINISH A SHELTER (dev)</button><span class="sep"></span>
+    <span>RESEARCH <b id="rp" style="color:#c070ff">0</b> RP/s</span>
   </div></div>
 </div>
 <script type="module">
@@ -35,6 +37,9 @@ import { LeadMarket, attachCrisis } from '../src/demand/demand.js';
 import { MapSales } from '../src/worldmap/sales.js';
 import { createWorldMapScreen } from '../src/worldmap/worldmap-ui.js';
 import { createAudio, wireAudio, startOnFirstGesture } from '../src/audio/audio.js';
+import { SchemeBoard, researchCrisis } from '../src/schemes/schemes.js';
+import { createContainmentUI } from '../src/crisis/breach-ui.js';
+import { researchRate } from '../src/research/research.js';
 
 const params = new URLSearchParams(location.search);
 const ledger = new Ledger({ startingCash: 2_000_000 });
@@ -47,7 +52,8 @@ const market = new LeadMarket({ seed: 9, reputation: () => crisis.reputation });
 attachCrisis(market, crisis);
 market.ownSite('nam', { prestige: 2 }); // HQ with a Showroom
 const tensions = () => Object.fromEntries(Object.values(crisis.tracks).map((t) => [t.id, t.tension]));
-const sales = new MapSales({ market, ledger, pushback: pb, getTensions: tensions, getBreachMultiplier: () => crisis.panicMultiplier, getQuarter: () => 1 + Math.floor(market.weekNo / 13) });
+const schemes = new SchemeBoard({ crisis, market, ledger, pushback: pb });
+const sales = new MapSales({ market, ledger, pushback: pb, getTensions: tensions, getBreachMultiplier: () => crisis.panicMultiplier, getEdgeBonus: (id) => schemes.edgeBonus(id), getQuarter: () => 1 + Math.floor(market.weekNo / 13) });
 
 const audio = createAudio();
 wireAudio(audio, { ledger, pushback: pb });
@@ -70,10 +76,13 @@ let nextDesign = 0;
 const finish = () => sales.addFinished(DESIGNS[nextDesign++ % DESIGNS.length]);
 for (let i = 0; i < 3; i++) finish();
 
-const screen = createWorldMapScreen({ root: mapView, sales, initial: params.get('region') });
+const screen = createWorldMapScreen({ root: mapView, sales, schemes, initial: params.get('region'), onScheme: () => hud() });
+createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => advanceWeek() });
+crisis.on('week', () => screen.refresh());
 
 function hud() {
   document.getElementById('wk').textContent = market.weekNo;
+  document.getElementById('rp').textContent = researchRate(researchCrisis(crisis)).toFixed(1);
   const avg = Math.round(Object.values(crisis.tracks).reduce((a, t) => a + t.tension, 0) / 5);
   ui.update({ quarter: 1 + Math.floor(market.weekNo / 13), totalQuarters: 12, heat: pb.heat, tension: avg, boardTarget: 0 });
 }
@@ -90,7 +99,7 @@ for (const t of Object.values(crisis.tracks)) {
 }
 ledger.onChange(hud);
 hud();
-window.__demo = { crisis, market, sales, screen, ledger, advanceWeek, finish };
+window.__demo = { crisis, market, sales, schemes, screen, ledger, pb, advanceWeek, finish };
 </script>
 </body>
 </html>
