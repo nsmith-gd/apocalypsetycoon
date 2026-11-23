@@ -66,6 +66,7 @@
 
 .hud-board .hud-bar-fill { background: var(--at-dim); }
 .hud-board[data-met='true'] .hud-bar-fill { background: var(--at-green); }
+.hud-strikes { position: absolute; right: 6px; top: 3px; color: var(--at-red); font-weight: 900; font-size: 12px; letter-spacing: 1px; }
 
 .view-toggle { margin-left: auto; display: flex; align-items: center; gap: 4px; }
 .view-btn, .report-continue {

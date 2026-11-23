@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pushback Demo</title>
+<link rel="stylesheet" href="../src/ui/ui.css">
+<link rel="stylesheet" href="../src/pushback/pushback.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #14110f; }
+  #game { min-height: 100vh; display: flex; flex-direction: column; }
+  .stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .stage canvas { image-rendering: pixelated; width: min(560px, 100%); border: 4px solid #0a0807; }
+  .actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; justify-content: center; background: #241f1a; border-top: 4px solid #0a0807; position: sticky; bottom: 0; z-index: 45; }
+  .actions button { font-family: 'Courier New', monospace; font-weight: 700; font-size: 12px; padding: 8px; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; cursor: pointer; }
+  .actions button.end { background: #f5c542; color: #2a2118; }
+  .actions button.scheme { color: #ff9f1c; }
+  .ousted { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: rgba(10,8,7,.92); color: #ff5a4f; font: 900 28px 'Courier New', monospace; text-align: center; letter-spacing: 3px; }
+  .ousted small { display: block; color: #a8977a; font-size: 13px; letter-spacing: 1px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div id="game">
+  <main class="stage" id="grid-view"><canvas id="grid" width="160" height="96"></canvas></main>
+  <main class="stage" id="map-view" hidden><canvas id="map" width="160" height="96"></canvas></main>
+  <footer class="actions" id="actions"></footer>
+</div>
+<script type="module">
+import { Ledger } from '../src/ledger/ledger.js';
+import { createGameUI } from '../src/ui/hud.js';
+import { Pushback } from '../src/pushback/pushback.js';
+import { createPushbackUI } from '../src/pushback/pushback-ui.js';
+
+// Stand-in builds/sales/schemes so pushback can be played before the real systems are wired in.
+const seed = Number(new URLSearchParams(location.search).get('seed') ?? 42);
+const ledger = new Ledger({ startingCash: 250_000 });
+const pb = new Pushback({ ledger, seed });
+const root = document.getElementById('game');
+const ui = createGameUI({ root, ledger, views: { grid: document.getElementById('grid-view'), map: document.getElementById('map-view') } });
+const pbui = createPushbackUI({ root, pushback: pb });
+const state = { quarter: 1, totalQuarters: 12 };
+
+const hudState = () => ({
+  ...state,
+  heat: pb.heat,
+  tension: pb.tension,
+  boardTarget: pb.board.target,
+  boardProgress: ledger.summary(state.quarter).net,
+  boardStrikes: pb.board.strikes,
+});
+
+// ---- placeholder canvases ----
+const rooms = [];
+function drawGrid() {
+  const c = document.getElementById('grid').getContext('2d');
+  c.fillStyle = '#3b2a1e'; c.fillRect(0, 0, 160, 96);
+  c.fillStyle = '#5a7a3a'; c.fillRect(0, 0, 160, 10);
+  c.fillStyle = '#2a1d14';
+  for (let x = 0; x < 160; x += 16) for (let y = 16; y < 96; y += 16) c.fillRect(x, y, 15, 15);
+  rooms.forEach((r, i) => { c.fillStyle = r.color; c.fillRect((i % 10) * 16, 16 + Math.floor(i / 10) * 16, 15, 15); });
+  // heat haze: police lights flash at the top when heat is high
+  if (pb.heat >= 50) { c.fillStyle = pb.heat >= 65 ? '#ff5a4f' : '#3a7bff'; for (let x = 4; x < 160; x += 24) c.fillRect(x, 2, 6, 4); }
+}
+const regions = [[20, 30, 30, 20], [60, 20, 30, 25], [100, 35, 35, 25], [40, 60, 30, 20], [120, 70, 25, 15]];
+function drawMap() {
+  const c = document.getElementById('map').getContext('2d');
+  c.fillStyle = '#16324a'; c.fillRect(0, 0, 160, 96);
+  regions.forEach(([x, y, w, h], i) => {
+    const t = Math.max(0, Math.min(100, pb.tension + (i - 2) * 8)) / 100;
+    c.fillStyle = `rgb(${80 + t * 175}, ${140 - t * 90}, 60)`;
+    c.fillRect(x, y, w, h);
+  });
+}
+const redraw = () => { drawGrid(); drawMap(); ui.update(hudState()); };
+pb.on('change', redraw);
+ledger.onChange(() => ui.update(hudState()));
+
+// ---- actions ----
+const CLIENTS = ['Mr. Vance', 'Duchess Okoro', 'Chad Remington IV', 'The Halvorsen Twins', 'Senator Pike', 'Mrs. Abernathy-Lux', 'DJ Bunkr', 'Count Velasquez'];
+let sold = 0;
+const buildCost = (base) => Math.round(base * pb.board.buildCostMultiplier);
+const builds = [
+  ['Gold taps', 40_000, '#f5c542'],
+  ['Cryo pod suite', 120_000, '#8fd3ff'],
+];
+const schemes = [
+  ['Leak pandemic memo', 30_000, 14, 18],
+  ['Fund doom podcast', 15_000, 4, 7],
+  ['Bankroll riots', 60_000, 22, 26],
+];
+const actions = [
+  ...builds.map(([name, cost, color]) => [`Build ${name}`, () => { ledger.record('builds', name, -buildCost(cost)); rooms.push({ color }); }]),
+  ['Sell shelter', () => {
+    const price = Math.round(180_000 * (1 + pb.tension / 50));
+    const client = CLIENTS[sold++ % CLIENTS.length];
+    ledger.record('sales', `Shelter sold to ${client}`, price);
+    pb.onSale({ client, price });
+    pbui.tick(`${client} bought a shelter. They know things now.`, 'ok');
+  }],
+  ...schemes.map(([name, cost, heat, tension]) => [`Scheme: ${name}`, () => {
+    ledger.record('schemes', name, -cost);
+    pb.onScheme({ label: name, heat, tension });
+    pbui.tick(`${name}: heat +${heat}, tension +${tension}`);
+  }, 'scheme']),
+];
+const bar = document.getElementById('actions');
+for (const [label, fn, cls] of actions) {
+  const b = document.createElement('button');
+  b.textContent = label;
+  if (cls) b.className = cls;
+  b.onclick = () => { if (pb.board.ousted) return; fn(); redraw(); };
+  bar.append(b);
+}
+
+async function endQuarter() {
+  if (pb.board.ousted) return;
+  ledger.record('upkeep', 'Crew payroll', -45_000);
+  if (rooms.length) ledger.record('upkeep', 'Shelter maintenance', -rooms.length * 2_000);
+  const q = state.quarter;
+  const profit = ledger.summary(q).net;
+  pbui.hold();
+  const r = pb.endQuarter({ quarter: q, profit });
+  await ui.showQuarterReport({ quarter: q, board: r.board, heat: pb.heat, tension: pb.tension, notes: r.lines.slice(1) });
+  await pbui.drain();
+  if (pb.board.ousted) {
+    const o = document.createElement('div');
+    o.className = 'ousted';
+    o.innerHTML = 'OUSTED BY THE BOARD<small>Last Resort Holdings goes on without you. Reload to try again.</small>';
+    document.body.append(o);
+    return;
+  }
+  if (state.quarter < state.totalQuarters) state.quarter += 1;
+  redraw();
+}
+const end = document.createElement('button');
+end.className = 'end'; end.id = 'end-quarter'; end.textContent = 'END QUARTER';
+end.onclick = endQuarter;
+bar.append(end);
+redraw();
+window.__demo = { ledger, ui, pb, pbui, state, redraw, endQuarter };
+</script>
+</body>
+</html>
