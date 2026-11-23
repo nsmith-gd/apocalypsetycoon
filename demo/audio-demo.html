@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sound Desk</title>
+<link rel="stylesheet" href="../src/ui/ui.css">
+<style>
+  html, body { margin: 0; background: #14110f; }
+  .desk { max-width: 720px; margin: 0 auto; padding: 16px; font-family: 'Courier New', monospace; color: #f2e6c9; }
+  h1 { font-size: 18px; letter-spacing: 3px; color: #f5c542; margin: 8px 0 2px; }
+  .sub { color: #a8977a; font-size: 12px; margin-bottom: 16px; }
+  .panel { background: #241f1a; border: 3px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; padding: 12px; margin-bottom: 12px; }
+  .panel h2 { font-size: 12px; letter-spacing: 2px; color: #a8977a; margin: 0 0 8px; }
+  input[type=range] { width: 100%; accent-color: #ff9f1c; }
+  .crisis-read { display: flex; justify-content: space-between; font-weight: 700; font-size: 13px; margin-top: 4px; }
+  .crisis-read b { color: #ff9f1c; }
+  .layers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+  .layer { text-align: center; font-size: 10px; letter-spacing: 1px; color: #a8977a; }
+  .layer .bar { height: 60px; background: #0a0807; border: 1px solid #4a3f33; display: flex; align-items: flex-end; margin-bottom: 4px; }
+  .layer .fill { width: 100%; background: #7ed957; transition: height .2s steps(6); }
+  .layer[data-k=pulse] .fill { background: #f5c542; }
+  .layer[data-k=drone] .fill { background: #ff9f1c; }
+  .layer[data-k=alarm] .fill { background: #ff5a4f; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+  button { font-family: inherit; font-weight: 700; font-size: 12px; padding: 8px 10px; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; cursor: pointer; }
+  button.big { background: #f5c542; color: #2a2118; }
+  button.mid { background: #7a2a3a; }
+  .scope { width: 100%; height: 80px; image-rendering: pixelated; background: #0a0807; border: 2px solid #4a3f33; display: block; }
+</style>
+</head>
+<body class="at-ui">
+<div class="desk">
+  <h1>LAST RESORT SOUND DESK</h1>
+  <div class="sub">Press START, then drag the crisis level. The tension layers fade in as the world gets worse.</div>
+  <div class="panel">
+    <div class="buttons"><button class="big" id="start">START MUSIC</button><span id="toggle-slot"></span><button id="sweep">AUTO SWEEP 0 → 100</button></div>
+  </div>
+  <div class="panel">
+    <h2>WORLD CRISIS</h2>
+    <input type="range" id="crisis" min="0" max="100" value="15">
+    <div class="crisis-read"><span>CALM</span><b id="crisis-val">15 · 96 BPM</b><span>TIPPING</span></div>
+    <div class="layers" id="layers"></div>
+    <canvas class="scope" id="scope" width="320" height="80"></canvas>
+  </div>
+  <div class="panel">
+    <h2>SFX</h2>
+    <div class="buttons" id="sfx"></div>
+  </div>
+  <div class="panel">
+    <h2>MIDNIGHT</h2>
+    <div class="buttons"><button class="mid" id="mid-eng">ENGINEERED MIDNIGHT</button><button class="mid" id="mid-fail">FAILED TO CONTAIN</button></div>
+  </div>
+</div>
+<script type="module">
+import { createAudio, createSoundToggle } from '../src/audio/audio.js';
+import { MUSIC } from '../src/audio/synth.js';
+
+const audio = createAudio();
+document.getElementById('toggle-slot').replaceWith(createSoundToggle(audio));
+const slider = document.getElementById('crisis');
+const val = document.getElementById('crisis-val');
+const layersEl = document.getElementById('layers');
+const LAYERS = [['base', 'BASE'], ['pulse', 'PULSE 30+'], ['drone', 'DRONE 50+'], ['alarm', 'ALARM 75+']];
+for (const [k, label] of LAYERS) {
+  const d = document.createElement('div'); d.className = 'layer'; d.dataset.k = k;
+  d.innerHTML = `<div class="bar"><div class="fill"></div></div>${label}`;
+  layersEl.append(d);
+}
+function render() {
+  const c = Number(slider.value);
+  audio.setCrisis(c);
+  const L = { base: 1, ...MUSIC.layers(c) };
+  val.textContent = `${c} · ${Math.round(MUSIC.tempo(c))} BPM`;
+  for (const [k] of LAYERS) layersEl.querySelector(`[data-k=${k}] .fill`).style.height = `${Math.round(L[k] * 100)}%`;
+}
+slider.oninput = render;
+render();
+
+document.getElementById('start').onclick = () => audio.start();
+const SFX_LABELS = { place: 'PLACE ROOM', sell: 'SHELTER SOLD', scheme: 'SCHEME FIRES', heatWarning: 'HEAT WARNING', raid: 'FEDERAL RAID', runaway: 'RUNAWAY CRISIS', leverage: 'CLIENT DEMAND', boardMet: 'TARGET MET', boardMiss: 'TARGET MISSED' };
+for (const [k, label] of Object.entries(SFX_LABELS)) {
+  const b = document.createElement('button'); b.textContent = label; b.dataset.sfx = k;
+  b.onclick = () => audio.play(k);
+  document.getElementById('sfx').append(b);
+}
+document.getElementById('mid-eng').onclick = () => audio.midnight('engineered');
+document.getElementById('mid-fail').onclick = () => audio.midnight('failed');
+
+let sweep = null;
+document.getElementById('sweep').onclick = () => {
+  audio.start();
+  clearInterval(sweep);
+  slider.value = 0; render();
+  sweep = setInterval(() => { slider.value = Number(slider.value) + 1; render(); if (Number(slider.value) >= 100) clearInterval(sweep); }, 300);
+};
+
+// oscilloscope on the master output
+const scope = document.getElementById('scope').getContext('2d');
+let wave = null;
+(function draw() {
+  requestAnimationFrame(draw);
+  scope.fillStyle = '#0a0807'; scope.fillRect(0, 0, 320, 80);
+  const an = audio.analyser;
+  if (!an) return;
+  wave ??= new Uint8Array(an.fftSize);
+  an.getByteTimeDomainData(wave);
+  const c = Number(slider.value);
+  scope.fillStyle = c >= 75 ? '#ff5a4f' : c >= 50 ? '#ff9f1c' : c >= 30 ? '#f5c542' : '#7ed957';
+  for (let x = 0; x < 320; x += 2) {
+    const v = wave[Math.floor((x / 320) * wave.length)];
+    scope.fillRect(x, Math.round((v / 255) * 78), 2, 2);
+  }
+})();
+window.__audio = audio;
+</script>
+</body>
+</html>

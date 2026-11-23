@@ -30,6 +30,7 @@ import { Ledger } from '../src/ledger/ledger.js';
 import { createGameUI } from '../src/ui/hud.js';
 import { Pushback } from '../src/pushback/pushback.js';
 import { createPushbackUI } from '../src/pushback/pushback-ui.js';
+import { createAudio, wireAudio, createSoundToggle, startOnFirstGesture } from '../src/audio/audio.js';
 
 // Stand-in builds/sales/schemes so pushback can be played before the real systems are wired in.
 const seed = Number(new URLSearchParams(location.search).get('seed') ?? 42);
@@ -38,6 +39,11 @@ const pb = new Pushback({ ledger, seed });
 const root = document.getElementById('game');
 const ui = createGameUI({ root, ledger, views: { grid: document.getElementById('grid-view'), map: document.getElementById('map-view') } });
 const pbui = createPushbackUI({ root, pushback: pb });
+// Sound: music starts on the first click or key; builds, sales, schemes, heat and the board are wired automatically.
+const audio = createAudio();
+wireAudio(audio, { ledger, pushback: pb });
+startOnFirstGesture(audio);
+root.querySelector('.view-toggle').append(createSoundToggle(audio));
 const state = { quarter: 1, totalQuarters: 12 };
 
 const hudState = () => ({
@@ -120,6 +126,7 @@ async function endQuarter() {
   const profit = ledger.summary(q).net;
   pbui.hold();
   const r = pb.endQuarter({ quarter: q, profit });
+  if (r.board.met) audio.play('boardMet');
   await ui.showQuarterReport({ quarter: q, board: r.board, heat: pb.heat, tension: pb.tension, notes: r.lines.slice(1) });
   await pbui.drain();
   if (pb.board.ousted) {
@@ -137,7 +144,7 @@ end.className = 'end'; end.id = 'end-quarter'; end.textContent = 'END QUARTER';
 end.onclick = endQuarter;
 bar.append(end);
 redraw();
-window.__demo = { ledger, ui, pb, pbui, state, redraw, endQuarter };
+window.__demo = { audio, ledger, ui, pb, pbui, state, redraw, endQuarter };
 </script>
 </body>
 </html>

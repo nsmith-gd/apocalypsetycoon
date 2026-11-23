@@ -34,8 +34,9 @@ import { Ledger } from '../src/ledger/ledger.js';
 import { createGameUI } from '../src/ui/hud.js';
 import { Pushback } from '../src/pushback/pushback.js';
 import { createPushbackUI } from '../src/pushback/pushback-ui.js';
+import { createAudio, wireAudio, createSoundToggle, startOnFirstGesture, midnightTimes } from '../src/audio/audio.js';
 import { computeMidnight, gradeShelter } from '../src/midnight/midnight.js';
-import { showMidnight } from '../src/midnight/midnight-ui.js';
+import { showMidnight, showClockStrike } from '../src/midnight/midnight-ui.js';
 
 // Stand-in campaign so Midnight can be reached before the real grid, map and clock are wired in.
 const params = new URLSearchParams(location.search);
@@ -44,6 +45,11 @@ const pb = new Pushback({ ledger, seed: Number(params.get('seed') ?? 7) });
 const root = document.getElementById('game');
 const ui = createGameUI({ root, ledger, views: { grid: document.getElementById('grid-view'), map: document.getElementById('map-view') } });
 const pbui = createPushbackUI({ root, pushback: pb });
+// Sound: music starts on the first click or key; builds, sales, schemes, heat and the board are wired automatically.
+const audio = createAudio();
+wireAudio(audio, { ledger, pushback: pb });
+startOnFirstGesture(audio);
+root.querySelector('.view-toggle').append(createSoundToggle(audio));
 const state = { quarter: 1, totalQuarters: 12 };
 
 // Your own HQ shelter (the grid you build) plus every shelter you sell.
@@ -119,6 +125,10 @@ ledger.onChange(() => ui.update(hudState()));
 async function midnight() {
   const result = computeMidnight({ shelters, world: { tension: pb.tension, heat: pb.heat, runaways: pb.runaways }, cash: ledger.cash });
   window.__demo.result = result;
+  // The stinger's clock ticks and twelve tolls play over a black clock face; the ending lands on the boom.
+  const { tolls, boom } = midnightTimes();
+  audio.midnight(result.type);
+  await showClockStrike({ root: document.body, tolls: tolls.map((s) => s + 0.05), duration: boom + 0.05 });
   await showMidnight({ root: document.body, result, onRestart: () => location.reload() });
 }
 
@@ -128,6 +138,7 @@ async function endQuarter() {
   const q = state.quarter;
   pbui.hold();
   const r = pb.endQuarter({ quarter: q, profit: ledger.summary(q).net });
+  if (r.board.met) audio.play('boardMet');
   await ui.showQuarterReport({ quarter: q, board: r.board, heat: pb.heat, tension: pb.tension, notes: r.lines.slice(1) });
   await pbui.drain();
   if (pb.board.ousted) return;
@@ -180,7 +191,7 @@ if (preset) {
   state.quarter = state.totalQuarters;
 }
 redraw();
-window.__demo = { ledger, ui, pb, pbui, state, shelters, hq, build, sell, scheme, endQuarter, fastForward, midnight, redraw };
+window.__demo = { audio, ledger, ui, pb, pbui, state, shelters, hq, build, sell, scheme, endQuarter, fastForward, midnight, redraw };
 </script>
 </body>
 </html>
