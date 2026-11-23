@@ -159,3 +159,72 @@ test('only one runaway per quarter', () => {
   pb.onScheme({ label: 'c', tension: 100 });
   assert.equal(n, 2);
 });
+
+// ---------- #14: one data model, relief valves, save/load ----------
+
+test('pressures() exposes all four sources with value, zone and next consequence', () => {
+  const pb = new Pushback({ ledger: fakeLedger() });
+  pb.onSale({ client: 'Vance', price: 200_000 });
+  pb.onScheme({ label: 'x', heat: 30, tension: 40 });
+  const p = pb.pressures({ quarterProfit: 10_000 });
+  assert.equal(p.heat.value, pb.heat);
+  assert.deepEqual(p.heat.next, { at: 50, what: 'Federal investigation opens' });
+  assert.equal(p.tension.value, pb.tension);
+  assert.equal(p.tension.next.at, 75);
+  assert.equal(p.leverage.highest.name, 'Vance');
+  assert.equal(p.leverage.highest.next.at, 30);
+  assert.equal(p.board.target, pb.board.target);
+  assert.equal(p.board.onTrack, false);
+  assert.equal(p.board.zone, 'content');
+});
+
+test('pressures() reports self-feeding tension and a board on its last chance', () => {
+  const pb = new Pushback({ ledger: fakeLedger() });
+  pb.tension = 80;
+  pb.board.strikes = 2;
+  const p = pb.pressures();
+  assert.equal(p.tension.selfFeeding, true);
+  assert.equal(p.tension.perQuarter, 6);
+  assert.equal(p.board.zone, 'last-chance');
+});
+
+test('Lay low sheds heat for cash, and costs more each time in a quarter', () => {
+  const ledger = fakeLedger();
+  const pb = new Pushback({ ledger });
+  pb.heat = 60;
+  const cash = ledger.cash;
+  const r1 = pb.layLow();
+  assert.equal(pb.heat, 45);
+  assert.equal(ledger.cash, cash - 40_000);
+  assert.equal(r1.nextCost, 60_000);
+  pb.layLow();
+  assert.equal(ledger.cash, cash - 100_000);
+  pb.endQuarter({ quarter: 1, profit: 1e9 });
+  assert.equal(pb.reliefCost('layLow'), 40_000); // resets each quarter
+});
+
+test('Fund relief lowers tension (stopping the runaway spiral) but draws a little heat', () => {
+  const pb = new Pushback({ ledger: fakeLedger() });
+  pb.tension = 80;
+  pb.heat = 10;
+  pb.fundRelief();
+  assert.equal(pb.tension, 66);
+  assert.equal(pb.heat, 13);
+  pb.endQuarter({ quarter: 1, profit: 1e9 });
+  assert.equal(pb.tension, 63); // below the momentum line it now eases instead of feeding itself
+});
+
+test('save and load round-trips every pressure', () => {
+  const ledger = fakeLedger();
+  const pb = new Pushback({ ledger, seed: 5 });
+  pb.onSale({ client: 'Okoro', price: 300_000 });
+  pb.onScheme({ label: 'riots', heat: 55, tension: 30 });
+  pb.endQuarter({ quarter: 1, profit: 0 });
+  pb.fundRelief();
+  const saved = JSON.parse(JSON.stringify(pb));
+  const back = Pushback.fromJSON(saved, { ledger, seed: 5 });
+  assert.deepEqual(back.pressures({ quarterProfit: 1 }), pb.pressures({ quarterProfit: 1 }));
+  assert.equal(back.board.strikes, pb.board.strikes);
+  assert.equal(back.pending.length, pb.pending.length);
+  assert.equal(back.reliefCost('fundRelief'), pb.reliefCost('fundRelief'));
+});

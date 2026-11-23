@@ -24,9 +24,7 @@ export const SIM = Object.freeze({
     { id: 'shortage', name: 'Engineered shortage', cost: 70_000, heat: 10, tension: 28, research: true },
     { id: 'blackout', name: 'Grid blackout', cost: 90_000, heat: 12, tension: 35, research: true },
   ],
-  // Stand-in de-escalation (no such action exists in the game yet; above 75 tension feeds itself,
-  // so without one every edge strategy ends in a runaway). Recommended for the schemes task.
-  coolDown: { id: 'relief', name: 'Fund disaster relief', cost: 50_000, heat: -6, tension: -14 },
+  // Tension relief is pushback's own Fund disaster relief action (pb.fundRelief()).
   // Stand-in shelter packages (#2/#3 will replace these). Price scales with crisis.
   packages: {
     luxury: { label: 'Luxury', base: 320_000, occupants: 8, rooms: ['gold_taps', 'cryo_pod', 'wine_cellar', 'air_vent', 'water_tank', 'pantry'] },
@@ -128,15 +126,15 @@ export function botQuarter(game, botName = game.bot) {
     game.scheme(pickFrom[0]);
     resolvePending(game, profile);
   }
-  // Cool down if the world is running away from the band (momentum above 75 adds +6 a quarter).
+  // Cool down if the world is running away from the band (momentum above 75 adds +6 a quarter),
+  // using pushback's real relief valve (its price rises with each use in a quarter).
   guard = 0;
-  while (pb.tension > hi && profile.coolDown !== false && guard++ < 4) {
-    const c = SIM.coolDown;
-    ledger.record('schemes', c.name, -c.cost);
-    pb.onScheme({ label: c.name, heat: 0, tension: 0 });
-    pb.tension = Math.max(0, pb.tension + c.tension);
-    pb.heat = Math.max(0, pb.heat + c.heat);
+  while (pb.tension > hi && profile.coolDown !== false && guard++ < 4 && pb.reliefCost('fundRelief') < ledger.cash * 0.2) {
+    pb.fundRelief();
+    resolvePending(game, profile);
   }
+  // Lay low if heat is closing on the fine line and the bot cares.
+  if (profile.heatCap < 100 && pb.heat > profile.heatCap && pb.reliefCost('layLow') < ledger.cash * 0.1) pb.layLow();
   // Sales: as many as demand and crews allow, rotating the bot's packages.
   const n = Math.min(game.demand(), game.capacity());
   for (let i = 0; i < n; i++) game.sell(profile.sell[(game.shelters.length + i) % profile.sell.length]);

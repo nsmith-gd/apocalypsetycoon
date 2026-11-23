@@ -56,3 +56,30 @@
 @media (max-width: 640px) {
   .pb-panel { position: static; width: auto; margin: 8px 16px; }
 }
+
+/* ---------- Pressure gauge ---------- */
+.pg-panel {
+  position: fixed; left: 8px; top: 72px; z-index: 40; width: 250px;
+  background: var(--at-panel); border: 3px solid var(--at-border); box-shadow: inset 2px 2px 0 var(--at-hi), 4px 4px 0 rgba(0,0,0,.4);
+  font-family: var(--at-font); color: var(--at-ink); font-size: 11px; padding: 6px;
+}
+.pg-head { font-weight: 900; letter-spacing: 1px; color: var(--at-dim); margin-bottom: 4px; }
+.pg-row { margin-bottom: 6px; }
+.pg-top { display: flex; justify-content: space-between; font-weight: 700; font-size: 10px; letter-spacing: 1px; }
+.pg-name { color: var(--at-dim); }
+.pg-bar { position: relative; height: 7px; background: var(--at-border); border: 1px solid var(--at-hi); margin: 2px 0; }
+.pg-fill { height: 100%; width: 0; background: var(--at-green); transition: width .3s steps(6); }
+.pg-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--at-ink); }
+.pg-next { font-size: 10px; color: var(--at-dim); line-height: 1.3; }
+.pg-row[data-zone='watched'] .pg-fill, .pg-row[data-zone='edge'] .pg-fill, .pg-row[data-zone='demand'] .pg-fill, .pg-row[data-zone='displeased'] .pg-fill { background: var(--at-amber); }
+.pg-row[data-zone='hot'] .pg-fill, .pg-row[data-zone='momentum'] .pg-fill, .pg-row[data-zone='blackmail'] .pg-fill, .pg-row[data-zone='last-chance'] .pg-fill, .pg-row[data-zone='ousted'] .pg-fill { background: var(--at-red); }
+.pg-row[data-zone='hot'] .pg-next, .pg-row[data-zone='momentum'] .pg-next, .pg-row[data-zone='blackmail'] .pg-next, .pg-row[data-zone='last-chance'] .pg-next { color: var(--at-red); }
+.pg-row[data-zone='content'] .pg-fill { background: var(--at-gold); }
+.pg-relief { display: flex; flex-direction: column; gap: 4px; border-top: 2px solid var(--at-border); padding-top: 6px; }
+.pg-btn {
+  font-family: var(--at-font); font-weight: 700; font-size: 10px; padding: 6px; cursor: pointer; text-align: left;
+  color: var(--at-ink); background: var(--at-panel-2); border: 2px solid var(--at-border); box-shadow: inset 2px 2px 0 var(--at-hi);
+}
+.pg-btn:hover { color: var(--at-green); }
+.pg-btn:disabled { opacity: .4; cursor: default; }
+@media (max-width: 640px) { .pg-panel { position: static; width: auto; margin: 8px 16px; } }

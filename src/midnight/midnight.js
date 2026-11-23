@@ -140,9 +140,10 @@ const ENDINGS = {
  * @param world     { tension, heat, runaways } at Midnight (Pushback has all three)
  * @param cash      final cash, shown in the breakdown
  */
-export function computeMidnight({ shelters = [], world = {}, cash = 0, cfg = MIDNIGHT_CONFIG, roomStats = ROOM_STATS } = {}) {
+export function computeMidnight({ shelters = [], world = {}, cash = 0, cfg = MIDNIGHT_CONFIG, roomStats = ROOM_STATS, forceType = null, cause = null } = {}) {
   const control = controlScore(world, cfg);
-  const type = control >= cfg.engineeredAt ? 'engineered' : 'failed';
+  // forceType: 'failed' when the Doom Clock hit zero or the Final Countdown ran out (uncontrolled Midnight).
+  const type = forceType ?? (control >= cfg.engineeredAt ? 'engineered' : 'failed');
   const needMultiplier = type === 'failed' ? cfg.failedNeedMultiplier : 1;
   const graded = shelters.map((s) => gradeShelter(s, { needMultiplier, roomStats }));
 
@@ -186,6 +187,7 @@ export function computeMidnight({ shelters = [], world = {}, cash = 0, cfg = MID
     outcomes,
     wasted,
     cash,
+    cause, // e.g. 'The Doom Clock struck zero.' when Midnight came uncontrolled
     ending: { ...ending, type },
   };
 }

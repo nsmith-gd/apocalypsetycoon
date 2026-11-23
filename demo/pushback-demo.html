@@ -30,6 +30,7 @@ import { Ledger } from '../src/ledger/ledger.js';
 import { createGameUI } from '../src/ui/hud.js';
 import { Pushback } from '../src/pushback/pushback.js';
 import { createPushbackUI } from '../src/pushback/pushback-ui.js';
+import { createPressureGauge } from '../src/pushback/pressure-gauge.js';
 import { createAudio, wireAudio, createSoundToggle, startOnFirstGesture } from '../src/audio/audio.js';
 
 // Stand-in builds/sales/schemes so pushback can be played before the real systems are wired in.
@@ -39,6 +40,8 @@ const pb = new Pushback({ ledger, seed });
 const root = document.getElementById('game');
 const ui = createGameUI({ root, ledger, views: { grid: document.getElementById('grid-view'), map: document.getElementById('map-view') } });
 const pbui = createPushbackUI({ root, pushback: pb });
+// All four pressures with what happens next, plus the paid relief buttons.
+const gauge = createPressureGauge({ root, pushback: pb, getQuarterProfit: () => ledger.summary(ledger.quarter).net, onRelief: (r) => r && pbui.tick(`${r.kind === 'layLow' ? 'Laid low' : 'Funded relief'}: -$${Math.round(r.cost / 1000)}K`, 'ok') });
 // Sound: music starts on the first click or key; builds, sales, schemes, heat and the board are wired automatically.
 const audio = createAudio();
 wireAudio(audio, { ledger, pushback: pb });
@@ -79,7 +82,7 @@ function drawMap() {
 }
 const redraw = () => { drawGrid(); drawMap(); ui.update(hudState()); };
 pb.on('change', redraw);
-ledger.onChange(() => ui.update(hudState()));
+ledger.onChange(() => { ui.update(hudState()); gauge.render(); });
 
 // ---- actions ----
 const CLIENTS = ['Mr. Vance', 'Duchess Okoro', 'Chad Remington IV', 'The Halvorsen Twins', 'Senator Pike', 'Mrs. Abernathy-Lux', 'DJ Bunkr', 'Count Velasquez'];
@@ -144,7 +147,7 @@ end.className = 'end'; end.id = 'end-quarter'; end.textContent = 'END QUARTER';
 end.onclick = endQuarter;
 bar.append(end);
 redraw();
-window.__demo = { audio, ledger, ui, pb, pbui, state, redraw, endQuarter };
+window.__demo = { gauge, audio, ledger, ui, pb, pbui, state, redraw, endQuarter };
 </script>
 </body>
 </html>

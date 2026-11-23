@@ -63,6 +63,13 @@ export const PUSHBACK_DEFAULTS = Object.freeze({
     freezeMultiplier: 1.25, // second strike: builds cost 25% more next quarter
     beatBonusPct: 0.05, // beating the target pays a bonus of 5% of profit
   },
+  // Relief valves: paid ways to push back on the pushback. Each use in the same quarter costs
+  // 50% more than the last ("nothing is free"), and each has a side effect.
+  relief: {
+    layLow: { cost: 40_000, heat: -15, label: 'Lay low', blurb: 'Lawyers, shredders, a quiet quarter. Heat -15.' },
+    fundRelief: { cost: 50_000, tension: -14, heat: 3, label: 'Fund disaster relief', blurb: 'Calm the world a little. Tension -14, but the press asks where the money came from (heat +3).' },
+    repeatMarkup: 0.5,
+  },
 });
 
 const clamp = (v, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
@@ -121,7 +128,7 @@ export class Pushback {
     this.pending = []; // choice events waiting on the player
     this.log = []; // everything that happened, newest last
     this.runaways = 0;
-    this.doomsdayShift = 0; // quarters Midnight has been pulled forward by runaways
+    this.doomsdayShift = 0; // legacy runaway counter; the Doom Clock (src/doomclock) is the real model — see attachPushback()
     this._ids = 0;
     this._investigatedThisQuarter = false;
     this._internalCash = startingCash; // only used when no ledger is attached
@@ -445,6 +452,7 @@ export class Pushback {
     this.quarter = quarter + 1;
     this._investigatedThisQuarter = false;
     this._runawayThisQuarter = false;
+    this._reliefUses = {};
     this._quarterProfit = 0;
     for (const l of lines) this._note('quarter', l);
     this._changed();
@@ -466,6 +474,122 @@ export class Pushback {
       runaways: this.runaways,
       doomsdayShift: this.doomsdayShift,
     };
+  }
+
+  // ---------- relief valves ----------
+  /** Current price of a relief action this quarter (rises with each use). */
+  reliefCost(kind) {
+    const R = this.cfg.relief;
+    const used = this._reliefUses?.[kind] ?? 0;
+    return Math.round(R[kind].cost * (1 + R.repeatMarkup) ** used);
+  }
+
+  /** Lay low: pay to shed heat. Returns what happened. */
+  layLow() {
+    return this._relief('layLow');
+  }
+
+  /** Fund disaster relief: pay to lower world tension (the press notices: a little heat). */
+  fundRelief() {
+    return this._relief('fundRelief');
+  }
+
+  _relief(kind) {
+    if (this.board.ousted) return null;
+    const r = this.cfg.relief[kind];
+    const cost = this.reliefCost(kind);
+    this._reliefUses = this._reliefUses ?? {};
+    this._reliefUses[kind] = (this._reliefUses[kind] ?? 0) + 1;
+    this._pay('schemes', r.label, -cost);
+    const before = { heat: this.heat, tension: this.tension };
+    if (r.tension) this.tension = clamp(this.tension + r.tension);
+    const fired = [];
+    if (r.heat > 0) this.addHeat(r.heat, r.label, fired);
+    else if (r.heat < 0) this.heat = clamp(this.heat + r.heat);
+    this._note('relief', `${r.label}: -$${Math.round(cost / 1000)}K`, { kind, cost });
+    this._changed();
+    return { kind, cost, heat: this.heat - before.heat, tension: this.tension - before.tension, fired, nextCost: this.reliefCost(kind) };
+  }
+
+  /**
+   * Every pressure source in one data model: its value, its zone, and the next consequence the
+   * player is heading for. `quarterProfit` (optional) fills in board progress.
+   */
+  pressures({ quarterProfit = null } = {}) {
+    const H = this.cfg.heat;
+    const T = this.cfg.tension;
+    const L = this.cfg.leverage;
+    const B = this.cfg.board;
+    const heatNext = this.heat < H.investigationAt && !this._investigatedThisQuarter
+      ? { at: H.investigationAt, what: 'Federal investigation opens' }
+      : this.heat < H.fineAt ? { at: H.fineAt, what: 'Regulator fine at quarter end' }
+      : this.heat < H.raidAt ? { at: H.raidAt, what: 'Federal raid' } : null;
+    const tensionNext = this.tension < T.momentumAt
+      ? { at: T.momentumAt, what: 'Tension starts feeding itself' }
+      : { at: T.runawayAt, what: 'Runaway crisis' };
+    const clients = this.clients.map((c) => {
+      const zone = c.leverage >= L.blackmailAt ? 'blackmail' : c.leverage >= L.demandAt ? 'demand' : 'quiet';
+      const next = c.leverage < L.demandAt ? { at: L.demandAt, what: 'Starts making demands' } : c.leverage < L.blackmailAt ? { at: L.blackmailAt, what: 'Turns to blackmail' } : null;
+      return { id: c.id, name: c.name, leverage: c.leverage, zone, next };
+    });
+    const top = clients.reduce((a, c) => (!a || c.leverage > a.leverage ? c : a), null);
+    return {
+      heat: {
+        value: this.heat, max: 100, zone: this.heatZone(), next: heatNext,
+        perQuarter: -H.decayPerQuarter,
+        relief: { action: 'layLow', cost: this.reliefCost('layLow'), effect: this.cfg.relief.layLow.heat },
+      },
+      tension: {
+        value: this.tension, max: 100, zone: this.tensionZone(), next: tensionNext,
+        selfFeeding: this.tension >= T.momentumAt,
+        perQuarter: this.tension >= T.momentumAt ? T.momentumGain : -T.decayPerQuarter,
+        runaways: this.runaways, runawayThisQuarter: !!this._runawayThisQuarter,
+        relief: { action: 'fundRelief', cost: this.reliefCost('fundRelief'), effect: this.cfg.relief.fundRelief.tension },
+      },
+      leverage: {
+        clients, highest: top,
+        growthPerQuarter: Math.round(this.heat * L.heatFactor),
+        zone: top?.zone ?? 'quiet',
+      },
+      board: {
+        target: this.board.target, progress: quarterProfit,
+        onTrack: quarterProfit == null ? null : quarterProfit >= this.board.target,
+        strikes: this.board.strikes, strikesToOust: B.strikesToOust, ousted: this.board.ousted,
+        buildCostMultiplier: this.board.buildCostMultiplier,
+        zone: this.board.ousted ? 'ousted' : this.board.strikes >= B.strikesToOust - 1 ? 'last-chance' : this.board.strikes ? 'displeased' : 'content',
+        next: this.board.ousted ? null : { what: this.board.strikes >= B.strikesToOust - 1 ? 'One more miss and you are ousted' : `A miss is strike ${this.board.strikes + 1} of ${B.strikesToOust}` },
+      },
+    };
+  }
+
+  // ---------- save / load ----------
+  toJSON() {
+    return {
+      v: 1,
+      heat: this.heat, tension: this.tension, quarter: this.quarter,
+      clients: this.clients.map((c) => ({ ...c })),
+      board: { ...this.board, history: this.board.history.map((h) => ({ ...h })) },
+      pending: this.pending.map((e) => JSON.parse(JSON.stringify(e))),
+      runaways: this.runaways, doomsdayShift: this.doomsdayShift, ids: this._ids,
+      flags: { investigated: this._investigatedThisQuarter, runaway: !!this._runawayThisQuarter, reliefUses: { ...(this._reliefUses ?? {}) } },
+      internalCash: this._internalCash, quarterProfit: this._quarterProfit,
+    };
+  }
+
+  /** Rebuild from toJSON() output. The RNG restarts from `seed`. */
+  static fromJSON(data, { ledger = null, seed = 1, config = {} } = {}) {
+    const pb = new Pushback({ ledger, seed, config });
+    Object.assign(pb, {
+      heat: data.heat, tension: data.tension, quarter: data.quarter,
+      clients: data.clients.map((c) => ({ ...c })),
+      board: { ...data.board, history: data.board.history.map((h) => ({ ...h })) },
+      pending: data.pending.map((e) => ({ ...e })),
+      runaways: data.runaways, doomsdayShift: data.doomsdayShift, _ids: data.ids,
+      _investigatedThisQuarter: data.flags.investigated, _runawayThisQuarter: data.flags.runaway,
+      _reliefUses: { ...data.flags.reliefUses },
+      _internalCash: data.internalCash, _quarterProfit: data.quarterProfit,
+    });
+    return pb;
   }
 
   heatZone() {
