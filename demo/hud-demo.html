@@ -9,7 +9,7 @@
   html, body { margin: 0; height: 100%; background: #14110f; }
   #game { min-height: 100vh; display: flex; flex-direction: column; }
   .stage { flex: 1; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px; flex-wrap: wrap; }
-  .stage canvas { image-rendering: pixelated; width: min(640px, 100%); border: 4px solid #0a0807; }
+  .stage canvas { image-rendering: pixelated; border: 4px solid #0a0807; background: #0a0807; }
   .actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; justify-content: center; align-items: center; background: #241f1a; border-top: 4px solid #0a0807; }
   .actions button, .palette button { font-family: 'Courier New', monospace; font-weight: 700; font-size: 12px; padding: 8px; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; cursor: pointer; }
   .actions button.end { background: #f5c542; color: #2a2118; }
@@ -18,7 +18,7 @@
   .palette h3 { margin: 0 0 4px; font: 900 12px 'Courier New', monospace; letter-spacing: 2px; color: #f5c542; }
   .palette .crews { font: 700 10px 'Courier New', monospace; color: #a8977a; margin-bottom: 4px; }
   .palette button { display: flex; align-items: center; gap: 8px; text-align: left; }
-  .palette button i { width: 12px; height: 12px; display: inline-block; border: 1px solid #0a0807; flex: none; }
+  .palette button .icon { width: 32px; height: 32px; image-rendering: pixelated; border: 1px solid #0a0807; flex: none; }
   .palette button small { margin-left: auto; color: #a8977a; font-size: 10px; }
   .palette button:disabled { opacity: 0.4; cursor: not-allowed; }
   .palette button.fresh { animation: fresh 0.5s steps(2) 6; }
@@ -31,7 +31,7 @@
     <aside class="palette" id="palette"></aside>
     <canvas id="grid" width="160" height="96"></canvas>
   </main>
-  <main class="stage" id="map-view" hidden><canvas id="map" width="160" height="96"></canvas></main>
+  <main class="stage" id="map-view" hidden><canvas id="map" width="320" height="192"></canvas></main>
   <footer class="actions" id="actions"></footer>
 </div>
 <script type="module">
@@ -39,6 +39,10 @@ import { Ledger } from '../src/ledger/ledger.js';
 import { createGameUI } from '../src/ui/hud.js';
 import { ResearchTree } from '../src/research/research.js';
 import { createResearchPanel } from '../src/ui/researchPanel.js';
+import { drawShelter, nextFreeSlot } from '../src/art/shelterView.js';
+import { drawWorldMap } from '../src/art/worldmap.js';
+import { fitIntegerScale, drawSprite } from '../src/art/render.js';
+import { TILES, AMENITIES as AMENITY_SPRITES } from '../src/art/sprites-shelter.js';
 
 // Stand-in game state so the HUD, ledger and research can be played before the
 // real grid, map, schemes and clock systems land. Prices are placeholders.
@@ -85,12 +89,16 @@ function renderPalette() {
     b.dataset.amenity = a.id;
     b.disabled = locked;
     b.title = locked ? 'Locked: research it in R&D (R)' : `Build ${a.name}`;
-    const sw = document.createElement('i'); sw.style.background = locked ? '#3a332b' : a.color;
+    const sw = document.createElement('canvas'); sw.width = 16; sw.height = 16; sw.className = 'icon';
+    const sctx = sw.getContext('2d');
+    drawSprite(sctx, TILES.roomEmpty, 0, 0);
+    if (AMENITY_SPRITES[a.id]) drawSprite(sctx, AMENITY_SPRITES[a.id], 0, 0);
+    if (locked) { sctx.globalCompositeOperation = 'saturation'; sctx.fillStyle = '#000'; sctx.fillRect(0, 0, 16, 16); }
     const label = document.createElement('span'); label.textContent = locked ? `${a.name}` : a.name;
     const cost = document.createElement('small'); cost.textContent = locked ? 'R&D' : fmtK(a.cost);
     b.append(sw, label, cost);
     if (a.id === fresh) b.classList.add('fresh');
-    b.onclick = () => { ledger.record('builds', a.name, -a.cost); rooms.push({ color: a.color }); redraw(); };
+    b.onclick = () => { ledger.record('builds', a.name, -a.cost); const slot = nextFreeSlot(rooms); if (slot) rooms.push({ ...slot, amenity: a.id }); redraw(); };
     paletteEl.append(b);
   }
 }
@@ -100,26 +108,30 @@ tree.onUnlock((node) => {
   renderActions();
 });
 
-// ---- placeholder canvases ----
+// ---- pixel-art views (integer-scaled, pixel-perfect) ----
+let frame = 0;
 function drawGrid() {
-  const c = document.getElementById('grid').getContext('2d');
-  c.fillStyle = '#3b2a1e'; c.fillRect(0, 0, 160, 96);
-  c.fillStyle = '#5a7a3a'; c.fillRect(0, 0, 160, 10);
-  c.fillStyle = '#2a1d14';
-  for (let x = 0; x < 160; x += 16) for (let y = 16; y < 96; y += 16) c.fillRect(x, y, 15, 15);
-  rooms.forEach((r, i) => { c.fillStyle = r.color; c.fillRect((i % 10) * 16, 16 + Math.floor(i / 10) * 16, 15, 15); });
+  const cv = document.getElementById('grid');
+  drawShelter(cv.getContext('2d'), { cols: 10, rows: 6, rooms, frame });
 }
-const regions = [[20, 30, 30, 20], [60, 20, 30, 25], [100, 35, 35, 25], [40, 60, 30, 20], [120, 70, 25, 15]];
+const MAP_OFFSETS = { na: -6, sa: -14, eu: 4, af: -2, as: 10, oc: -20 };
+const MAP_CRISIS = { na: 'unrest', sa: 'flood', eu: 'pandemic', af: 'fire', as: 'radiation', oc: 'crash' };
 function drawMap() {
-  const c = document.getElementById('map').getContext('2d');
-  c.fillStyle = '#16324a'; c.fillRect(0, 0, 160, 96);
-  regions.forEach(([x, y, w, h], i) => {
-    const t = clamp(state.tension + (i - 2) * 8) / 100;
-    c.fillStyle = `rgb(${80 + t * 175}, ${140 - t * 90}, 60)`;
-    c.fillRect(x, y, w, h);
-  });
+  const cv = document.getElementById('map');
+  const crisis = Object.fromEntries(Object.entries(MAP_OFFSETS).map(([k, o]) => [k, clamp(state.tension + o)]));
+  const bunkers = [[9, 4], [20, 4], [33, 4], [36, 17]].slice(0, sales);
+  drawWorldMap(cv.getContext('2d'), { crisis, crisisType: MAP_CRISIS, frame, bunkers });
 }
+function fitCanvases() {
+  const avail = Math.min(window.innerWidth - 32, 1280);
+  const palW = window.innerWidth > 700 ? 240 : 0;
+  fitIntegerScale(document.getElementById('grid'), avail - palW, window.innerHeight - 220);
+  fitIntegerScale(document.getElementById('map'), avail, window.innerHeight - 220);
+}
+window.addEventListener('resize', fitCanvases);
+setInterval(() => { frame++; drawGrid(); drawMap(); }, 500);
 const redraw = () => { drawGrid(); drawMap(); ui.update(state); research.render(); };
+let sales = 0;
 
 // ---- actions (schemes etc.) ----
 const SCHEMES = [
@@ -150,7 +162,7 @@ function renderActions() {
   calm.onclick = () => { state.tension = clamp(state.tension - 15); redraw(); };
   const sell = document.createElement('button');
   sell.textContent = 'Sell shelter';
-  sell.onclick = () => { ledger.record('sales', `Shelter sold (tension ${state.tension})`, Math.round(180_000 * (1 + state.tension / 50))); redraw(); };
+  sell.onclick = () => { sales++; ledger.record('sales', `Shelter sold (tension ${state.tension})`, Math.round(180_000 * (1 + state.tension / 50))); redraw(); };
   const fine = document.createElement('button');
   fine.textContent = 'Regulator fine';
   fine.onclick = () => { ledger.record('fines', 'Regulator fine', -Math.round(20_000 + state.heat * 1_000)); state.heat = clamp(state.heat - 15); redraw(); };
@@ -188,6 +200,7 @@ setInterval(() => {
 
 renderPalette();
 renderActions();
+fitCanvases();
 redraw();
 window.__demo = { ledger, ui, state, tree, research, redraw };
 </script>
