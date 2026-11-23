@@ -6,6 +6,7 @@
 <title>Pushback Demo</title>
 <link rel="stylesheet" href="../src/ui/ui.css">
 <link rel="stylesheet" href="../src/pushback/pushback.css">
+<link rel="stylesheet" href="../src/pushback/press.css">
 <style>
   html, body { margin: 0; height: 100%; background: #14110f; }
   #game { min-height: 100vh; display: flex; flex-direction: column; }
@@ -15,6 +16,8 @@
   .actions button { font-family: 'Courier New', monospace; font-weight: 700; font-size: 12px; padding: 8px; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; cursor: pointer; }
   .actions button.end { background: #f5c542; color: #2a2118; }
   .actions button.scheme { color: #ff9f1c; }
+  .actions button.week { color: #8fd3ff; }
+  .press-overlay .pr-desk { max-height: calc(100vh - 40px); overflow: auto; }
   .ousted { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: rgba(10,8,7,.92); color: #ff5a4f; font: 900 28px 'Courier New', monospace; text-align: center; letter-spacing: 3px; }
   .ousted small { display: block; color: #a8977a; font-size: 13px; letter-spacing: 1px; margin-top: 10px; }
 </style>
@@ -31,6 +34,8 @@ import { createGameUI } from '../src/ui/hud.js';
 import { Pushback } from '../src/pushback/pushback.js';
 import { createPushbackUI } from '../src/pushback/pushback-ui.js';
 import { createPressureGauge } from '../src/pushback/pressure-gauge.js';
+import { Press } from '../src/pushback/press.js';
+import { createPressDesk, createReputationChip, createFrontPage } from '../src/pushback/press-ui.js';
 import { createAudio, wireAudio, createSoundToggle, startOnFirstGesture } from '../src/audio/audio.js';
 
 // Stand-in builds/sales/schemes so pushback can be played before the real systems are wired in.
@@ -48,6 +53,28 @@ wireAudio(audio, { ledger, pushback: pb });
 startOnFirstGesture(audio);
 root.querySelector('.view-toggle').append(createSoundToggle(audio));
 const state = { quarter: 1, totalQuarters: 12 };
+
+// ---- press, reputation, Inspector and sieges (#31) ----
+const press = new Press({ pushback: pb, seed });
+const pressOverlay = document.createElement('div');
+pressOverlay.className = 'report-overlay press-overlay';
+pressOverlay.hidden = true;
+const desk = createPressDesk({ press, pushback: pb, onAction: (r) => { if (r && r.ok === false) pbui.tick(r.reason, 'bad'); for (const n of r?.notes ?? []) pbui.tick(n); } });
+const closeDesk = document.createElement('button');
+closeDesk.className = 'report-continue'; closeDesk.textContent = 'BACK TO WORK [P]';
+closeDesk.onclick = () => togglePress(false);
+desk.el.append(closeDesk);
+pressOverlay.append(desk.el);
+pressOverlay.addEventListener('click', (e) => { if (e.target === pressOverlay) togglePress(false); });
+root.append(pressOverlay);
+function togglePress(force) { pressOverlay.hidden = !(force ?? pressOverlay.hidden); desk.render(); }
+const repChip = createReputationChip({ press, onOpen: () => togglePress() });
+root.querySelector('.hud').insertBefore(repChip.el, root.querySelector('.view-toggle'));
+window.addEventListener('keydown', (e) => { if ((e.key === 'p' || e.key === 'P') && !e.ctrlKey && !e.metaKey) togglePress(); });
+const frontPage = createFrontPage({ root, press, onClose: () => { pbui.tick('The story ran. Clients are calling.', 'bad'); } });
+press.on('note', (n) => { if (['story', 'siege', 'pitchforks', 'inspector'].includes(n.kind)) pbui.tick(n.text, n.kind === 'siege' && /OCCUPIED/.test(n.text) ? 'bad' : undefined); });
+press.on('aired', () => audio.play?.('heatWarning'));
+const SITE_NAMES = ['Helipad Ranch', 'Granite Vault', 'Glass Dome Estate', 'Silo Nine', 'The Wine Cave', 'Cliffside Retreat', 'Lake Bunker', 'Old Mine'];
 
 const hudState = () => ({
   ...state,
@@ -103,7 +130,9 @@ const actions = [
     const price = Math.round(180_000 * (1 + pb.tension / 50));
     const client = CLIENTS[sold++ % CLIENTS.length];
     ledger.record('sales', `Shelter sold to ${client}`, price);
-    pb.onSale({ client, price });
+    const c = pb.onSale({ client, price });
+    // Each sale is a site: security 1-4 and 0-3 visible surface features (stand-ins until the grid hands real ratings over).
+    press.addSite({ name: SITE_NAMES[(sold - 1) % SITE_NAMES.length], security: 1 + ((sold * 7) % 4), visible: (sold * 5) % 4, clientId: c.id });
     pbui.tick(`${client} bought a shelter. They know things now.`, 'ok');
   }],
   ...schemes.map(([name, cost, heat, tension]) => [`Scheme: ${name}`, () => {
@@ -142,12 +171,30 @@ async function endQuarter() {
   if (state.quarter < state.totalQuarters) state.quarter += 1;
   redraw();
 }
+function advanceWeek() {
+  if (pb.board.ousted || frontPage.open) return;
+  press.tickWeek();
+  redraw();
+}
+let autoTimer = null;
+const weekBtn = document.createElement('button');
+weekBtn.className = 'week'; weekBtn.id = 'next-week'; weekBtn.textContent = '+1 WEEK';
+weekBtn.onclick = advanceWeek;
+const autoBtn = document.createElement('button');
+autoBtn.className = 'week'; autoBtn.id = 'auto-weeks'; autoBtn.textContent = 'PLAY WEEKS';
+autoBtn.onclick = () => {
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; autoBtn.textContent = 'PLAY WEEKS'; return; }
+  autoTimer = setInterval(advanceWeek, 700); autoBtn.textContent = 'PAUSE WEEKS';
+};
+const pressBtn = document.createElement('button');
+pressBtn.textContent = 'PRESS DESK [P]'; pressBtn.onclick = () => togglePress();
+bar.append(weekBtn, autoBtn, pressBtn);
 const end = document.createElement('button');
 end.className = 'end'; end.id = 'end-quarter'; end.textContent = 'END QUARTER';
 end.onclick = endQuarter;
 bar.append(end);
 redraw();
-window.__demo = { gauge, audio, ledger, ui, pb, pbui, state, redraw, endQuarter };
+window.__demo = { press, togglePress, advanceWeek, gauge, audio, ledger, ui, pb, pbui, state, redraw, endQuarter };
 </script>
 </body>
 </html>
