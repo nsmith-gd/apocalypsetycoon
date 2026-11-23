@@ -184,3 +184,21 @@ export function showMidnight({ root = document.body, result, onRestart } = {}) {
     again.focus();
   });
 }
+
+/**
+ * Black "the clock strikes twelve" interstitial to sit under the Midnight stinger.
+ * `tolls` = seconds at which each of the twelve bells lands (audio's midnightTimes()); `duration` = when the boom lands.
+ */
+export function showClockStrike({ root = document.body, tolls, duration = 6 } = {}) {
+  const overlay = el('div', 'mn-strike');
+  const time = el('div', 'mn-strike-time', '11:59');
+  const tollsEl = el('div', 'mn-strike-tolls');
+  overlay.append(time, tollsEl);
+  root.append(overlay);
+  const at = tolls ?? Array.from({ length: 12 }, (_, i) => duration * 0.33 + (i + 1) * ((duration * 0.6) / 12));
+  const timers = at.map((sec, i) => setTimeout(() => {
+    tollsEl.textContent = '|'.repeat(i + 1);
+    if (i === 11) { time.textContent = '00:00'; overlay.classList.add('mn-strike-final'); }
+  }, sec * 1000));
+  return new Promise((resolve) => setTimeout(() => { timers.forEach(clearTimeout); overlay.remove(); resolve(); }, duration * 1000));
+}
