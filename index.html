@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apocalypse Tycoon</title>
+<link rel="stylesheet" href="src/ui/ui.css">
+<style>
+  html, body { margin: 0; min-height: 100%; background: #14110f; }
+  .front { max-width: 640px; margin: 0 auto; padding: 32px 16px; display: flex; flex-direction: column; gap: 14px; }
+  .front h1 { margin: 0; font-size: 28px; letter-spacing: 3px; color: var(--at-gold); }
+  .front .pitch { color: var(--at-dim); font-style: italic; }
+  .play { display: block; text-align: center; text-decoration: none; font: 900 18px var(--at-font); letter-spacing: 3px; color: var(--at-paper-ink); background: var(--at-gold); border: 4px solid var(--at-border); box-shadow: inset -3px -3px 0 rgba(0,0,0,.3); padding: 14px; }
+  .front h2 { font-size: 12px; letter-spacing: 2px; color: var(--at-dim); margin: 10px 0 0; }
+  .front ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; }
+  .front li a { display: block; text-decoration: none; color: var(--at-ink); background: var(--at-panel-2); border: 2px solid var(--at-border); box-shadow: inset 2px 2px 0 var(--at-hi); padding: 8px; font-size: 12px; font-weight: 700; }
+  .front li a:hover { background: var(--at-hi); }
+  .keys { font-size: 12px; color: var(--at-dim); line-height: 1.6; }
+  .keys b { color: var(--at-ink); }
+</style>
+</head>
+<body class="at-ui">
+<div class="front">
+  <h1>APOCALYPSE TYCOON</h1>
+  <div class="pitch">You don't survive the apocalypse. You sell it.</div>
+  <a class="play" href="demo/hud-demo.html">PLAY THE PROTOTYPE</a>
+  <div class="keys"><b>1</b> shelter grid · <b>2</b> world map · <b>TAB</b> switch canvas · <b>L</b> full ledger · <b>R</b> research</div>
+  <h2>SYSTEM DEMOS</h2>
+  <ul>
+    <li><a href="demo/shelter-life-demo.html">Shelter life systems</a></li>
+    <li><a href="demo/demand-demo.html">Fear and lead demand</a></li>
+    <li><a href="demo/pushback-demo.html">Pushback pressures</a></li>
+    <li><a href="demo/doom-clock-demo.html">Doom Clock</a></li>
+    <li><a href="demo/breach-demo.html">Breach and collapse</a></li>
+    <li><a href="demo/clients-demo.html">Clients and orders</a></li>
+    <li><a href="demo/midnight-demo.html">Midnight</a></li>
+    <li><a href="demo/audio-demo.html">Sound desk</a></li>
+    <li><a href="demo/art-gallery.html">Art style guide</a></li>
+    <li><a href="demo/pacing-harness.html">Pacing harness</a></li>
+  </ul>
+</div>
+</body>
+</html>

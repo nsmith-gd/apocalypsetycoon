@@ -27,11 +27,14 @@
 </head>
 <body>
 <div id="game">
-  <main class="stage" id="grid-view">
-    <aside class="palette" id="palette"></aside>
-    <canvas id="grid" width="160" height="96"></canvas>
-  </main>
-  <main class="stage" id="map-view" hidden><canvas id="map" width="320" height="192"></canvas></main>
+  <div class="at-body">
+    <main class="stage" id="grid-view">
+      <aside class="palette" id="palette"></aside>
+      <canvas id="grid" width="160" height="96"></canvas>
+    </main>
+    <main class="stage" id="map-view" hidden><canvas id="map" width="320" height="192"></canvas></main>
+    <div class="at-rail-host" id="rail"></div>
+  </div>
   <footer class="actions" id="actions"></footer>
 </div>
 <script type="module">
@@ -52,6 +55,7 @@ const ui = createGameUI({
   root,
   ledger,
   views: { grid: document.getElementById('grid-view'), map: document.getElementById('map-view') },
+  rail: document.getElementById('rail'),
 });
 const state = { quarter: 1, totalQuarters: 12, heat: 8, tension: 22, boardTarget: 300_000 };
 const clamp = (v) => Math.max(0, Math.min(100, v));
@@ -123,7 +127,8 @@ function drawMap() {
   drawWorldMap(cv.getContext('2d'), { crisis, crisisType: MAP_CRISIS, frame, bunkers });
 }
 function fitCanvases() {
-  const avail = Math.min(window.innerWidth - 32, 1280);
+  const railW = window.innerWidth > 760 && !ui.ledgerRail?.collapsed ? 244 : 0;
+  const avail = Math.min(window.innerWidth - 32 - railW, 1280);
   const palW = window.innerWidth > 700 ? 240 : 0;
   fitIntegerScale(document.getElementById('grid'), avail - palW, window.innerHeight - 220);
   fitIntegerScale(document.getElementById('map'), avail, window.innerHeight - 220);
@@ -201,6 +206,7 @@ setInterval(() => {
 renderPalette();
 renderActions();
 fitCanvases();
+document.querySelector('.lr-collapse')?.addEventListener('click', fitCanvases);
 redraw();
 window.__demo = { ledger, ui, state, tree, research, redraw };
 </script>
