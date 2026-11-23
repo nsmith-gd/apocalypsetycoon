@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shelter Life Systems</title>
+<link rel="stylesheet" href="../src/ui/ui.css">
+<style>
+  html, body { margin: 0; background: #14110f; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 12px 16px; font-family: 'Courier New', monospace; color: #f2e6c9; display: grid; grid-template-columns: 200px auto 1fr; gap: 12px; box-sizing: border-box; }
+  .panel { background: #241f1a; border: 3px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; padding: 10px; }
+  .panel h2 { font-size: 11px; letter-spacing: 2px; color: #a8977a; margin: 0 0 8px; }
+  h1 { grid-column: 1 / -1; margin: 0; font-size: 16px; letter-spacing: 3px; color: #f5c542; }
+  .palette { display: flex; flex-direction: column; gap: 3px; max-height: 640px; overflow: auto; }
+  .palette .grp { font-size: 9px; color: #a8977a; letter-spacing: 2px; margin-top: 6px; }
+  .palette button { font-family: inherit; font-size: 11px; text-align: left; padding: 4px 6px; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; cursor: pointer; display: flex; gap: 6px; align-items: center; }
+  .palette button.on { border-color: #f5c542; color: #f5c542; }
+  .palette button i { width: 10px; height: 10px; display: inline-block; flex: none; }
+  .palette small { color: #a8977a; margin-left: auto; }
+  #cv { image-rendering: pixelated; width: 480px; height: auto; display: block; border: 3px solid #0a0807; cursor: crosshair; }
+  .hint { font-size: 10px; color: #a8977a; margin-top: 6px; max-width: 480px; }
+  .big { font-size: 34px; font-weight: 900; color: #f5c542; letter-spacing: 2px; }
+  .big small { font-size: 12px; color: #a8977a; letter-spacing: 0; }
+  .sys { display: grid; grid-template-columns: 60px 1fr 140px; gap: 6px; align-items: center; font-size: 11px; margin: 4px 0; }
+  .sys .bar { height: 10px; background: #0a0807; border: 1px solid #4a3f33; position: relative; }
+  .sys .fill { height: 100%; background: #7ed957; }
+  .sys[data-limit=true] .fill { background: #ff5a4f; }
+  .sys[data-limit=true] span:first-child { color: #ff5a4f; }
+  .sys .num { text-align: right; color: #a8977a; }
+  .rat { display: grid; grid-template-columns: 70px repeat(5, 16px) 1fr; gap: 3px; align-items: center; font-size: 11px; margin: 3px 0; }
+  .rat i { height: 10px; background: #0a0807; border: 1px solid #4a3f33; display: block; }
+  .rat i.on { background: #8fd3ff; }
+  .rat i.need { outline: 2px solid #ff9f1c; outline-offset: -1px; }
+  .rat .f { font-size: 10px; color: #a8977a; text-align: right; }
+  select, .ctl button { font-family: inherit; font-size: 11px; font-weight: 700; padding: 4px 6px; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; }
+  .p { font-size: 22px; font-weight: 900; }
+  .warn { font-size: 10px; color: #ff9f1c; line-height: 1.5; }
+  .warn .bad { color: #ff5a4f; }
+  .note { font-size: 10px; color: #7ed957; line-height: 1.5; }
+  .phases { display: flex; height: 18px; margin: 6px 0; border: 2px solid #0a0807; }
+  .phases div { font-size: 8px; display: grid; place-items: center; overflow: hidden; white-space: nowrap; color: #2a2118; font-weight: 700; border-right: 1px solid #0a0807; }
+  .phases div.done { filter: brightness(0.55); }
+  .phases div.now { outline: 2px solid #f2e6c9; outline-offset: -2px; }
+  .ctl { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 11px; }
+  @media (max-width: 960px) { .wrap { grid-template-columns: 1fr; } #cv { width: 100%; } }
+</style>
+</head>
+<body class="at-ui">
+<div class="wrap">
+  <h1>SHELTER LIFE SYSTEMS · LAST RESORT HQ</h1>
+  <div class="panel"><h2>BUILD</h2><div class="palette" id="palette"></div></div>
+  <div class="panel"><h2>CROSS-SECTION · CLICK TO PLACE · RIGHT-CLICK TO REMOVE</h2><canvas id="cv"></canvas>
+    <div class="hint">Column 0 is the Utility Spine: every floor must connect to it. Each floor is 5 m deeper. Strata bands get harder (and pricier) to dig, and deeper rock gives a better blast rating.</div></div>
+  <div>
+    <div class="panel"><h2>DAYS SEALED · MIN OVER AIR, WATER, FOOD, POWER OF STOCK / (USE - PRODUCTION)</h2>
+      <div class="big" id="days"></div><div id="flows"></div>
+      <div class="ctl" style="margin-top:6px">Occupants <button id="occ-">-</button><b id="occ"></b><button id="occ+">+</button></div></div>
+    <div class="panel" style="margin-top:10px"><h2>RATINGS · SURVIVAL ODDS</h2>
+      <div class="ctl">Apocalypse <select id="apoc"></select></div><div id="ratings"></div><div id="psurv"></div></div>
+    <div class="panel" style="margin-top:10px"><h2>BUILD RULES</h2><div id="rules"></div></div>
+    <div class="panel" style="margin-top:10px"><h2>CONSTRUCTION</h2>
+      <div class="ctl">Crews <button id="crew-">-</button><b id="crews"></b><button id="crew+">+</button> <button id="build">START BUILD</button> <button id="week">+1 WEEK</button></div>
+      <div class="phases" id="phases"></div><div class="warn" id="cons"></div></div>
+  </div>
+</div>
+<script type="module">
+import { LIFE_ROOMS, STRATA, stratumAt, depthOf, simulate, survival, constructionPlan, ConstructionJob, SPINE_COL } from '../src/shelter/life.js';
+import { drawText } from '../src/art/font.js';
+
+const COLS = 8, GUTTER = 4, FLOORS = 17, T = 16; // floors 0..16 = surface to 80 m; a 4-tile label gutter on the right
+const cv = document.getElementById('cv');
+cv.width = (COLS + GUTTER) * T; cv.height = FLOORS * T;
+const ctx = cv.getContext('2d');
+const COLORS = { bunk: '#8a6a4a', suite: '#c070ff', air_vent: '#b8d8c8', mil_scrubber: '#d8f0e0', oxygen_store: '#9fc8d8', water_tank: '#4a8ad8', water_recycler: '#2f6fb8', aquifer: '#1e4f9a', pantry: '#c8743a', hydroponics: '#7ed957', kitchen: '#e0a060', battery: '#f5e05a', diesel: '#8a8a7a', geothermal: '#ff7a3a', reactor: '#5aff9a', solar: '#3a5aa8', airlock: '#a8b8c8', nbc_filter: '#7a9aaa', blast_door_1: '#6a6a6a', blast_door_2: '#4a4a5a', blast_door_3: '#2a2a3a', armory: '#7a2a2a', cameras: '#5a5a3a', cellar: '#7a2a3a', gym: '#c85a5a', cinema: '#5a3a7a', medbay: '#e8e8e8', gold_taps: '#f5c542', helipad: '#9a9a9a', vent_stack: '#b8b8b8', decoy_barn: '#8a5a2a' };
+const ABBR = (id) => ({ blast_door_1: 'BD1', blast_door_2: 'BD2', blast_door_3: 'BD3', water_tank: 'H2O', water_recycler: 'REC', mil_scrubber: 'SCR', air_vent: 'VNT', oxygen_store: 'O2', nbc_filter: 'NBC' })[id] ?? id.slice(0, 3).toUpperCase();
+const GROUPS = [
+  ['QUARTERS', ['bunk', 'suite']], ['AIR', ['air_vent', 'mil_scrubber', 'oxygen_store']], ['WATER', ['water_tank', 'water_recycler', 'aquifer']],
+  ['FOOD', ['pantry', 'hydroponics', 'kitchen']], ['POWER', ['battery', 'diesel', 'geothermal', 'reactor', 'solar']],
+  ['SEAL / BLAST', ['airlock', 'nbc_filter', 'blast_door_1', 'blast_door_2', 'blast_door_3']], ['SECURITY', ['armory', 'cameras']],
+  ['MORALE', ['cellar', 'gym', 'cinema', 'medbay', 'gold_taps']], ['SURFACE', ['helipad', 'vent_stack', 'decoy_barn']],
+];
+// Requirements per apocalypse: stand-ins until #29's table lands.
+const APOC = {
+  pandemic: { name: 'Pandemic', days: 180, seal: 3, blast: 0, security: 2, morale: 2 },
+  nuclear: { name: 'Nuclear exchange', days: 365, seal: 4, blast: 4, security: 2, morale: 3 },
+  unrest: { name: 'Civil collapse', days: 120, seal: 1, blast: 1, security: 4, morale: 2 },
+};
+const shelter = { occupants: 6, rooms: [
+  { type: 'bunk', floor: 1, col: 1 }, { type: 'pantry', floor: 1, col: 2 }, { type: 'water_tank', floor: 1, col: 3 }, { type: 'oxygen_store', floor: 1, col: 4 }, { type: 'battery', floor: 1, col: 5 },
+] };
+let pick = 'air_vent';
+let crews = 1;
+let job = null;
+
+const pal = document.getElementById('palette');
+for (const [g, ids] of GROUPS) {
+  const h = document.createElement('div'); h.className = 'grp'; h.textContent = g; pal.append(h);
+  for (const id of ids) {
+    const d = LIFE_ROOMS[id];
+    const b = document.createElement('button');
+    b.dataset.room = id;
+    b.innerHTML = `<i style="background:${COLORS[id]}"></i>${d.name}<small>${d.minDepth ? `${d.minDepth}m` : d.surface ? 'top' : ''}</small>`;
+    b.title = describe(id);
+    b.onclick = () => { pick = id; render(); };
+    pal.append(b);
+  }
+}
+function describe(id) {
+  const d = LIFE_ROOMS[id]; const bits = [];
+  for (const [k, v] of Object.entries(d.produce ?? {})) bits.push(`+${v} ${k}/day`);
+  for (const [k, v] of Object.entries(d.stock ?? {})) bits.push(`stores ${v} ${k}`);
+  for (const [k, v] of Object.entries(d.use ?? {})) bits.push(`uses ${v} ${k}/day`);
+  for (const k of ['seal', 'security', 'comfort', 'visibility', 'beds']) if (d[k]) bits.push(`${k} ${d[k] > 0 ? '+' : ''}${d[k]}`);
+  if (d.blastDoor) bits.push(`blast door ${d.blastDoor}`);
+  if (d.noisy) bits.push('noisy');
+  return `${d.name}: ${bits.join(', ')} · $${Math.round(d.cost / 1000)}K`;
+}
+const STRATA_COL = { topsoil: '#5a4030', clay: '#7a5030', sandstone: '#9a7a4a', granite: '#5a5a62', bedrock: '#2e2a30' };
+
+function draw() {
+  ctx.fillStyle = '#14110f'; ctx.fillRect(COLS * T, 0, GUTTER * T, FLOORS * T);
+  for (let f = 0; f < FLOORS; f++) for (let c = 0; c < COLS; c++) {
+    const x = c * T, y = f * T;
+    if (f === 0) { ctx.fillStyle = '#3a5a2a'; ctx.fillRect(x, y, T, T); ctx.fillStyle = '#6a9a4a'; ctx.fillRect(x, y, T, 3); continue; }
+    ctx.fillStyle = STRATA_COL[stratumAt(depthOf(f)).id]; ctx.fillRect(x, y, T, T);
+    ctx.fillStyle = 'rgba(0,0,0,.18)'; if ((c * 7 + f * 5) % 9 === 0) ctx.fillRect(x + 5, y + 6, 3, 2);
+    if (c === SPINE_COL) { ctx.fillStyle = '#2a2118'; ctx.fillRect(x + 4, y, 8, T); ctx.fillStyle = '#f5c542'; ctx.fillRect(x + 7, y, 2, T); }
+  }
+  // strata labels on the right edge, depth markers
+  let lastS = null;
+  for (let f = 1; f < FLOORS; f++) {
+    const s = stratumAt(depthOf(f));
+    ctx.fillStyle = STRATA_COL[s.id]; ctx.fillRect(COLS * T, f * T, 3, T);
+    if (s.id !== lastS) { drawText(ctx, s.name.split(' ').pop(), COLS * T + 5, f * T + 2, '#f2e6c9'); drawText(ctx, `${depthOf(f)}M`, COLS * T + 5, f * T + 9, '#a8977a'); lastS = s.id; }
+  }
+  const viol = new Set(simulate(shelter).violations.filter((v) => v.room).map((v) => `${v.room.floor},${v.room.col}`));
+  for (const r of shelter.rooms) {
+    const x = r.col * T, y = r.floor * T;
+    ctx.fillStyle = '#0a0807'; ctx.fillRect(x, y, T, T);
+    ctx.fillStyle = COLORS[r.type] ?? '#888'; ctx.fillRect(x + 1, y + 1, T - 2, T - 2);
+    drawText(ctx, ABBR(r.type), x + 2, y + 6, '#f2e6c9');
+    if (viol.has(`${r.floor},${r.col}`)) { ctx.strokeStyle = '#ff5a4f'; ctx.lineWidth = 2; ctx.strokeRect(x + 1, y + 1, T - 2, T - 2); }
+  }
+}
+
+function render() {
+  for (const b of pal.querySelectorAll('button')) b.classList.toggle('on', b.dataset.room === pick);
+  draw();
+  const sim = simulate(shelter);
+  const fmtDays = (d) => (d === Infinity ? '∞' : d);
+  document.getElementById('days').innerHTML = `${fmtDays(sim.daysSealed)} <small>days sealed · ${sim.limiting.toUpperCase()} runs out first</small>`;
+  document.getElementById('occ').textContent = `${shelter.occupants} (beds ${sim.beds})`;
+  const maxD = Math.max(60, ...Object.values(sim.days).filter((d) => d !== Infinity));
+  document.getElementById('flows').innerHTML = ['air', 'water', 'food', 'power'].map((k) => {
+    const f = sim.flows[k], d = sim.days[k];
+    return `<div class="sys" data-limit="${k === sim.limiting && d !== Infinity}"><span>${k.toUpperCase()}</span><div class="bar"><div class="fill" style="width:${d === Infinity ? 100 : Math.round((d / maxD) * 100)}%"></div></div><span class="num">${fmtDays(d)}d · ${f.stock} / ${f.use - f.produce > 0 ? '-' : '+'}${Math.abs(f.use - f.produce)}</span></div>`;
+  }).join('');
+  const req = APOC[document.getElementById('apoc').value];
+  const sv = survival(sim, req);
+  document.getElementById('ratings').innerHTML = ['seal', 'blast', 'security', 'morale'].map((k) => `<div class="rat"><span>${k.toUpperCase()}</span>${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= sim.ratings[k] ? 'on' : ''} ${i === req[k] ? 'need' : ''}"></i>`).join('')}<span class="f">${sim.ratings[k]}/${req[k]} · x${sv.factors[k]}</span></div>`).join('')
+    + `<div class="rat"><span>DAYS</span><span style="grid-column: span 5; font-size:10px">${fmtDays(sim.daysSealed)} of ${req.days} needed</span><span class="f">x${Math.round(sv.factors.days * 100) / 100}</span></div>`;
+  const p = sv.p;
+  document.getElementById('psurv').innerHTML = `<div class="p" style="color:${p >= 0.8 ? '#7ed957' : p >= 0.4 ? '#ff9f1c' : '#ff5a4f'}">P(survive) ${Math.round(p * 100)}%</div><div class="warn">-0.25 per missing rating point; Days Sealed short of the need scales it down. Stratum ${sim.stratum} (${sim.deepestMeters} m) + best blast door ${sim.bestDoor}.</div>`;
+  document.getElementById('rules').innerHTML = (sim.violations.length ? sim.violations.map((v) => `<div class="warn"><span class="bad">✕</span> ${v.text}</div>`).join('') : '<div class="note">All build rules pass.</div>')
+    + sim.notes.map((n) => `<div class="${/-\d/.test(n) ? 'warn' : 'note'}">${n}</div>`).join('') + `<div class="warn" style="color:#a8977a">Visibility ${sim.visibility} · comfort ${sim.comfort} · prestige ${sim.prestige}</div>`;
+  // construction
+  document.getElementById('crews').textContent = crews;
+  const plan = job ? job.plan : constructionPlan(shelter, { crews });
+  const colors = { survey: '#a8977a', dig: '#9a7a4a', shell: '#8a8a7a', fitout: '#f5c542', pressure: '#8fd3ff', walkthrough: '#7ed957', handover: '#c070ff' };
+  document.getElementById('phases').innerHTML = plan.phases.filter((p) => p.weeks > 0 || p.id === 'handover').map((ph, i) => {
+    const idx = plan.phases.indexOf(ph);
+    const st = job ? (idx < job.index || job.done ? 'done' : idx === job.index ? 'now' : '') : '';
+    return `<div class="${st}" style="flex:${Math.max(0.6, ph.weeks)};background:${colors[ph.id]}" title="${ph.name}: ${ph.weeks} wk">${ph.name.toUpperCase()}</div>`;
+  }).join('');
+  document.getElementById('cons').innerHTML = job
+    ? `${job.failed ? `<span class="bad">PRESSURE TEST FAILED: ${job.failed.limiting} runs out after ${job.failed.daysSealed} days (needs 30). Add stock and press +1 WEEK to retest.</span>` : job.done ? 'Handed over.' : `Now: ${job.phase.name} · ${job.left} wk left in phase.`}<br>${job.log.slice(-3).join(' · ')}`
+    : `${plan.weeks} weeks · $${(plan.cost / 1e6).toFixed(2)}M (dig $${(plan.phases[1].cost / 1e3).toFixed(0)}K over ${plan.phases[1].detail.tiles} tiles) · pressure test 30 days`;
+}
+
+cv.addEventListener('click', (e) => {
+  const rect = cv.getBoundingClientRect();
+  const col = Math.floor(((e.clientX - rect.left) / rect.width) * (COLS + GUTTER));
+  const floor = Math.floor(((e.clientY - rect.top) / rect.height) * FLOORS);
+  if ((col === SPINE_COL && floor > 0) || col >= COLS) return;
+  shelter.rooms = shelter.rooms.filter((r) => !(r.col === col && r.floor === floor));
+  shelter.rooms.push({ type: pick, floor, col });
+  render();
+});
+cv.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  const rect = cv.getBoundingClientRect();
+  const col = Math.floor(((e.clientX - rect.left) / rect.width) * (COLS + GUTTER));
+  const floor = Math.floor(((e.clientY - rect.top) / rect.height) * FLOORS);
+  shelter.rooms = shelter.rooms.filter((r) => !(r.col === col && r.floor === floor));
+  render();
+});
+const sel = document.getElementById('apoc');
+for (const [k, a] of Object.entries(APOC)) { const o = document.createElement('option'); o.value = k; o.textContent = `${a.name} (needs ${a.days} days)`; sel.append(o); }
+sel.onchange = render;
+document.getElementById('occ-').onclick = () => { shelter.occupants = Math.max(1, shelter.occupants - 1); render(); };
+document.getElementById('occ+').onclick = () => { shelter.occupants += 1; render(); };
+document.getElementById('crew-').onclick = () => { crews = Math.max(1, crews - 1); job?.setCrews(crews); render(); };
+document.getElementById('crew+').onclick = () => { crews = Math.min(4, crews + 1); job?.setCrews(crews); render(); };
+document.getElementById('build').onclick = () => { job = new ConstructionJob(shelter, { crews }); render(); };
+document.getElementById('week').onclick = () => {
+  if (!job) return;
+  if (job.failed) { const prev = job.failed; job.failed = null; job.left = 0; job.index = job.plan.phases.findIndex((p) => p.id === 'pressure'); job.left = job.plan.phases[job.index].weeks; if (prev) job.log.push('Retesting'); }
+  job.advanceWeek(); render();
+};
+render();
+window.__demo = { shelter, render, place: (type, floor, col) => { shelter.rooms = shelter.rooms.filter((r) => !(r.col === col && r.floor === floor)); shelter.rooms.push({ type, floor, col }); render(); }, sim: () => simulate(shelter), startBuild: () => document.getElementById('build').click(), week: () => document.getElementById('week').click() };
+</script>
+</body>
+</html>
