@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Breach Demo</title>
+<link rel="stylesheet" href="../src/ui/ui.css">
+<link rel="stylesheet" href="../src/doomclock/doomclock.css">
+<link rel="stylesheet" href="../src/crisis/breach.css">
+<style>
+  html, body { margin: 0; background: #14110f; }
+  #game { min-height: 100vh; display: flex; flex-direction: column; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 12px 16px; font-family: 'Courier New', monospace; color: #f2e6c9; width: 100%; box-sizing: border-box; display: grid; grid-template-columns: 1fr 300px; gap: 12px; }
+  .panel { background: #241f1a; border: 3px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; padding: 10px; }
+  .panel h2 { font-size: 11px; letter-spacing: 2px; color: #a8977a; margin: 0 0 8px; }
+  .row { display: grid; grid-template-columns: 100px 1fr 150px 48px; gap: 8px; align-items: center; margin: 7px 0; font-size: 12px; }
+  .bar { position: relative; height: 16px; background: #0a0807; border: 1px solid #4a3f33; }
+  .fill { position: absolute; left: 0; top: 0; bottom: 0; background: #7ed957; transition: width .3s steps(6); }
+  .tiprange { position: absolute; top: -3px; bottom: -3px; background: rgba(255,90,79,.25); border-left: 1px dashed #ff5a4f; border-right: 1px dashed #ff5a4f; }
+  .tipexact { position: absolute; top: -4px; bottom: -4px; width: 2px; background: #ff5a4f; }
+  .row[data-state=brink] .fill { background: #ff9f1c; }
+  .row[data-state=breach] .fill { background: #ff5a4f; animation: at-blink .6s steps(2) infinite; }
+  .row[data-state=locked] .fill { background: #8fd3ff; }
+  .row[data-state=collapsed] .fill { background: #7a2a3a; }
+  .row[data-state=collapsed] { opacity: .6; }
+  .info { font-size: 10px; color: #a8977a; }
+  .row button, .controls button { font-family: inherit; font-weight: 700; font-size: 11px; padding: 5px 6px; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; cursor: pointer; }
+  .controls { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .controls .hot { background: #f5c542; color: #2a2118; }
+  .stats { font-size: 12px; line-height: 1.8; }
+  .stats b { color: #f5c542; }
+  .log { background: #0a0807; border: 2px solid #4a3f33; padding: 6px; font-size: 10px; height: 220px; overflow: auto; color: #a8977a; line-height: 1.5; }
+  .log div:first-child { color: #f2e6c9; }
+  .log [data-type=collapse], .log [data-type=breach] { color: #ff5a4f; }
+  .log [data-type=contained] { color: #7ed957; }
+  .log [data-type=domino] { color: #ff9f1c; }
+  svg.domino { width: 100%; height: auto; display: block; }
+  @keyframes at-blink { 50% { opacity: .4; } }
+  @media (max-width: 760px) { .wrap { grid-template-columns: 1fr; } .row { grid-template-columns: 80px 1fr 48px; } .row .info { grid-column: span 3; } }
+</style>
+</head>
+<body>
+<div id="game">
+  <div class="wrap">
+    <div>
+      <div class="panel"><h2>CRISIS TRACKS · TIPPING POINTS ARE HIDDEN UNTIL A BREACH IS CONTAINED</h2><div id="tracks"></div>
+        <div class="controls"><button id="week">ADVANCE 1 WEEK</button><button id="heat" class="hot">STOKE EVERYTHING +6</button></div>
+      </div>
+      <div class="panel" style="margin-top:12px"><h2>LOG</h2><div class="log" id="log"></div></div>
+    </div>
+    <div>
+      <div class="panel stats" id="stats"></div>
+      <div class="panel" style="margin-top:12px"><h2>DOMINO MAP · 10 LINKS</h2><div id="domino"></div></div>
+    </div>
+  </div>
+</div>
+<script type="module">
+import { Ledger } from '../src/ledger/ledger.js';
+import { createGameUI } from '../src/ui/hud.js';
+import { Pushback } from '../src/pushback/pushback.js';
+import { DoomClock } from '../src/doomclock/doomclock.js';
+import { createDoomClockHud } from '../src/doomclock/doomclock-hud.js';
+import { CrisisSystem, DOMINO_LINKS } from '../src/crisis/breach.js';
+import { createContainmentUI } from '../src/crisis/breach-ui.js';
+
+const params = new URLSearchParams(location.search);
+const ledger = new Ledger({ startingCash: 60_000_000 });
+const pb = new Pushback({ ledger });
+const clock = new DoomClock();
+const root = document.getElementById('game');
+const ui = createGameUI({ root, ledger });
+createDoomClockHud({ clock, hud: root.querySelector('.hud') });
+// Two sold shelters for shelter-in-place tests: one built for survival, one for show.
+const shelters = [
+  { id: 'a', name: 'Survival bunker #1', owner: 'Mr. Vance', occupants: 8, rooms: ['mil_scrubber', 'water_recycler', 'hydroponics'], sold: true },
+  { id: 'b', name: 'Luxury bunker #2', owner: 'Duchess Okoro', occupants: 8, rooms: ['gold_taps', 'cryo_pod', 'wine_cellar', 'air_vent'], sold: true },
+];
+pb.onSale({ client: 'Mr. Vance', price: 400_000 });
+pb.onSale({ client: 'Duchess Okoro', price: 600_000 });
+const crisis = new CrisisSystem({ seed: Number(params.get('seed') ?? 11), pushback: pb, doomClock: clock, ledger, shelters: () => shelters });
+const START = { pandemic: 55, climate: 62, unrest: 70, markets: 66, war: 40 };
+for (const [id, v] of Object.entries(START)) crisis.setTension(id, v);
+
+const logEl = document.getElementById('log');
+crisis.on('log', (e) => { const d = document.createElement('div'); d.dataset.type = e.type; d.textContent = `W${e.week} · ${e.text}`; logEl.prepend(d); });
+
+function advanceWeek() { crisis.advanceWeek(); clock.advanceWeeks(1); render(); }
+createContainmentUI({ root: document.body, crisis, onAdvanceWeek: advanceWeek });
+
+const POS = { pandemic: [60, 18], climate: [200, 18], unrest: [230, 110], markets: [130, 170], war: [30, 110] };
+function renderDomino() {
+  const col = (s) => ({ strong: '#ff5a4f', medium: '#ff9f1c', weak: '#a8977a' })[s];
+  const w = (s) => ({ strong: 4, medium: 2.5, weak: 1.2 })[s];
+  const lines = DOMINO_LINKS.map(([a, b, s]) => `<line x1="${POS[a][0]}" y1="${POS[a][1]}" x2="${POS[b][0]}" y2="${POS[b][1]}" stroke="${col(s)}" stroke-width="${w(s)}" />`).join('');
+  const nodes = Object.values(crisis.tracks).map((t) => {
+    const [x, y] = POS[t.id];
+    const fill = t.state === 'collapsed' ? '#7a2a3a' : t.state === 'breach' ? '#ff5a4f' : t.state === 'locked' ? '#8fd3ff' : t.state === 'brink' ? '#ff9f1c' : '#2f2821';
+    return `<rect x="${x - 34}" y="${y - 11}" width="68" height="22" fill="${fill}" stroke="#0a0807" stroke-width="2"/><text x="${x}" y="${y + 4}" text-anchor="middle" font-size="10" font-family="Courier New" font-weight="700" fill="#f2e6c9">${t.name.split(' ').pop().toUpperCase()}</text>`;
+  }).join('');
+  document.getElementById('domino').innerHTML = `<svg class="domino" viewBox="0 0 270 190">${lines}${nodes}</svg><div class="info">Collapse shoves linked tracks: <span style="color:#ff5a4f">strong +15</span> · <span style="color:#ff9f1c">medium +8</span> · weak +4</div>`;
+}
+
+function render() {
+  const s = crisis.snapshot();
+  document.getElementById('tracks').replaceChildren(...s.tracks.map((t) => {
+    const r = document.createElement('div');
+    r.className = 'row';
+    r.dataset.state = t.state;
+    r.dataset.id = t.id;
+    const tipEl = t.tip.exact != null ? `<div class="tipexact" style="left:${t.tip.exact}%"></div>` : `<div class="tiprange" style="left:${t.tip.range[0]}%;width:${t.tip.range[1] - t.tip.range[0]}%"></div>`;
+    const status = t.state === 'breach' ? `BREACH · ${t.window.weeksLeft}w · ${t.window.bar}/100` : { calm: '', brink: 'BRINK', locked: `RECOVERING ${t.lockWeeks}w`, collapsed: 'COLLAPSED' }[t.state];
+    r.innerHTML = `<span>${t.name}</span><div class="bar"><div class="fill" style="width:${t.tension}%"></div>${tipEl}</div>
+      <span class="info">${Math.round(t.tension)} · tip ${t.tip.exact != null ? `${t.tip.exact} (known)` : `${t.tip.range[0]}–${t.tip.range[1]}?`}${t.scars ? ` · scars ${t.scars}` : ''}${status ? `<br>${status}` : ''}</span>
+      <button ${t.state === 'collapsed' || t.state === 'locked' ? 'disabled' : ''}>+5</button>`;
+    r.querySelector('button').onclick = () => { crisis.addTension(t.id, 5, 'scheme'); render(); };
+    return r;
+  }));
+  document.getElementById('stats').innerHTML = `<b>WEEK ${s.week}</b>${s.paused ? ' · <span style="color:#ff5a4f">PAUSED</span>' : ''}<br>
+    Reputation <b>${s.reputation}</b> · Board confidence <b>${s.boardConfidence}</b><br>
+    Heat <b>${Math.round(pb.heat)}</b> · Panic premium <b>x${s.panicMultiplier}</b><br>
+    Breaches so far <b>${s.breachCount}</b> (next op ${'$' + (10 * (s.breachCount + 1))}M)<br>
+    Clients: ${pb.clients.map((c) => `${c.name} lev ${c.leverage}`).join(', ')}`;
+  ui.update({ quarter: 1 + Math.floor(s.week / 13), totalQuarters: 12, heat: pb.heat, tension: Math.round(s.tracks.reduce((a, t) => a + t.tension, 0) / 5), boardTarget: 0 });
+  renderDomino();
+}
+document.getElementById('week').onclick = advanceWeek;
+document.getElementById('heat').onclick = () => { for (const id of Object.keys(crisis.tracks)) crisis.addTension(id, 6, 'stoked'); render(); };
+['breach', 'contained', 'collapse', 'contribute', 'domino'].forEach((k) => crisis.on(k, () => requestAnimationFrame(render)));
+render();
+window.__demo = { crisis, clock, pb, render, advanceWeek };
+</script>
+</body>
+</html>
