@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Client Orders</title>
+<link rel="stylesheet" href="../src/ui/ui.css">
+<link rel="stylesheet" href="../src/clients/orders.css">
+<link rel="stylesheet" href="../src/midnight/midnight.css">
+<style>
+  html, body { margin: 0; min-height: 100%; background: #14110f; }
+  #game { min-height: 100vh; display: flex; flex-direction: column; }
+  .actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; justify-content: center; background: #241f1a; border-top: 4px solid #0a0807; margin-top: auto; position: sticky; bottom: 0; z-index: 40; }
+  .actions button { font-family: 'Courier New', monospace; font-weight: 700; font-size: 12px; padding: 8px; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; cursor: pointer; }
+  .actions button.end { background: #f5c542; color: #2a2118; }
+</style>
+</head>
+<body>
+<div id="game"><div id="orders-view"></div><div id="map-view" hidden></div><footer class="actions" id="actions"></footer></div>
+<script type="module">
+import { Ledger } from '../src/ledger/ledger.js';
+import { createGameUI } from '../src/ui/hud.js';
+import { ResearchTree } from '../src/research/research.js';
+import { createResearchPanel } from '../src/ui/researchPanel.js';
+import { ClientBook, mulberry32 } from '../src/clients/clients.js';
+import { createOrdersUI } from '../src/clients/orders-ui.js';
+import { computeMidnight } from '../src/midnight/midnight.js';
+import { showMidnight } from '../src/midnight/midnight-ui.js';
+
+const root = document.getElementById('game');
+const ledger = new Ledger({ startingCash: 600_000 });
+const ui = createGameUI({ root, ledger, views: { grid: document.getElementById('orders-view'), map: document.getElementById('map-view') } });
+const state = { quarter: 1, totalQuarters: 12, heat: 10, tension: 35, boardTarget: 800_000 };
+const clamp = (v) => Math.max(0, Math.min(100, v));
+const tree = new ResearchTree();
+const research = createResearchPanel({ root, tree, getCrisis: () => state.tension });
+root.querySelector('.hud').insertBefore(research.chip, root.querySelector('.view-toggle'));
+
+const book = new ClientBook({ ledger, rng: mulberry32(Number(new URLSearchParams(location.search).get('seed') ?? 4)) });
+// Placeholder crisis pricing until the schemes' profit-at-the-edge curve lands: up to +60% near the edge.
+const priceMultiplier = () => 1 + 0.6 * (Math.min(state.tension, 90) / 90) ** 2;
+const REGIONS = ['N.America', 'S.America', 'Europe', 'Africa', 'Asia', 'Oceania'];
+const newOrders = (n) => { for (let i = 0; i < n; i++) book.generateOrder({ quarter: state.quarter, region: REGIONS[Math.floor(Math.random() * 6)], crisis: state.tension, isUnlocked: (id) => tree.isUnlocked(id) }); };
+
+const orders = createOrdersUI({
+  root: document.getElementById('orders-view'), book, ledger,
+  isUnlocked: (id) => tree.isUnlocked(id),
+  getQuarter: () => state.quarter,
+  getPriceMultiplier: priceMultiplier,
+});
+tree.onUnlock(() => orders.render());
+
+const redraw = () => { ui.update(state); research.render(); orders.render(); };
+const bar = document.getElementById('actions');
+const btn = (label, fn, cls) => { const b = document.createElement('button'); b.textContent = label; if (cls) b.className = cls; b.onclick = () => { fn(); redraw(); }; bar.append(b); return b; };
+btn('Scheme: leak pandemic memo', () => { ledger.record('schemes', 'Leak pandemic memo', -30_000); state.tension = clamp(state.tension + 14); state.heat = clamp(state.heat + 10); });
+btn('World calms down', () => { state.tension = clamp(state.tension - 15); });
+btn('New order', () => newOrders(1));
+btn('Preview Midnight', async () => {
+  const result = computeMidnight({ shelters: book.sheltersForMidnight(), world: { tension: state.tension, heat: state.heat, runaways: 0 }, cash: ledger.cash });
+  await showMidnight({ root: document.body, result, onRestart: () => {} });
+});
+btn('END QUARTER', async () => {
+  ledger.record('upkeep', 'Crew payroll', -45_000 * tree.crewCount);
+  await ui.showQuarterReport({ quarter: state.quarter, boardTarget: state.boardTarget });
+  if (state.quarter < state.totalQuarters) { state.quarter += 1; state.boardTarget = Math.round(state.boardTarget * 1.2); }
+  book.expire(state.quarter);
+  newOrders(1 + Math.round(state.tension / 30));
+  redraw();
+}, 'end');
+
+let last = performance.now();
+setInterval(() => { const now = performance.now(); tree.tick(((now - last) / 1000) * 10, state.tension); last = now; }, 250);
+
+newOrders(3);
+redraw();
+window.__demo = { ledger, ui, state, tree, book, orders, redraw, newOrders };
+</script>
+</body>
+</html>
