@@ -1,0 +1,84 @@
+{
+ "heat": {
+  "value": 1,
+  "max": 100,
+  "zone": "low",
+  "next": {
+   "at": 50,
+   "what": "Federal investigation opens"
+  },
+  "perQuarter": -8,
+  "relief": {
+   "action": "layLow",
+   "cost": 40000,
+   "effect": -15
+  }
+ },
+ "tension": {
+  "value": 40,
+  "max": 100,
+  "zone": "contained",
+  "next": {
+   "at": 75,
+   "what": "Tension starts feeding itself"
+  },
+  "selfFeeding": false,
+  "perQuarter": -3,
+  "runaways": 0,
+  "runawayThisQuarter": false,
+  "relief": {
+   "action": "fundRelief",
+   "cost": 50000,
+   "effect": -14
+  }
+ },
+ "leverage": {
+  "clients": [
+   {
+    "id": 1,
+    "name": "Mr. Vance",
+    "leverage": 14,
+    "zone": "quiet",
+    "next": {
+     "at": 30,
+     "what": "Starts making demands"
+    }
+   },
+   {
+    "id": 2,
+    "name": "Duchess Okoro",
+    "leverage": 14,
+    "zone": "quiet",
+    "next": {
+     "at": 30,
+     "what": "Starts making demands"
+    }
+   }
+  ],
+  "highest": {
+   "id": 1,
+   "name": "Mr. Vance",
+   "leverage": 14,
+   "zone": "quiet",
+   "next": {
+    "at": 30,
+    "what": "Starts making demands"
+   }
+  },
+  "growthPerQuarter": 0,
+  "zone": "quiet"
+ },
+ "board": {
+  "target": 50000,
+  "progress": 0,
+  "onTrack": false,
+  "strikes": 2,
+  "strikesToOust": 3,
+  "ousted": false,
+  "buildCostMultiplier": 1.25,
+  "zone": "last-chance",
+  "next": {
+   "what": "One more miss and you are ousted"
+  }
+ }
+}
