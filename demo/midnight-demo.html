@@ -35,6 +35,7 @@ import { Ledger } from '../src/ledger/ledger.js';
 import { createGameUI } from '../src/ui/hud.js';
 import { Pushback } from '../src/pushback/pushback.js';
 import { createPushbackUI } from '../src/pushback/pushback-ui.js';
+import { createPressureGauge } from '../src/pushback/pressure-gauge.js';
 import { createAudio, wireAudio, createSoundToggle, startOnFirstGesture, midnightTimes } from '../src/audio/audio.js';
 import { computeMidnight, gradeShelter } from '../src/midnight/midnight.js';
 import { showMidnight, showClockStrike } from '../src/midnight/midnight-ui.js';
@@ -50,6 +51,8 @@ const pb = new Pushback({ ledger, seed: Number(params.get('seed') ?? 7) });
 const root = document.getElementById('game');
 const ui = createGameUI({ root, ledger, views: { grid: document.getElementById('grid-view'), map: document.getElementById('map-view') } });
 const pbui = createPushbackUI({ root, pushback: pb });
+// All four pressures with what happens next, plus the paid relief buttons.
+const gauge = createPressureGauge({ root, pushback: pb, getQuarterProfit: () => ledger.summary(ledger.quarter).net, onRelief: (r) => r && pbui.tick(`${r.kind === 'layLow' ? 'Laid low' : 'Funded relief'}: -$${Math.round(r.cost / 1000)}K`, 'ok') });
 // Sound: music starts on the first click or key; builds, sales, schemes, heat and the board are wired automatically.
 const audio = createAudio();
 wireAudio(audio, { ledger, pushback: pb });
@@ -124,7 +127,7 @@ function drawMap() {
 }
 const redraw = () => { drawGrid(); drawMap(); ui.update(hudState()); };
 pb.on('change', redraw);
-ledger.onChange(() => ui.update(hudState()));
+ledger.onChange(() => { ui.update(hudState()); gauge.render(); });
 
 // ---- Midnight ----
 async function midnight() {
@@ -215,7 +218,7 @@ const botGame = {
 const debug = createDebugPanel({ root: document.body, log, game: botGame, endQuarter: async () => { await endQuarter(); redraw(); } });
 if (params.has('debug')) debug.show();
 redraw();
-window.__demo = { log, debug, tree, audio, ledger, ui, pb, pbui, state, shelters, hq, build, sell, scheme, endQuarter, fastForward, midnight, redraw };
+window.__demo = { gauge, log, debug, tree, audio, ledger, ui, pb, pbui, state, shelters, hq, build, sell, scheme, endQuarter, fastForward, midnight, redraw };
 </script>
 </body>
 </html>
