@@ -1,0 +1,65 @@
+{
+ "panel": [
+  {
+   "x": 0,
+   "y": 0,
+   "w": 24,
+   "h": 24,
+   "nineSliceBorder": 6
+  }
+ ],
+ "paper": [
+  {
+   "x": 0,
+   "y": 25,
+   "w": 24,
+   "h": 24,
+   "nineSliceBorder": 6
+  }
+ ],
+ "button": [
+  {
+   "x": 0,
+   "y": 50,
+   "w": 16,
+   "h": 16,
+   "nineSliceBorder": 5
+  }
+ ],
+ "buttonPressed": [
+  {
+   "x": 0,
+   "y": 75,
+   "w": 16,
+   "h": 16,
+   "nineSliceBorder": 5
+  }
+ ],
+ "buttonActive": [
+  {
+   "x": 0,
+   "y": 100,
+   "w": 16,
+   "h": 16,
+   "nineSliceBorder": 5
+  }
+ ],
+ "meter": [
+  {
+   "x": 0,
+   "y": 125,
+   "w": 12,
+   "h": 8,
+   "nineSliceBorder": 3
+  }
+ ],
+ "tooltip": [
+  {
+   "x": 0,
+   "y": 150,
+   "w": 12,
+   "h": 12,
+   "nineSliceBorder": 4
+  }
+ ]
+}

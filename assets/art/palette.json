@@ -1,0 +1,142 @@
+{
+ "K": {
+  "x": 0,
+  "hex": "#0a0807",
+  "name": "Void (outline)"
+ },
+ "D": {
+  "x": 8,
+  "hex": "#241f1a",
+  "name": "Panel"
+ },
+ "d": {
+  "x": 16,
+  "hex": "#3b2f26",
+  "name": "Panel raised"
+ },
+ "S": {
+  "x": 24,
+  "hex": "#a8977a",
+  "name": "Dust (dim text)"
+ },
+ "W": {
+  "x": 32,
+  "hex": "#f2e6c9",
+  "name": "Bone (text, paper)"
+ },
+ "e": {
+  "x": 40,
+  "hex": "#2a1d14",
+  "name": "Deep earth"
+ },
+ "E": {
+  "x": 48,
+  "hex": "#3b2a1e",
+  "name": "Earth"
+ },
+ "B": {
+  "x": 56,
+  "hex": "#5c4636",
+  "name": "Clay"
+ },
+ "b": {
+  "x": 64,
+  "hex": "#8a6a4a",
+  "name": "Sand"
+ },
+ "k": {
+  "x": 72,
+  "hex": "#3a3f46",
+  "name": "Gunmetal"
+ },
+ "M": {
+  "x": 80,
+  "hex": "#6b7078",
+  "name": "Steel"
+ },
+ "m": {
+  "x": 88,
+  "hex": "#9aa3ad",
+  "name": "Chrome"
+ },
+ "w": {
+  "x": 96,
+  "hex": "#dfe6ec",
+  "name": "Glint"
+ },
+ "y": {
+  "x": 104,
+  "hex": "#8a5a1a",
+  "name": "Old gold"
+ },
+ "Y": {
+  "x": 112,
+  "hex": "#f5c542",
+  "name": "Gold"
+ },
+ "L": {
+  "x": 120,
+  "hex": "#fff1a8",
+  "name": "Gold glint"
+ },
+ "g": {
+  "x": 128,
+  "hex": "#2f5a24",
+  "name": "Moss"
+ },
+ "G": {
+  "x": 136,
+  "hex": "#7ed957",
+  "name": "Leaf"
+ },
+ "N": {
+  "x": 144,
+  "hex": "#16324a",
+  "name": "Ocean"
+ },
+ "n": {
+  "x": 152,
+  "hex": "#24507a",
+  "name": "Shallows"
+ },
+ "c": {
+  "x": 160,
+  "hex": "#3f8fc8",
+  "name": "Water"
+ },
+ "C": {
+  "x": 168,
+  "hex": "#8fd3ff",
+  "name": "Ice"
+ },
+ "r": {
+  "x": 176,
+  "hex": "#6b1f1a",
+  "name": "Dried blood"
+ },
+ "R": {
+  "x": 184,
+  "hex": "#ff5a4f",
+  "name": "Alarm"
+ },
+ "O": {
+  "x": 192,
+  "hex": "#ff9f1c",
+  "name": "Edge amber"
+ },
+ "V": {
+  "x": 200,
+  "hex": "#7a2a5a",
+  "name": "Velvet"
+ },
+ "v": {
+  "x": 208,
+  "hex": "#c070ff",
+  "name": "Neon"
+ },
+ "T": {
+  "x": 216,
+  "hex": "#b8e0c8",
+  "name": "Clean air"
+ }
+}
