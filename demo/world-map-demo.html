@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>World Map Sales</title>
+<link rel="stylesheet" href="../src/ui/ui.css">
+<link rel="stylesheet" href="../src/worldmap/worldmap.css">
+<style>
+  html, body { margin: 0; background: #14110f; }
+  #game { min-height: 100vh; display: flex; flex-direction: column; }
+  .dev { max-width: 1200px; margin: 0 auto; padding: 0 16px 16px; box-sizing: border-box; width: 100%; font-family: 'Courier New', monospace; color: #a8977a; font-size: 11px; }
+  .dev-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: #241f1a; border: 3px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; padding: 8px; }
+  .dev-row b { color: #f2e6c9; letter-spacing: 1px; margin-right: 4px; }
+  .dev button { font-family: inherit; font-weight: 700; font-size: 11px; padding: 5px 8px; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; cursor: pointer; }
+  .dev button.hot { background: #f5c542; color: #2a2118; }
+  .dev .sep { width: 2px; align-self: stretch; background: #0a0807; margin: 0 4px; }
+</style>
+</head>
+<body>
+<div id="game">
+  <section id="map-view"></section>
+  <div class="dev"><div class="dev-row" id="dev"><b>WEEK <span id="wk">0</span></b>
+    <button id="week" class="hot">ADVANCE 1 WEEK</button><button id="month">+4 WEEKS</button><span class="sep"></span>
+    <span>STOKE (dev):</span><span id="stoke"></span><span class="sep"></span>
+    <button id="finish">FINISH A SHELTER (dev)</button>
+  </div></div>
+</div>
+<script type="module">
+import { Ledger } from '../src/ledger/ledger.js';
+import { createGameUI } from '../src/ui/hud.js';
+import { Pushback } from '../src/pushback/pushback.js';
+import { CrisisSystem } from '../src/crisis/breach.js';
+import { LeadMarket, attachCrisis } from '../src/demand/demand.js';
+import { MapSales } from '../src/worldmap/sales.js';
+import { createWorldMapScreen } from '../src/worldmap/worldmap-ui.js';
+import { createAudio, wireAudio, startOnFirstGesture } from '../src/audio/audio.js';
+
+const params = new URLSearchParams(location.search);
+const ledger = new Ledger({ startingCash: 2_000_000 });
+const pb = new Pushback({ ledger });
+const root = document.getElementById('game');
+const mapView = document.getElementById('map-view');
+const ui = createGameUI({ root, ledger, views: { map: mapView }, initialView: 'map' });
+const crisis = new CrisisSystem({ seed: 4, pushback: pb, ledger, tips: { pandemic: 92, climate: 90, unrest: 88, markets: 90, war: 94 } });
+const market = new LeadMarket({ seed: 9, reputation: () => crisis.reputation });
+attachCrisis(market, crisis);
+market.ownSite('nam', { prestige: 2 }); // HQ with a Showroom
+const tensions = () => Object.fromEntries(Object.values(crisis.tracks).map((t) => [t.id, t.tension]));
+const sales = new MapSales({ market, ledger, pushback: pb, getTensions: tensions, getBreachMultiplier: () => crisis.panicMultiplier, getQuarter: () => 1 + Math.floor(market.weekNo / 13) });
+
+const audio = createAudio();
+wireAudio(audio, { ledger, pushback: pb });
+startOnFirstGesture(audio);
+
+// A world that's already uneasy, and three shelters fresh from handover.
+const START = { pandemic: 62, climate: 24, unrest: 20, markets: 44, war: 12 };
+for (const [id, v] of Object.entries(START)) crisis.setTension(id, v);
+// Fear remembers the last few weeks of rising tension: pretend it rose from about half.
+market.week({ tensions: Object.fromEntries(Object.entries(START).map(([k, v]) => [k, Math.round(v * 0.6)])) });
+for (let i = 0; i < 3; i++) { crisis.advanceWeek(); }
+
+const DESIGNS = [
+  { name: 'The Gilded Burrow', occupants: 6, rooms: ['bunk', 'bunk', 'air_vent', 'water_tank', 'pantry', 'gold_taps', 'gold_taps'] },
+  { name: 'Silo No. 7', occupants: 8, rooms: ['bunk', 'bunk', 'bunk', 'air_vent', 'air_vent', 'water_tank', 'water_tank', 'pantry', 'pantry'] },
+  { name: 'Cryo Penthouse', occupants: 4, rooms: ['bunk', 'cryo_pod', 'air_vent', 'water_tank', 'pantry', 'gold_taps'] },
+  { name: 'The Vintner', occupants: 6, rooms: ['bunk', 'bunk', 'wine_cellar', 'air_vent', 'water_tank', 'pantry'] },
+];
+let nextDesign = 0;
+const finish = () => sales.addFinished(DESIGNS[nextDesign++ % DESIGNS.length]);
+for (let i = 0; i < 3; i++) finish();
+
+const screen = createWorldMapScreen({ root: mapView, sales, initial: params.get('region') });
+
+function hud() {
+  document.getElementById('wk').textContent = market.weekNo;
+  const avg = Math.round(Object.values(crisis.tracks).reduce((a, t) => a + t.tension, 0) / 5);
+  ui.update({ quarter: 1 + Math.floor(market.weekNo / 13), totalQuarters: 12, heat: pb.heat, tension: avg, boardTarget: 0 });
+}
+function advanceWeek() { crisis.advanceWeek(); hud(); screen.refresh(); }
+document.getElementById('week').onclick = advanceWeek;
+document.getElementById('month').onclick = () => { for (let i = 0; i < 4; i++) advanceWeek(); };
+document.getElementById('finish').onclick = () => { finish(); screen.refresh(); };
+const stoke = document.getElementById('stoke');
+for (const t of Object.values(crisis.tracks)) {
+  const b = document.createElement('button');
+  b.textContent = `${t.name.split(' ').pop().toUpperCase()} +10`;
+  b.onclick = () => { crisis.addTension(t.id, 10, 'scheme'); hud(); screen.refresh(); };
+  stoke.append(b);
+}
+ledger.onChange(hud);
+hud();
+window.__demo = { crisis, market, sales, screen, ledger, advanceWeek, finish };
+</script>
+</body>
+</html>
