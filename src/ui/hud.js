@@ -72,9 +72,11 @@ export function createGameUI({ root, ledger, views = {}, onViewChange, initialVi
   const tension = meter('TENSION', 'World tension. Profit peaks just below the tipping point.');
 
   const boardBox = el('div', 'hud-stat hud-board');
-  boardBox.title = 'Cash the board expects you to hold at the end of this quarter.';
+  boardBox.title = 'Profit the board expects this quarter. Miss it and you take a strike; three strikes and you are out.';
   boardBox.append(el('span', 'hud-label', 'BOARD TARGET'));
   const boardValue = el('span', 'hud-value');
+  const boardStrikes = el('span', 'hud-strikes');
+  boardBox.append(boardStrikes);
   const boardBar = el('div', 'hud-bar');
   const boardFill = el('div', 'hud-bar-fill');
   boardBar.append(boardFill);
@@ -140,9 +142,14 @@ export function createGameUI({ root, ledger, views = {}, onViewChange, initialVi
 
     const target = state.boardTarget || 0;
     boardValue.textContent = target ? formatMoney(target) : '—';
-    const pct = target > 0 ? Math.max(0, Math.min(100, (cash / target) * 100)) : 0;
+    // boardProgress (this quarter's profit so far) wins over cash on hand when the board system supplies it.
+    const progress = state.boardProgress ?? cash;
+    const pct = target > 0 ? Math.max(0, Math.min(100, (progress / target) * 100)) : 0;
     boardFill.style.width = `${pct}%`;
-    boardBox.dataset.met = target > 0 && cash >= target ? 'true' : 'false';
+    boardBox.dataset.met = target > 0 && progress >= target ? 'true' : 'false';
+    const strikes = state.boardStrikes ?? 0;
+    boardStrikes.textContent = strikes ? 'X'.repeat(strikes) : '';
+    boardStrikes.title = strikes ? `${strikes} strike${strikes > 1 ? 's' : ''} with the board` : '';
   }
 
   ledger.onChange((entry) => {
@@ -167,7 +174,7 @@ export function createGameUI({ root, ledger, views = {}, onViewChange, initialVi
   // ---------- Quarter report ----------
   let reportOpen = false;
 
-  function showQuarterReport({ quarter = state.quarter, boardTarget = state.boardTarget, heat: h = state.heat, tension: t = state.tension, notes = [] } = {}) {
+  function showQuarterReport({ quarter = state.quarter, boardTarget = state.boardTarget, heat: h = state.heat, tension: t = state.tension, notes = [], board = null } = {}) {
     const s = ledger.summary(quarter);
     reportOpen = true;
 
@@ -207,7 +214,14 @@ export function createGameUI({ root, ledger, views = {}, onViewChange, initialVi
     paper.append(table);
 
     const verdict = el('div', 'report-verdict');
-    if (boardTarget > 0) {
+    if (board) {
+      // Verdict supplied by the board system (quarterly profit vs target).
+      verdict.dataset.met = String(board.met);
+      verdict.append(
+        el('div', 'v-stamp', board.met ? 'TARGET MET' : 'TARGET MISSED'),
+        el('div', 'v-text', `Operating profit ${formatMoney(board.profit)} vs board target ${formatMoney(board.target)}. ${board.met ? 'The board is pleased. For now.' : `Short by ${formatMoney(board.target - board.profit)}. Strike ${board.strikes}.`}`),
+      );
+    } else if (boardTarget > 0) {
       const met = s.closing >= boardTarget;
       verdict.dataset.met = String(met);
       verdict.append(

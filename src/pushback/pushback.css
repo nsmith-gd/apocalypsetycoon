@@ -1,0 +1,58 @@
+/* Pushback systems: choice cards, client leverage panel, ticker. Uses the --at-* tokens from src/ui/ui.css. */
+
+.pb-panel {
+  position: fixed; right: 8px; top: 72px; z-index: 40; width: 250px;
+  background: var(--at-panel); border: 3px solid var(--at-border); box-shadow: inset 2px 2px 0 var(--at-hi), 4px 4px 0 rgba(0,0,0,.4);
+  font-family: var(--at-font); color: var(--at-ink); font-size: 11px; padding: 6px;
+}
+.pb-panel-head { font-weight: 900; letter-spacing: 1px; color: var(--at-dim); margin-bottom: 4px; }
+.pb-clients { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; max-height: 140px; overflow: auto; }
+.pb-empty { color: var(--at-dim); font-style: italic; }
+.pb-client { display: grid; grid-template-columns: 1fr 56px 70px; align-items: center; gap: 4px; }
+.pb-client-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pb-lev { height: 6px; background: var(--at-border); border: 1px solid var(--at-hi); display: block; }
+.pb-lev-fill { display: block; height: 100%; background: var(--at-green); }
+.pb-lev-word { font-size: 9px; font-weight: 700; text-align: right; color: var(--at-dim); }
+.pb-client[data-zone='demand'] .pb-lev-fill { background: var(--at-amber); }
+.pb-client[data-zone='demand'] .pb-lev-word { color: var(--at-amber); }
+.pb-client[data-zone='blackmail'] .pb-lev-fill { background: var(--at-red); }
+.pb-client[data-zone='blackmail'] .pb-lev-word { color: var(--at-red); animation: at-blink 0.8s steps(2) infinite; }
+
+.pb-ticker { margin-top: 6px; border-top: 2px solid var(--at-border); padding-top: 4px; display: flex; flex-direction: column; gap: 2px; }
+.pb-tick { font-size: 10px; line-height: 1.3; }
+.pb-tick[data-tone='bad'] { color: var(--at-red); }
+.pb-tick[data-tone='ok'] { color: var(--at-green); }
+.pb-tick:first-child { animation: at-slide 0.25s steps(4); }
+
+.pb-overlay {
+  position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 8, 7, 0.7); padding: 16px;
+}
+.pb-card {
+  width: min(420px, 100%); background: var(--at-panel); color: var(--at-ink); font-family: var(--at-font);
+  border: 4px solid var(--at-border); box-shadow: inset 3px 3px 0 var(--at-hi), 8px 8px 0 rgba(0,0,0,.5);
+  padding: 16px; text-align: center; animation: at-slide 0.25s steps(5);
+}
+.pb-icon {
+  width: 40px; height: 40px; margin: 0 auto 8px; display: grid; place-items: center;
+  font-size: 24px; font-weight: 900; background: var(--at-amber); color: var(--at-border); border: 3px solid var(--at-border);
+}
+.pb-card[data-type='raid'] .pb-icon, .pb-card[data-type='runaway'] .pb-icon, .pb-card[data-type='blackmail'] .pb-icon { background: var(--at-red); }
+.pb-card[data-type='board'] .pb-icon { background: var(--at-gold); }
+.pb-card[data-type='raid'], .pb-card[data-type='runaway'] { border-color: var(--at-red); }
+.pb-title { font-size: 17px; font-weight: 900; letter-spacing: 1px; color: var(--at-gold); }
+.pb-card[data-type='raid'] .pb-title, .pb-card[data-type='runaway'] .pb-title, .pb-card[data-type='blackmail'] .pb-title { color: var(--at-red); }
+.pb-body { font-size: 13px; line-height: 1.4; margin: 8px 0; }
+.pb-vitals { font-size: 10px; color: var(--at-dim); margin-bottom: 10px; letter-spacing: 1px; }
+.pb-options { display: flex; flex-direction: column; gap: 6px; }
+.pb-option {
+  font-family: var(--at-font); font-weight: 700; font-size: 12px; padding: 8px; cursor: pointer;
+  color: var(--at-ink); background: var(--at-panel-2); border: 2px solid var(--at-border); box-shadow: inset 2px 2px 0 var(--at-hi);
+}
+.pb-option:hover, .pb-option:focus { background: var(--at-hi); color: var(--at-gold); outline: none; }
+
+@keyframes at-blink { 50% { opacity: 0.3; } }
+
+@media (max-width: 640px) {
+  .pb-panel { position: static; width: auto; margin: 8px 16px; }
+}
