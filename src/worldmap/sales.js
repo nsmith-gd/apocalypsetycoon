@@ -9,7 +9,7 @@
 //     local demand falls), pays out through the one ledger as a 'sales' entry, hands the client
 //     to Pushback (leverage), and stores a Midnight-ready shelter record.
 //
-// Price = spec value (room costs x markup) x client wealth class x the region's panic premium.
+// Price = spec value (room costs x markup) x client wealth class x (the region's panic premium + any edge bonus).
 //
 //   const sales = new MapSales({ market, ledger, pushback, getTensions, getBreachMultiplier });
 //   sales.addFinished({ name, rooms: ['bunk', 'gold_taps', ...], occupants });
@@ -59,6 +59,7 @@ export class MapSales {
   constructor({
     market, ledger = null, pushback = null, regions = REGIONS, config = {},
     getTensions = () => market.lastTension ?? {}, getBreachMultiplier = () => 1, getQuarter = () => 1,
+    getEdgeBonus = () => 0,
   } = {}) {
     this.market = market;
     this.ledger = ledger;
@@ -68,6 +69,7 @@ export class MapSales {
     this.getTensions = getTensions;
     this.getBreachMultiplier = getBreachMultiplier;
     this.getQuarter = getQuarter;
+    this.getEdgeBonus = getEdgeBonus; // (regionId) -> extra price multiplier at the edge (#4 schemes)
     this.stock = []; // finished shelters waiting for a buyer
     this.sold = []; // Midnight-ready records
     this._ids = 0;
@@ -103,7 +105,8 @@ export class MapSales {
     return rows.map((d) => {
       const region = this.region(d.id);
       const crisis = regionCrisis(region, tensions);
-      return { ...d, crisis: crisis.level, crisisTrack: crisis.track, buyers: d.open };
+      const edgeBonus = this.getEdgeBonus(d.id) || 0;
+      return { ...d, crisis: crisis.level, crisisTrack: crisis.track, buyers: d.open, edgeBonus, premium: Math.round((d.panicPremium + edgeBonus) * 1000) / 1000 };
     });
   }
 
@@ -115,7 +118,7 @@ export class MapSales {
     const best = buyers[0] ?? null;
     const quotes = this.stock.map((s) => ({
       shelter: s,
-      price: best ? salePrice(s, best.wealth, row.panicPremium, this.cfg) : null,
+      price: best ? salePrice(s, best.wealth, row.premium, this.cfg) : null,
     }));
     return { ...row, buyerList: buyers, best, quotes };
   }
@@ -127,8 +130,7 @@ export class MapSales {
     if (!shelter) return { error: 'That shelter is not in stock.' };
     const lead = this.buyers(regionId)[0];
     if (!lead) return { error: `No buyers in ${region.name}. Calm worlds don't buy bunkers.` };
-    const premium = this.market.regionDemand({ tensions: this.getTensions(), breachMultiplier: this.getBreachMultiplier() })
-      .find((r) => r.id === regionId).panicPremium;
+    const premium = this.overview().find((r) => r.id === regionId).premium;
     return { region, shelter, lead, premium, price: salePrice(shelter, lead.wealth, premium, this.cfg) };
   }
 

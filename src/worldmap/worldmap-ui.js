@@ -1,7 +1,8 @@
 // World map screen: the eight regions on the pixel map, each with its crisis level and the
 // buyers waiting there, and a side panel to sell a finished shelter to that region's best buyer.
 //
-//   const screen = createWorldMapScreen({ root, sales, onSold });
+//   const screen = createWorldMapScreen({ root, sales, schemes, onSold, onScheme });
+//   (`schemes` is an optional SchemeBoard from src/schemes: adds the CRISES HERE bars and the SCHEMES list.)
 //   screen.refresh();   // after a week passes, tensions change, or stock changes
 //   screen.select('eur');
 //
@@ -58,7 +59,7 @@ const el = (tag, cls, text) => {
   return n;
 };
 
-export function createWorldMapScreen({ root, sales, onSold, initial = null }) {
+export function createWorldMapScreen({ root, sales, schemes = null, onSold, onScheme, initial = null }) {
   root.classList.add('wm');
   const mapWrap = el('div', 'wm-map');
   const canvas = el('canvas');
@@ -67,7 +68,9 @@ export function createWorldMapScreen({ root, sales, onSold, initial = null }) {
   canvas.setAttribute('aria-label', 'World map. Click a region to see its buyers.');
   const legend = el('div', 'wm-legend');
   legend.innerHTML = '<span><i class="wm-ico wm-ico-buyer"></i>buyers waiting</span><span><i class="wm-ico" style="background:var(--at-gold)"></i>uneasy 40+</span><span><i class="wm-ico" style="background:var(--at-amber)"></i>edge 70+</span><span><i class="wm-ico" style="background:var(--at-red)"></i>tipping 90+</span>';
-  mapWrap.append(canvas, legend);
+  const toast = el('div', 'wm-toast');
+  toast.hidden = true;
+  mapWrap.append(canvas, toast, legend);
 
   const panel = el('aside', 'wm-panel');
   root.append(mapWrap, panel);
@@ -79,6 +82,7 @@ export function createWorldMapScreen({ root, sales, onSold, initial = null }) {
   let frame = 0;
   let floaters = []; // { text, x, y, color, t }
   let flash = null; // { msg, kind }
+  let toastTimer = 0;
 
   // ---------- map ----------
   function cellFromEvent(e) {
@@ -190,27 +194,86 @@ export function createWorldMapScreen({ root, sales, onSold, initial = null }) {
     crisis.dataset.zone = z.name;
     crisis.innerHTML = `<div class="wm-lbl">CRISIS <b>${v.crisis}</b> ${z.word}${v.crisisTrack ? ` · worst: ${TRACK_NAMES[v.crisisTrack]}` : ''}</div><div class="wm-bar"><i style="width:${v.crisis}%"></i></div>`;
     panel.append(crisis);
+    if (schemes) panel.append(tracksBlock(v));
 
     // demand
     const demand = el('div', 'wm-demand');
     demand.innerHTML = `<div class="wm-big"><span class="wm-num" data-n="${v.buyers}">${v.buyers}</span> BUYER${v.buyers === 1 ? '' : 'S'} WAITING</div>
-      <div class="wm-dim">New leads ${v.leadsPerWeek.toFixed(1)}/week · prices x${v.panicPremium.toFixed(2)}${v.siteOwned ? ' · you have a site here' : ''}</div>`;
+      <div class="wm-dim">New leads ${v.leadsPerWeek.toFixed(1)}/week · prices x${v.premium.toFixed(2)}${v.edgeBonus ? ' <b class="wm-edge">EDGE BONUS</b>' : ''}${v.siteOwned ? ' · you have a site here' : ''}</div>`;
     panel.append(demand);
     const buyers = el('ul', 'wm-buyers');
-    for (const [i, l] of v.buyerList.slice(0, 5).entries()) {
+    const shown = schemes ? 3 : 5;
+    for (const [i, l] of v.buyerList.slice(0, shown).entries()) {
       const li = el('li');
       const weeksLeft = 4 - (sales.market.weekNo - l.week);
       li.innerHTML = `<span>${i === 0 ? '▶ ' : ''}${CLIENT_TYPES[l.type]?.label ?? l.type} <em class="wm-w-${l.wealth}">${l.wealth}</em></span><small data-late="${weeksLeft <= 1}">${weeksLeft}wk</small>`;
       buyers.append(li);
     }
-    if (v.buyerList.length > 5) buyers.append(el('li', 'wm-dim', `+${v.buyerList.length - 5} more`));
+    if (v.buyerList.length > shown) buyers.append(el('li', 'wm-dim', `+${v.buyerList.length - shown} more`));
     if (!v.buyerList.length) buyers.append(el('li', 'wm-dim', "Nobody here is scared enough to buy. Calm worlds don't buy bunkers."));
     panel.append(buyers);
+    if (schemes) panel.append(schemesBlock(v));
     panel.append(stockBlock(v));
-    if (flash) {
-      const f = el('div', `wm-flash wm-flash-${flash.kind}`, flash.msg);
-      panel.append(f);
+  }
+
+  // One bar per crisis track, most exposed first: tension, the edge band and the visible tipping range.
+  const EXPO_ORDER = { high: 0, medium: 1, low: 2 };
+  function tracksBlock(v) {
+    const region = sales.region(v.id);
+    const wrap = el('div', 'wm-tracks');
+    wrap.append(el('h3', 'wm-h3', 'CRISES HERE · $$$ = THE EDGE, JUST BELOW THE TIPPING POINT'));
+    const ids = Object.keys(region.exposure).sort((a, b) => EXPO_ORDER[region.exposure[a]] - EXPO_ORDER[region.exposure[b]]);
+    for (const id of ids) {
+      const tv = schemes.trackView(id);
+      const row = el('div', 'wm-track');
+      row.dataset.zone = tv.zone;
+      const tipTxt = tv.zone === 'breach' ? 'BREACHED' : tv.zone === 'collapsed' ? 'COLLAPSED' : tv.zone === 'locked' ? `recovering ${tv.lockWeeks}wk` : tv.exact != null ? `tips at ${tv.exact}` : `tips ${tv.tipLow}-${tv.tipHigh}?`;
+      row.innerHTML = `<div class="wm-track-lbl"><span>${tv.name} <em data-x="${region.exposure[id]}">${region.exposure[id].toUpperCase()}</em></span><span><b>${tv.tension}</b> · ${tipTxt}</span></div>
+        <div class="wm-tbar"><span class="wm-tedge" style="left:${tv.edgeFrom}%;width:${tv.tipLow - tv.edgeFrom}%"></span><span class="wm-ttip" style="left:${tv.tipLow}%;width:${Math.max(1, tv.tipHigh - tv.tipLow)}%"></span><i style="width:${tv.tension}%"></i></div>`;
+      wrap.append(row);
     }
+    if (v.edgeBonus) wrap.append(el('div', 'wm-edge-note', `AT THE EDGE: prices here +${Math.round(v.edgeBonus * 100)}%. One more push could tip it.`));
+    return wrap;
+  }
+
+  function schemesBlock(v) {
+    const wrap = el('div', 'wm-schemes');
+    wrap.append(el('h3', 'wm-h3', `SCHEMES IN ${v.name.toUpperCase()}`));
+    for (const o of schemes.available(v.id)) {
+      if (o.locked && !o.scheme.research) continue;
+      const row = el('div', 'wm-scheme');
+      row.dataset.locked = String(o.locked);
+      const risky = !o.reason && o.track.tension + o.gain >= o.track.tipLow;
+      row.innerHTML = `<div><div class="wm-card-name">${o.scheme.name}</div><div class="wm-dim">${o.track.name} <b class="wm-gain">+${o.gain}</b> here (${o.exposure}) · heat +${o.heat}${risky ? ' · <b class="wm-risk">MAY TIP IT</b>' : ''}</div></div>`;
+      const b = el('button', 'wm-fund');
+      b.type = 'button';
+      if (o.reason) { b.disabled = true; b.textContent = o.locked ? 'R&D' : 'BLOCKED'; b.title = o.reason; }
+      else { b.innerHTML = `FUND <b>${formatMoney(o.cost)}</b>`; b.onclick = () => runScheme(o.scheme.id); }
+      row.append(b);
+      wrap.append(row);
+    }
+    return wrap;
+  }
+
+  function runScheme(id) {
+    const before = sales.regionView(selected);
+    try {
+      const r = schemes.run(id, selected);
+      const after = sales.regionView(selected);
+      const p = MAP_PLACES[selected];
+      floaters.push({ text: `${r.track.toUpperCase()} ${Math.round(r.gain)}`, x: p.at[0] * CELL, y: p.at[1] * CELL - 12, color: HEX.O, t: 0 });
+      if (r.breached) {
+        flash = { kind: 'err', msg: `RUNAWAY CRISIS! ${r.scheme.name} tipped ${schemes.crisis.tracks[r.track].name} past its tipping point.${r.fled ? ` ${r.fled} buyer${r.fled === 1 ? '' : 's'} in ${r.region.name} fled to rivals.` : ''}` };
+        floaters.push({ text: 'RUNAWAY!', x: p.at[0] * CELL, y: p.at[1] * CELL + 12, color: HEX.R, t: 0 });
+      } else {
+        const up = Math.round((after.premium - before.premium) * 100);
+        flash = { kind: r.enteredEdge ? 'edge' : 'ok', msg: `${r.scheme.name}: ${schemes.crisis.tracks[r.track].name} ${Math.round(r.before)} → ${Math.round(r.after)}. Prices here x${after.premium.toFixed(2)}${up > 0 ? ` (+${up}%)` : ''}${after.buyers > before.buyers ? `, ${after.buyers - before.buyers} new buyer${after.buyers - before.buyers === 1 ? '' : 's'}` : ''}.${r.enteredEdge ? ' You are at the EDGE: prices peak here.' : ''}` };
+      }
+      onScheme?.(r);
+    } catch (err) {
+      flash = { kind: 'err', msg: err.message };
+    }
+    refresh();
   }
 
   function stockBlock(v) {
@@ -274,10 +337,19 @@ export function createWorldMapScreen({ root, sales, onSold, initial = null }) {
   function refresh() {
     rows = sales.overview();
     renderPanel();
+    toast.hidden = !flash;
+    if (flash && toast.textContent !== flash.msg) {
+      toast.className = `wm-toast wm-flash-${flash.kind}`;
+      toast.textContent = flash.msg;
+      clearTimeout(toastTimer);
+      const shown = flash;
+      toastTimer = setTimeout(() => { if (flash === shown) { flash = null; toast.hidden = true; toast.textContent = ''; } }, 7000);
+    }
   }
 
   const off = sales.onChange((e) => { if (e.type !== 'sale') refresh(); });
   const offMarket = sales.market.on('week', () => { flash = null; refresh(); });
+  const offSchemes = schemes?.onChange((e) => { if (e.type !== 'run') refresh(); });
   refresh();
   raf = requestAnimationFrame(loop);
 
@@ -286,6 +358,6 @@ export function createWorldMapScreen({ root, sales, onSold, initial = null }) {
     select,
     get selected() { return selected; },
     canvas,
-    destroy() { cancelAnimationFrame(raf); off(); offMarket(); root.replaceChildren(); },
+    destroy() { cancelAnimationFrame(raf); off(); offMarket(); offSchemes?.(); root.replaceChildren(); },
   };
 }
