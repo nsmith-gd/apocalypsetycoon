@@ -4,6 +4,7 @@
 //   const gauge = createPressureGauge({ root, pushback, getQuarterProfit: () => ledger.summary(q).net });
 
 import { fmt } from './pushback.js';
+import { dockBelowHud } from './pushback-ui.js';
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -43,6 +44,7 @@ export function createPressureGauge({ root, pushback, getQuarterProfit = () => n
   relief.append(layLow, fundRelief);
   panel.append(head, mkRow('heat', 'HEAT'), mkRow('tension', 'TENSION'), mkRow('leverage', 'CLIENT LEVERAGE'), mkRow('board', 'BOARD'), relief);
   root.append(panel);
+  dockBelowHud(panel, root);
 
   const act = (kind) => {
     const res = pushback[kind]();

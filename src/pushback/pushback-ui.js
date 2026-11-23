@@ -24,6 +24,7 @@ export function createPushbackUI({ root, pushback, autoShow = true }) {
   const ticker = el('div', 'pb-ticker');
   panel.append(panelHead, list, ticker);
   root.append(panel);
+  dockBelowHud(panel, root);
 
   function renderClients() {
     const L = pushback.cfg.leverage;
@@ -130,4 +131,14 @@ export function createPushbackUI({ root, pushback, autoShow = true }) {
       panel.remove();
     },
   };
+}
+
+/** Keep a fixed side panel just below the HUD, however tall the HUD wraps. */
+export function dockBelowHud(panel, root) {
+  const hud = root.querySelector?.('.hud') ?? document.querySelector('.hud');
+  if (!hud || typeof ResizeObserver === 'undefined') return;
+  const place = () => { if (getComputedStyle(panel).position === 'fixed') panel.style.top = `${Math.round(hud.getBoundingClientRect().bottom) + 8}px`; };
+  new ResizeObserver(place).observe(hud);
+  window.addEventListener('resize', place);
+  place();
 }

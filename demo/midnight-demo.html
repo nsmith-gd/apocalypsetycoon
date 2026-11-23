@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="../src/pushback/pushback.css">
 <link rel="stylesheet" href="../src/midnight/midnight.css">
 <link rel="stylesheet" href="../src/debug/debug.css">
+<link rel="stylesheet" href="../src/doomclock/doomclock.css">
 <style>
   html, body { margin: 0; height: 100%; background: #14110f; }
   #game { min-height: 100vh; display: flex; flex-direction: column; }
@@ -36,6 +37,8 @@ import { createGameUI } from '../src/ui/hud.js';
 import { Pushback } from '../src/pushback/pushback.js';
 import { createPushbackUI } from '../src/pushback/pushback-ui.js';
 import { createPressureGauge } from '../src/pushback/pressure-gauge.js';
+import { DoomClock, attachPushback } from '../src/doomclock/doomclock.js';
+import { createDoomClockHud } from '../src/doomclock/doomclock-hud.js';
 import { createAudio, wireAudio, createSoundToggle, startOnFirstGesture, midnightTimes } from '../src/audio/audio.js';
 import { computeMidnight, gradeShelter } from '../src/midnight/midnight.js';
 import { showMidnight, showClockStrike } from '../src/midnight/midnight-ui.js';
@@ -52,6 +55,12 @@ const root = document.getElementById('game');
 const ui = createGameUI({ root, ledger, views: { grid: document.getElementById('grid-view'), map: document.getElementById('map-view') } });
 const pbui = createPushbackUI({ root, pushback: pb });
 // All four pressures with what happens next, plus the paid relief buttons.
+// The Doom Clock: world tension and runaways move it; chapters start at Q4, Q7 and Q10.
+const doom = new DoomClock();
+attachPushback(doom, pb);
+createDoomClockHud({ clock: doom, hud: root.querySelector('.hud') });
+let midnightStarted = false;
+doom.on('midnight', (e) => { if (!midnightStarted) midnight(e.reason === 'clock' ? 'The Doom Clock struck zero before you were ready.' : 'Two collapses started a Final Countdown you could not stop.'); });
 const gauge = createPressureGauge({ root, pushback: pb, getQuarterProfit: () => ledger.summary(ledger.quarter).net, onRelief: (r) => r && pbui.tick(`${r.kind === 'layLow' ? 'Laid low' : 'Funded relief'}: -$${Math.round(r.cost / 1000)}K`, 'ok') });
 // Sound: music starts on the first click or key; builds, sales, schemes, heat and the board are wired automatically.
 const audio = createAudio();
@@ -130,8 +139,10 @@ pb.on('change', redraw);
 ledger.onChange(() => { ui.update(hudState()); gauge.render(); });
 
 // ---- Midnight ----
-async function midnight() {
-  const result = computeMidnight({ shelters, world: { tension: pb.tension, heat: pb.heat, runaways: pb.runaways }, cash: ledger.cash });
+async function midnight(cause = null) {
+  if (midnightStarted) return;
+  midnightStarted = true;
+  const result = computeMidnight({ shelters, world: { tension: pb.tension, heat: pb.heat, runaways: pb.runaways }, cash: ledger.cash, ...(cause ? { forceType: 'failed', cause } : {}) });
   window.__demo.result = result;
   // The stinger's clock ticks and twelve tolls play over a black clock face; the ending lands on the boom.
   const { tolls, boom } = midnightTimes();
@@ -159,6 +170,8 @@ async function endQuarter() {
   if (pb.board.ousted) return;
   if (q >= state.totalQuarters) return midnight();
   state.quarter += 1;
+  doom.advanceWeeks(13);
+  if ((state.quarter - 1) % 3 === 0) doom.chapterStart((state.quarter - 1) / 3 + 1);
   redraw();
 }
 // Fast-forward: jump the clock to Q12 with the world as it stands (testing / preview).
@@ -218,7 +231,7 @@ const botGame = {
 const debug = createDebugPanel({ root: document.body, log, game: botGame, endQuarter: async () => { await endQuarter(); redraw(); } });
 if (params.has('debug')) debug.show();
 redraw();
-window.__demo = { gauge, log, debug, tree, audio, ledger, ui, pb, pbui, state, shelters, hq, build, sell, scheme, endQuarter, fastForward, midnight, redraw };
+window.__demo = { doom, gauge, log, debug, tree, audio, ledger, ui, pb, pbui, state, shelters, hq, build, sell, scheme, endQuarter, fastForward, midnight, redraw };
 </script>
 </body>
 </html>

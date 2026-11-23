@@ -128,7 +128,7 @@ export class Pushback {
     this.pending = []; // choice events waiting on the player
     this.log = []; // everything that happened, newest last
     this.runaways = 0;
-    this.doomsdayShift = 0; // quarters Midnight has been pulled forward by runaways
+    this.doomsdayShift = 0; // legacy runaway counter; the Doom Clock (src/doomclock) is the real model — see attachPushback()
     this._ids = 0;
     this._investigatedThisQuarter = false;
     this._internalCash = startingCash; // only used when no ledger is attached

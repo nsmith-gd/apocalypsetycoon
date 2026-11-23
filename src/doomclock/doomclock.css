@@ -1,0 +1,14 @@
+/* Doom Clock HUD widget. Uses the --at-* tokens from src/ui/ui.css. */
+.dc-hud { min-width: 170px; }
+.dc-row { display: flex; align-items: center; gap: 6px; }
+.dc-face { width: 40px; height: 40px; image-rendering: pixelated; flex: none; }
+.dc-text { display: flex; flex-direction: column; }
+.dc-time { font-size: 18px; color: var(--at-ink); }
+.dc-sub { font-size: 9px; font-weight: 700; color: var(--at-dim); letter-spacing: 1px; white-space: nowrap; }
+.dc-hud[data-zone='uneasy'] .dc-time { color: var(--at-gold); }
+.dc-hud[data-zone='danger'] .dc-time { color: var(--at-amber); }
+.dc-hud[data-zone='countdown'] .dc-time, .dc-hud[data-zone='countdown'] .dc-sub { color: var(--at-red); }
+.dc-hud[data-zone='countdown'] .dc-sub { animation: at-blink 0.8s steps(2) infinite; }
+.dc-hud.dc-drop { animation: dc-shake 0.5s steps(5); }
+@keyframes dc-shake { 20% { transform: translateX(-2px); background: #4a1a14; } 40% { transform: translateX(2px); } 60% { transform: translateX(-1px); background: #4a1a14; } 80% { transform: translateX(1px); } }
+@keyframes at-blink { 50% { opacity: 0.3; } }
