@@ -1,0 +1,13 @@
+quarter,hours,pacedHours,wallMinutes,cash,net,crisis,heat,sales,salesRevenue,builds,schemes,fines,events,boardTarget,boardMet,strikes,runaways,unlocks
+1,0.54,0.27,0,1534311,1134311,82,29,2,1548111,3,8,0,,50000,true,0,0,Astroturf think tank
+2,1.03,0.46,0,2734389,1200078,99,46,2,1813878,3,5,223000,runaway demand,330000,true,0,1,Deepfake broadcast
+3,1.55,0.63,0,2917630,183241,70,55,2,1764041,3,0,1330000,runaway blackmail blackmail investigation raid,575000,true,0,2,Engineered shortage
+4,2.06,0.84,0,4258015,1340385,70,55,4,3581985,5,1,1688000,runaway blackmail blackmail raid,855000,true,0,3,Second shovel crew
+5,2.57,1.06,0,4858374,600359,99,55,4,3224959,5,2,1878000,runaway blackmail blackmail raid,1470000,true,0,4,Grid blackout
+6,3.08,1.26,0,5693817,835443,70,55,4,3378043,5,0,2023000,runaway blackmail blackmail investigation raid,1675000,true,0,5,
+7,3.6,1.48,0,5955863,262046,99,55,4,3435646,5,2,2363000,runaway board blackmail blackmail raid,2090000,false,1,6,
+8,4.12,1.68,0,6576495,620632,70,55,4,3359232,5,0,2244000,runaway blackmail blackmail investigation raid,2060000,true,0,7,
+9,4.63,1.9,0,6636424,59929,99,55,4,3411529,5,2,2544000,runaway board blackmail blackmail raid,2405000,false,1,8,
+10,5.15,2.1,0,7133864,497440,70,55,4,3399040,5,0,2383000,runaway blackmail blackmail investigation raid,2205000,true,0,9,
+11,5.67,2.32,0,6927712,-206152,99,55,4,3256448,5,2,2627000,runaway board blackmail blackmail raid,2525000,false,1,10,
+12,6.18,2.52,0,7278681,350969,70,55,4,3269569,5,0,2420000,runaway blackmail blackmail investigation raid,2175000,true,0,11,

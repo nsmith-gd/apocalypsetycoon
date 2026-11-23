@@ -1,0 +1,22 @@
+/* Debug / pacing panel. Uses the --at-* tokens from src/ui/ui.css. */
+.dbg-panel {
+  position: fixed; left: 8px; right: 8px; bottom: 64px; z-index: 260; max-height: 55vh; overflow: auto;
+  background: rgba(10, 8, 7, 0.95); border: 3px solid var(--at-amber); color: var(--at-ink);
+  font-family: var(--at-font); font-size: 11px; padding: 8px;
+}
+.dbg-head { display: flex; justify-content: space-between; color: var(--at-amber); letter-spacing: 2px; margin-bottom: 6px; }
+.dbg-hint { color: var(--at-dim); letter-spacing: 0; }
+.dbg-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.dbg-btn, .dbg-bot {
+  font-family: var(--at-font); font-weight: 700; font-size: 11px; padding: 6px 8px; cursor: pointer;
+  color: var(--at-ink); background: var(--at-panel-2); border: 2px solid var(--at-border);
+}
+.dbg-btn:hover { color: var(--at-amber); }
+.dbg-status { color: var(--at-gold); margin-bottom: 6px; }
+.dbg-table-wrap { overflow-x: auto; }
+.dbg-table { border-collapse: collapse; width: 100%; }
+.dbg-table th { color: var(--at-dim); text-align: right; padding: 2px 6px; border-bottom: 1px solid var(--at-hi); font-size: 10px; }
+.dbg-table td { text-align: right; padding: 2px 6px; white-space: nowrap; }
+.dbg-table tr[data-miss='true'] td { color: var(--at-red); }
+.dbg-totals { margin-top: 6px; color: var(--at-green); }
+.dbg-totals[data-ok='false'] { color: var(--at-red); }

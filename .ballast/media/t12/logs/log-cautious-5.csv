@@ -1,0 +1,7 @@
+quarter,hours,pacedHours,wallMinutes,cash,net,crisis,heat,sales,salesRevenue,builds,schemes,fines,events,boardTarget,boardMet,strikes,runaways,unlocks
+1,0.54,0.22,0,857313,457313,38,9,2,752813,3,3,0,,50000,true,0,0,Hydroponic garden
+2,1.02,0.36,0,1351875,494562,42,5,2,733062,3,1,0,,160000,true,0,0,Deep-well recycler
+3,1.49,0.5,0,2157895,806020,39,0,3,1129270,4,0,0,,255000,true,0,0,Second shovel crew
+4,1.98,0.65,0,2206358,48463,43,0,2,503463,3,1,200000,board,415000,false,1,0,Military air scrubber
+5,2.46,0.78,0,2275135,68777,40,0,2,508777,3,0,200000,board,330000,false,2,0,Astroturf think tank
+6,2.94,0.94,0,2362255,87120,37,0,3,690245,4,0,200000,board,300000,false,3,0,Tunnel boring machine

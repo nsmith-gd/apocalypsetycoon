@@ -1,0 +1,563 @@
+{
+ "pacing": {
+  "targetHours": [
+   5,
+   6.5
+  ],
+  "quarters": 12,
+  "clock": "fixed",
+  "quarterMinutes": 27,
+  "choiceCardMinutes": 0.5,
+  "quarterReportMinutes": 1.5,
+  "midnightMinutes": 3,
+  "introMinutes": 4,
+  "actionSeconds": {
+   "build": 25,
+   "sell": 45,
+   "scheme": 35,
+   "research": 20
+  },
+  "planningMinutes": 3
+ },
+ "checks": {
+  "allCompletedInTarget": true,
+  "hoursRange": [
+   5.83,
+   6.23
+  ],
+  "pacedHoursRange": [
+   1.92,
+   2.58
+  ],
+  "target": [
+   5,
+   6.5
+  ],
+  "engineeredReachable": true,
+  "failedReachable": true,
+  "ousted": 6,
+  "endings": [
+   "architect",
+   "ousted",
+   "managed",
+   "gilded",
+   "ashes",
+   "nobody"
+  ]
+ },
+ "runs": [
+  {
+   "bot": "cautious",
+   "seed": 1,
+   "label": "cautious #1",
+   "quarters": 12,
+   "hours": 5.85,
+   "pacedHours": 1.92,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "architect",
+    "type": "engineered",
+    "title": "ARCHITECT OF THE END",
+    "survivalRate": 0.89,
+    "control": 100
+   },
+   "totalSales": 35,
+   "finalCash": 6394856,
+   "peakCrisis": 45,
+   "peakHeat": 9
+  },
+  {
+   "bot": "cautious",
+   "seed": 2,
+   "label": "cautious #2",
+   "quarters": 12,
+   "hours": 5.85,
+   "pacedHours": 1.92,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "architect",
+    "type": "engineered",
+    "title": "ARCHITECT OF THE END",
+    "survivalRate": 0.87,
+    "control": 100
+   },
+   "totalSales": 35,
+   "finalCash": 6622185,
+   "peakCrisis": 45,
+   "peakHeat": 9
+  },
+  {
+   "bot": "cautious",
+   "seed": 3,
+   "label": "cautious #3",
+   "quarters": 12,
+   "hours": 5.85,
+   "pacedHours": 1.93,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "architect",
+    "type": "engineered",
+    "title": "ARCHITECT OF THE END",
+    "survivalRate": 0.9,
+    "control": 100
+   },
+   "totalSales": 36,
+   "finalCash": 6597319,
+   "peakCrisis": 45,
+   "peakHeat": 9
+  },
+  {
+   "bot": "cautious",
+   "seed": 4,
+   "label": "cautious #4",
+   "quarters": 8,
+   "hours": 3.94,
+   "pacedHours": 1.39,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ousted",
+    "type": "ousted",
+    "title": "OUSTED BY THE BOARD"
+   },
+   "totalSales": 26,
+   "finalCash": 5493554,
+   "peakCrisis": 44,
+   "peakHeat": 9
+  },
+  {
+   "bot": "cautious",
+   "seed": 5,
+   "label": "cautious #5",
+   "quarters": 6,
+   "hours": 2.99,
+   "pacedHours": 0.99,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ousted",
+    "type": "ousted",
+    "title": "OUSTED BY THE BOARD"
+   },
+   "totalSales": 14,
+   "finalCash": 2362255,
+   "peakCrisis": 43,
+   "peakHeat": 9
+  },
+  {
+   "bot": "edge",
+   "seed": 1,
+   "label": "edge #1",
+   "quarters": 12,
+   "hours": 5.84,
+   "pacedHours": 2.31,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "managed",
+    "type": "engineered",
+    "title": "MANAGED DECLINE",
+    "survivalRate": 0.61,
+    "control": 94
+   },
+   "totalSales": 53,
+   "finalCash": 22927763,
+   "peakCrisis": 94,
+   "peakHeat": 29
+  },
+  {
+   "bot": "edge",
+   "seed": 2,
+   "label": "edge #2",
+   "quarters": 12,
+   "hours": 5.83,
+   "pacedHours": 2.32,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "managed",
+    "type": "engineered",
+    "title": "MANAGED DECLINE",
+    "survivalRate": 0.62,
+    "control": 94
+   },
+   "totalSales": 54,
+   "finalCash": 23794545,
+   "peakCrisis": 94,
+   "peakHeat": 29
+  },
+  {
+   "bot": "edge",
+   "seed": 3,
+   "label": "edge #3",
+   "quarters": 11,
+   "hours": 5.37,
+   "pacedHours": 2.15,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ousted",
+    "type": "ousted",
+    "title": "OUSTED BY THE BOARD"
+   },
+   "totalSales": 49,
+   "finalCash": 21526871,
+   "peakCrisis": 94,
+   "peakHeat": 29
+  },
+  {
+   "bot": "edge",
+   "seed": 4,
+   "label": "edge #4",
+   "quarters": 12,
+   "hours": 5.83,
+   "pacedHours": 2.3,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "managed",
+    "type": "engineered",
+    "title": "MANAGED DECLINE",
+    "survivalRate": 0.62,
+    "control": 94
+   },
+   "totalSales": 53,
+   "finalCash": 23238274,
+   "peakCrisis": 94,
+   "peakHeat": 29
+  },
+  {
+   "bot": "edge",
+   "seed": 5,
+   "label": "edge #5",
+   "quarters": 11,
+   "hours": 5.37,
+   "pacedHours": 2.07,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ousted",
+    "type": "ousted",
+    "title": "OUSTED BY THE BOARD"
+   },
+   "totalSales": 45,
+   "finalCash": 18752983,
+   "peakCrisis": 94,
+   "peakHeat": 29
+  },
+  {
+   "bot": "luxury",
+   "seed": 1,
+   "label": "luxury #1",
+   "quarters": 12,
+   "hours": 5.83,
+   "pacedHours": 2.27,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "gilded",
+    "type": "engineered",
+    "title": "GILDED TOMBS",
+    "survivalRate": 0.13,
+    "control": 100
+   },
+   "totalSales": 51,
+   "finalCash": 29804810,
+   "peakCrisis": 90,
+   "peakHeat": 29
+  },
+  {
+   "bot": "luxury",
+   "seed": 2,
+   "label": "luxury #2",
+   "quarters": 11,
+   "hours": 5.37,
+   "pacedHours": 2.12,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ousted",
+    "type": "ousted",
+    "title": "OUSTED BY THE BOARD"
+   },
+   "totalSales": 47,
+   "finalCash": 26635033,
+   "peakCrisis": 90,
+   "peakHeat": 29
+  },
+  {
+   "bot": "luxury",
+   "seed": 3,
+   "label": "luxury #3",
+   "quarters": 12,
+   "hours": 5.84,
+   "pacedHours": 2.3,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "gilded",
+    "type": "engineered",
+    "title": "GILDED TOMBS",
+    "survivalRate": 0.13,
+    "control": 100
+   },
+   "totalSales": 52,
+   "finalCash": 30542382,
+   "peakCrisis": 90,
+   "peakHeat": 29
+  },
+  {
+   "bot": "luxury",
+   "seed": 4,
+   "label": "luxury #4",
+   "quarters": 11,
+   "hours": 5.37,
+   "pacedHours": 2.12,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ousted",
+    "type": "ousted",
+    "title": "OUSTED BY THE BOARD"
+   },
+   "totalSales": 47,
+   "finalCash": 27058050,
+   "peakCrisis": 90,
+   "peakHeat": 29
+  },
+  {
+   "bot": "luxury",
+   "seed": 5,
+   "label": "luxury #5",
+   "quarters": 12,
+   "hours": 5.83,
+   "pacedHours": 2.19,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "gilded",
+    "type": "engineered",
+    "title": "GILDED TOMBS",
+    "survivalRate": 0.13,
+    "control": 100
+   },
+   "totalSales": 47,
+   "finalCash": 27015150,
+   "peakCrisis": 90,
+   "peakHeat": 29
+  },
+  {
+   "bot": "arsonist",
+   "seed": 1,
+   "label": "arsonist #1",
+   "quarters": 12,
+   "hours": 5.9,
+   "pacedHours": 2.27,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ashes",
+    "type": "failed",
+    "title": "ASHES AND RECEIPTS",
+    "survivalRate": 0.51,
+    "control": 25
+   },
+   "totalSales": 44,
+   "finalCash": 16798158,
+   "peakCrisis": 99,
+   "peakHeat": 29
+  },
+  {
+   "bot": "arsonist",
+   "seed": 2,
+   "label": "arsonist #2",
+   "quarters": 12,
+   "hours": 5.9,
+   "pacedHours": 2.27,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ashes",
+    "type": "failed",
+    "title": "ASHES AND RECEIPTS",
+    "survivalRate": 0.51,
+    "control": 25
+   },
+   "totalSales": 44,
+   "finalCash": 16610471,
+   "peakCrisis": 99,
+   "peakHeat": 29
+  },
+  {
+   "bot": "arsonist",
+   "seed": 3,
+   "label": "arsonist #3",
+   "quarters": 12,
+   "hours": 5.91,
+   "pacedHours": 2.28,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ashes",
+    "type": "failed",
+    "title": "ASHES AND RECEIPTS",
+    "survivalRate": 0.51,
+    "control": 25
+   },
+   "totalSales": 44,
+   "finalCash": 16914394,
+   "peakCrisis": 99,
+   "peakHeat": 29
+  },
+  {
+   "bot": "arsonist",
+   "seed": 4,
+   "label": "arsonist #4",
+   "quarters": 12,
+   "hours": 5.91,
+   "pacedHours": 2.28,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ashes",
+    "type": "failed",
+    "title": "ASHES AND RECEIPTS",
+    "survivalRate": 0.51,
+    "control": 25
+   },
+   "totalSales": 44,
+   "finalCash": 16745744,
+   "peakCrisis": 99,
+   "peakHeat": 29
+  },
+  {
+   "bot": "arsonist",
+   "seed": 5,
+   "label": "arsonist #5",
+   "quarters": 12,
+   "hours": 5.91,
+   "pacedHours": 2.28,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ashes",
+    "type": "failed",
+    "title": "ASHES AND RECEIPTS",
+    "survivalRate": 0.51,
+    "control": 25
+   },
+   "totalSales": 44,
+   "finalCash": 16302277,
+   "peakCrisis": 99,
+   "peakHeat": 29
+  },
+  {
+   "bot": "reckless",
+   "seed": 1,
+   "label": "reckless #1",
+   "quarters": 12,
+   "hours": 6.21,
+   "pacedHours": 2.55,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "nobody",
+    "type": "failed",
+    "title": "NOBODY LEFT TO BILL",
+    "survivalRate": 0.13,
+    "control": 0
+   },
+   "totalSales": 42,
+   "finalCash": 7703831,
+   "peakCrisis": 99,
+   "peakHeat": 55
+  },
+  {
+   "bot": "reckless",
+   "seed": 2,
+   "label": "reckless #2",
+   "quarters": 12,
+   "hours": 6.23,
+   "pacedHours": 2.58,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "nobody",
+    "type": "failed",
+    "title": "NOBODY LEFT TO BILL",
+    "survivalRate": 0.13,
+    "control": 0
+   },
+   "totalSales": 42,
+   "finalCash": 7530144,
+   "peakCrisis": 99,
+   "peakHeat": 55
+  },
+  {
+   "bot": "reckless",
+   "seed": 3,
+   "label": "reckless #3",
+   "quarters": 12,
+   "hours": 6.23,
+   "pacedHours": 2.58,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "nobody",
+    "type": "failed",
+    "title": "NOBODY LEFT TO BILL",
+    "survivalRate": 0.13,
+    "control": 0
+   },
+   "totalSales": 42,
+   "finalCash": 7576556,
+   "peakCrisis": 99,
+   "peakHeat": 55
+  },
+  {
+   "bot": "reckless",
+   "seed": 4,
+   "label": "reckless #4",
+   "quarters": 12,
+   "hours": 6.23,
+   "pacedHours": 2.58,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "nobody",
+    "type": "failed",
+    "title": "NOBODY LEFT TO BILL",
+    "survivalRate": 0.13,
+    "control": 0
+   },
+   "totalSales": 42,
+   "finalCash": 7278681,
+   "peakCrisis": 99,
+   "peakHeat": 55
+  },
+  {
+   "bot": "reckless",
+   "seed": 5,
+   "label": "reckless #5",
+   "quarters": 12,
+   "hours": 6.21,
+   "pacedHours": 2.55,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "nobody",
+    "type": "failed",
+    "title": "NOBODY LEFT TO BILL",
+    "survivalRate": 0.13,
+    "control": 0
+   },
+   "totalSales": 42,
+   "finalCash": 7430547,
+   "peakCrisis": 99,
+   "peakHeat": 55
+  }
+ ]
+}

@@ -1,0 +1,68 @@
+#!/usr/bin/env node
+// Campaign pacing harness: plays full 12-quarter campaigns with every bot over several seeds,
+// prints a per-quarter log and checks the 5-6.5 hour target and that both Midnight paths happen.
+//
+//   node tools/pacing-harness.mjs                 # all bots, seeds 1-5, summary + one log per bot
+//   node tools/pacing-harness.mjs --bot edge --seed 3 --log   # one run, full per-quarter table
+//   node tools/pacing-harness.mjs --out <dir>     # also write CSV logs and summary.json
+// Exit code 1 if a check fails.
+
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { runHarness, simulateCampaign, BOTS } from '../src/debug/sim.js';
+import { PACING } from '../src/debug/pacing.js';
+
+const args = process.argv.slice(2);
+const opt = (k, d) => { const i = args.indexOf(`--${k}`); return i >= 0 ? args[i + 1] : d; };
+const flag = (k) => args.includes(`--${k}`);
+const k = (n) => (Math.abs(n) >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : `${Math.round(n / 1e3)}K`);
+
+function table(rows) {
+  const cols = [
+    ['Q', (r) => r.quarter], ['hours', (r) => r.hours.toFixed(2)], ['cash', (r) => k(r.cash)], ['net', (r) => k(r.net)],
+    ['crisis', (r) => r.crisis], ['heat', (r) => r.heat], ['sales', (r) => r.sales], ['revenue', (r) => k(r.salesRevenue)],
+    ['schemes', (r) => r.schemes], ['fines', (r) => k(r.fines)], ['board', (r) => (r.boardMet ? 'MET' : 'MISS')], ['X', (r) => r.strikes],
+    ['runaway', (r) => r.runaways], ['events', (r) => r.events || '-'],
+  ];
+  const cells = [cols.map((c) => c[0]), ...rows.map((r) => cols.map((c) => String(c[1](r))))];
+  const w = cols.map((_, i) => Math.max(...cells.map((row) => row[i].length)));
+  return cells.map((row) => row.map((c, i) => c.padStart(i === cols.length - 1 ? 0 : w[i])).join('  ')).join('\n');
+}
+
+const out = opt('out');
+if (out) mkdirSync(out, { recursive: true });
+
+if (opt('bot')) {
+  const bot = opt('bot');
+  const seed = Number(opt('seed', 1));
+  const r = simulateCampaign({ bot, seed });
+  console.log(`\n${BOTS[bot].label} (seed ${seed})\n`);
+  console.log(table(r.rows));
+  console.log(`\n${JSON.stringify(r.summary)}`);
+  if (out) writeFileSync(join(out, `log-${bot}-${seed}.csv`), r.csv);
+  process.exit(0);
+}
+
+const seeds = Array.from({ length: Number(opt('seeds', 5)) }, (_, i) => i + 1);
+const h = runHarness({ seeds });
+console.log(`Pacing model: ${PACING.clock} clock, ${PACING.quarterMinutes} min per quarter, target ${PACING.targetHours.join('-')} h\n`);
+console.log('bot        seed  quarters  hours  paced-h  sales  final cash  peak crisis  ending');
+for (const r of h.runs) {
+  const s = r.summary;
+  console.log(`${r.bot.padEnd(10)} ${String(r.seed).padStart(4)}  ${String(s.quarters).padStart(8)}  ${s.hours.toFixed(2).padStart(5)}  ${s.pacedHours.toFixed(2).padStart(7)}  ${String(s.totalSales).padStart(5)}  ${k(s.finalCash).padStart(10)}  ${String(s.peakCrisis).padStart(11)}  ${s.ending.type}/${s.ending.id}${s.ending.survivalRate != null ? ` (${Math.round(s.ending.survivalRate * 100)}% survive)` : ''}`);
+}
+if (flag('log') || out) {
+  for (const bot of Object.keys(BOTS)) {
+    const r = h.runs.find((x) => x.bot === bot && x.seed === 1);
+    console.log(`\n--- ${BOTS[bot].label}, seed 1 ---`);
+    console.log(table(r.rows));
+  }
+}
+console.log('\nChecks:', JSON.stringify(h.checks, null, 1));
+if (out) {
+  for (const r of h.runs) writeFileSync(join(out, `log-${r.bot}-${r.seed}.csv`), r.csv);
+  writeFileSync(join(out, 'summary.json'), JSON.stringify({ pacing: PACING, checks: h.checks, runs: h.runs.map((r) => ({ bot: r.bot, seed: r.seed, ...r.summary })) }, null, 1));
+}
+const ok = h.checks.allCompletedInTarget && h.checks.engineeredReachable && h.checks.failedReachable;
+console.log(ok ? '\nPASS' : '\nFAIL');
+process.exit(ok ? 0 : 1);
