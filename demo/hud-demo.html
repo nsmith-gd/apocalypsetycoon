@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HUD &amp; Ledger Demo</title>
+<link rel="stylesheet" href="../src/ui/ui.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #14110f; }
+  #game { min-height: 100vh; display: flex; flex-direction: column; }
+  .stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .stage canvas { image-rendering: pixelated; width: min(640px, 100%); border: 4px solid #0a0807; }
+  .actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; justify-content: center; background: #241f1a; border-top: 4px solid #0a0807; }
+  .actions button { font-family: 'Courier New', monospace; font-weight: 700; font-size: 12px; padding: 8px; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; cursor: pointer; }
+  .actions button.end { background: #f5c542; color: #2a2118; }
+  .stage-label { position: absolute; margin-top: -280px; color: #a8977a; font: 700 11px 'Courier New', monospace; letter-spacing: 2px; }
+</style>
+</head>
+<body>
+<div id="game">
+  <main class="stage" id="grid-view"><canvas id="grid" width="160" height="96"></canvas></main>
+  <main class="stage" id="map-view" hidden><canvas id="map" width="160" height="96"></canvas></main>
+  <footer class="actions" id="actions"></footer>
+</div>
+<script type="module">
+import { Ledger } from '../src/ledger/ledger.js';
+import { createGameUI } from '../src/ui/hud.js';
+
+// Stand-in game state so the HUD and ledger can be seen without the other systems.
+const ledger = new Ledger({ startingCash: 250_000 });
+const ui = createGameUI({
+  root: document.getElementById('game'),
+  ledger,
+  views: { grid: document.getElementById('grid-view'), map: document.getElementById('map-view') },
+});
+const state = { quarter: 1, totalQuarters: 12, heat: 8, tension: 22, boardTarget: 300_000 };
+const clamp = (v) => Math.max(0, Math.min(100, v));
+ui.update(state);
+
+// ---- placeholder canvases (pixel grid and world map) ----
+const rooms = [];
+function drawGrid() {
+  const c = document.getElementById('grid').getContext('2d');
+  c.fillStyle = '#3b2a1e'; c.fillRect(0, 0, 160, 96);
+  c.fillStyle = '#5a7a3a'; c.fillRect(0, 0, 160, 10);
+  c.fillStyle = '#2a1d14';
+  for (let x = 0; x < 160; x += 16) for (let y = 16; y < 96; y += 16) c.fillRect(x, y, 15, 15);
+  rooms.forEach((r, i) => { c.fillStyle = r.color; c.fillRect((i % 10) * 16, 16 + Math.floor(i / 10) * 16, 15, 15); });
+}
+const regions = [[20, 30, 30, 20], [60, 20, 30, 25], [100, 35, 35, 25], [40, 60, 30, 20], [120, 70, 25, 15]];
+function drawMap() {
+  const c = document.getElementById('map').getContext('2d');
+  c.fillStyle = '#16324a'; c.fillRect(0, 0, 160, 96);
+  regions.forEach(([x, y, w, h], i) => {
+    const t = clamp(state.tension + (i - 2) * 8) / 100;
+    c.fillStyle = `rgb(${80 + t * 175}, ${140 - t * 90}, 60)`;
+    c.fillRect(x, y, w, h);
+  });
+}
+const redraw = () => { drawGrid(); drawMap(); ui.update(state); };
+
+// ---- actions ----
+const buys = [
+  ['Gold taps', -40_000, '#f5c542'],
+  ['Cryo pod suite', -120_000, '#8fd3ff'],
+  ['Air scrubber', -25_000, '#7ed957'],
+];
+const actions = [
+  ...buys.map(([name, cost, color]) => [`Build ${name}`, () => { ledger.record('builds', name, cost); rooms.push({ color }); }]),
+  ['Sell shelter', () => {
+    const price = Math.round(180_000 * (1 + state.tension / 50));
+    ledger.record('sales', `Shelter sold (tension ${state.tension})`, price);
+  }],
+  ['Scheme: leak pandemic memo', () => {
+    ledger.record('schemes', 'Leak pandemic memo', -30_000);
+    state.tension = clamp(state.tension + 14); state.heat = clamp(state.heat + 12);
+  }],
+  ['Scheme: fund doom podcast', () => {
+    ledger.record('schemes', 'Fund doom podcast', -15_000);
+    state.tension = clamp(state.tension + 7); state.heat = clamp(state.heat + 4);
+  }],
+  ['Regulator fine', () => {
+    ledger.record('fines', 'Regulator fine', -Math.round(20_000 + state.heat * 1_000));
+    state.heat = clamp(state.heat - 15);
+  }],
+];
+const bar = document.getElementById('actions');
+for (const [label, fn] of actions) {
+  const b = document.createElement('button');
+  b.textContent = label;
+  b.onclick = () => { fn(); redraw(); };
+  bar.append(b);
+}
+const end = document.createElement('button');
+end.className = 'end'; end.id = 'end-quarter'; end.textContent = 'END QUARTER';
+end.onclick = async () => {
+  ledger.record('upkeep', 'Crew payroll', -45_000);
+  if (rooms.length) ledger.record('upkeep', 'Shelter maintenance', -rooms.length * 2_000);
+  await ui.showQuarterReport({ quarter: state.quarter, boardTarget: state.boardTarget });
+  if (state.quarter < state.totalQuarters) {
+    state.quarter += 1;
+    state.boardTarget = Math.round(state.boardTarget * 1.25);
+    state.heat = clamp(state.heat - 5);
+  }
+  redraw();
+};
+bar.append(end);
+redraw();
+window.__demo = { ledger, ui, state, redraw };
+</script>
+</body>
+</html>
