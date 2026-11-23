@@ -3,42 +3,104 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>HUD &amp; Ledger Demo</title>
+<title>Apocalypse Tycoon Prototype</title>
 <link rel="stylesheet" href="../src/ui/ui.css">
 <style>
   html, body { margin: 0; height: 100%; background: #14110f; }
   #game { min-height: 100vh; display: flex; flex-direction: column; }
-  .stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .stage { flex: 1; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px; flex-wrap: wrap; }
   .stage canvas { image-rendering: pixelated; width: min(640px, 100%); border: 4px solid #0a0807; }
-  .actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; justify-content: center; background: #241f1a; border-top: 4px solid #0a0807; }
-  .actions button { font-family: 'Courier New', monospace; font-weight: 700; font-size: 12px; padding: 8px; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; cursor: pointer; }
+  .actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; justify-content: center; align-items: center; background: #241f1a; border-top: 4px solid #0a0807; }
+  .actions button, .palette button { font-family: 'Courier New', monospace; font-weight: 700; font-size: 12px; padding: 8px; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; cursor: pointer; }
   .actions button.end { background: #f5c542; color: #2a2118; }
-  .stage-label { position: absolute; margin-top: -280px; color: #a8977a; font: 700 11px 'Courier New', monospace; letter-spacing: 2px; }
+  .actions label { font: 700 11px 'Courier New', monospace; color: #a8977a; display: flex; align-items: center; gap: 6px; }
+  .palette { width: 220px; display: flex; flex-direction: column; gap: 4px; background: #241f1a; border: 4px solid #0a0807; padding: 8px; }
+  .palette h3 { margin: 0 0 4px; font: 900 12px 'Courier New', monospace; letter-spacing: 2px; color: #f5c542; }
+  .palette .crews { font: 700 10px 'Courier New', monospace; color: #a8977a; margin-bottom: 4px; }
+  .palette button { display: flex; align-items: center; gap: 8px; text-align: left; }
+  .palette button i { width: 12px; height: 12px; display: inline-block; border: 1px solid #0a0807; flex: none; }
+  .palette button small { margin-left: auto; color: #a8977a; font-size: 10px; }
+  .palette button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .palette button.fresh { animation: fresh 0.5s steps(2) 6; }
+  @keyframes fresh { 50% { background: #f5c542; color: #2a2118; } }
 </style>
 </head>
 <body>
 <div id="game">
-  <main class="stage" id="grid-view"><canvas id="grid" width="160" height="96"></canvas></main>
+  <main class="stage" id="grid-view">
+    <aside class="palette" id="palette"></aside>
+    <canvas id="grid" width="160" height="96"></canvas>
+  </main>
   <main class="stage" id="map-view" hidden><canvas id="map" width="160" height="96"></canvas></main>
   <footer class="actions" id="actions"></footer>
 </div>
 <script type="module">
 import { Ledger } from '../src/ledger/ledger.js';
 import { createGameUI } from '../src/ui/hud.js';
+import { ResearchTree } from '../src/research/research.js';
+import { createResearchPanel } from '../src/ui/researchPanel.js';
 
-// Stand-in game state so the HUD and ledger can be seen without the other systems.
+// Stand-in game state so the HUD, ledger and research can be played before the
+// real grid, map, schemes and clock systems land. Prices are placeholders.
+const root = document.getElementById('game');
 const ledger = new Ledger({ startingCash: 250_000 });
 const ui = createGameUI({
-  root: document.getElementById('game'),
+  root,
   ledger,
   views: { grid: document.getElementById('grid-view'), map: document.getElementById('map-view') },
 });
 const state = { quarter: 1, totalQuarters: 12, heat: 8, tension: 22, boardTarget: 300_000 };
 const clamp = (v) => Math.max(0, Math.min(100, v));
-ui.update(state);
 
-// ---- placeholder canvases (pixel grid and world map) ----
+const tree = new ResearchTree();
+const research = createResearchPanel({ root, tree, getCrisis: () => state.tension });
+root.querySelector('.hud').insertBefore(research.chip, root.querySelector('.view-toggle'));
+
+// ---- build palette: base amenities plus anything research has unlocked ----
+const AMENITIES = [
+  { id: 'bunk', name: 'Bunk room', cost: 20_000, color: '#8a6a4a' },
+  { id: 'gold_taps', name: 'Gold taps', cost: 40_000, color: '#f5c542' },
+  { id: 'air_vent', name: 'Air vent', cost: 15_000, color: '#b8d8c8' },
+  { id: 'water_tank', name: 'Water tank', cost: 15_000, color: '#4a8ad8' },
+  { id: 'pantry', name: 'Pantry', cost: 12_000, color: '#c8743a' },
+  { id: 'hydroponics', name: 'Hydroponic garden', cost: 35_000, color: '#7ed957', research: true },
+  { id: 'water_recycler', name: 'Deep-well recycler', cost: 45_000, color: '#2f6fb8', research: true },
+  { id: 'cryo_pod', name: 'Cryo pod suite', cost: 120_000, color: '#8fd3ff', research: true },
+  { id: 'mil_scrubber', name: 'Military air scrubber', cost: 70_000, color: '#d8f0e0', research: true },
+  { id: 'wine_cellar', name: 'Wine cellar & panic room', cost: 90_000, color: '#7a2a3a', research: true },
+  { id: 'ai_butler', name: 'AI butler core', cost: 200_000, color: '#c070ff', research: true },
+];
 const rooms = [];
+const paletteEl = document.getElementById('palette');
+const fmtK = (n) => `$${Math.round(n / 1000)}K`;
+let fresh = null;
+function renderPalette() {
+  paletteEl.replaceChildren();
+  const h = document.createElement('h3'); h.textContent = 'BUILD';
+  const crews = document.createElement('div'); crews.className = 'crews'; crews.textContent = `Build crews: ${tree.crewCount}`;
+  paletteEl.append(h, crews);
+  for (const a of AMENITIES) {
+    const locked = a.research && !tree.isUnlocked(a.id);
+    const b = document.createElement('button');
+    b.dataset.amenity = a.id;
+    b.disabled = locked;
+    b.title = locked ? 'Locked: research it in R&D (R)' : `Build ${a.name}`;
+    const sw = document.createElement('i'); sw.style.background = locked ? '#3a332b' : a.color;
+    const label = document.createElement('span'); label.textContent = locked ? `${a.name}` : a.name;
+    const cost = document.createElement('small'); cost.textContent = locked ? 'R&D' : fmtK(a.cost);
+    b.append(sw, label, cost);
+    if (a.id === fresh) b.classList.add('fresh');
+    b.onclick = () => { ledger.record('builds', a.name, -a.cost); rooms.push({ color: a.color }); redraw(); };
+    paletteEl.append(b);
+  }
+}
+tree.onUnlock((node) => {
+  if (node.unlocks.type === 'amenity') fresh = node.unlocks.id;
+  renderPalette();
+  renderActions();
+});
+
+// ---- placeholder canvases ----
 function drawGrid() {
   const c = document.getElementById('grid').getContext('2d');
   c.fillStyle = '#3b2a1e'; c.fillRect(0, 0, 160, 96);
@@ -57,56 +119,77 @@ function drawMap() {
     c.fillRect(x, y, w, h);
   });
 }
-const redraw = () => { drawGrid(); drawMap(); ui.update(state); };
+const redraw = () => { drawGrid(); drawMap(); ui.update(state); research.render(); };
 
-// ---- actions ----
-const buys = [
-  ['Gold taps', -40_000, '#f5c542'],
-  ['Cryo pod suite', -120_000, '#8fd3ff'],
-  ['Air scrubber', -25_000, '#7ed957'],
+// ---- actions (schemes etc.) ----
+const SCHEMES = [
+  { id: 'podcast', name: 'Fund doom podcast', cost: 15_000, tension: 7, heat: 4 },
+  { id: 'memo', name: 'Leak pandemic memo', cost: 30_000, tension: 14, heat: 12 },
+  { id: 'astroturf', name: 'Astroturf think tank', cost: 25_000, tension: 10, heat: 5, research: true },
+  { id: 'deepfake', name: 'Deepfake broadcast', cost: 60_000, tension: 20, heat: 18, research: true },
+  { id: 'shortage', name: 'Engineered shortage', cost: 90_000, tension: 26, heat: 20, research: true },
+  { id: 'blackout', name: 'Grid blackout', cost: 150_000, tension: 35, heat: 30, research: true },
 ];
-const actions = [
-  ...buys.map(([name, cost, color]) => [`Build ${name}`, () => { ledger.record('builds', name, cost); rooms.push({ color }); }]),
-  ['Sell shelter', () => {
-    const price = Math.round(180_000 * (1 + state.tension / 50));
-    ledger.record('sales', `Shelter sold (tension ${state.tension})`, price);
-  }],
-  ['Scheme: leak pandemic memo', () => {
-    ledger.record('schemes', 'Leak pandemic memo', -30_000);
-    state.tension = clamp(state.tension + 14); state.heat = clamp(state.heat + 12);
-  }],
-  ['Scheme: fund doom podcast', () => {
-    ledger.record('schemes', 'Fund doom podcast', -15_000);
-    state.tension = clamp(state.tension + 7); state.heat = clamp(state.heat + 4);
-  }],
-  ['Regulator fine', () => {
-    ledger.record('fines', 'Regulator fine', -Math.round(20_000 + state.heat * 1_000));
-    state.heat = clamp(state.heat - 15);
-  }],
-];
+let speed = 10;
 const bar = document.getElementById('actions');
-for (const [label, fn] of actions) {
-  const b = document.createElement('button');
-  b.textContent = label;
-  b.onclick = () => { fn(); redraw(); };
-  bar.append(b);
-}
-const end = document.createElement('button');
-end.className = 'end'; end.id = 'end-quarter'; end.textContent = 'END QUARTER';
-end.onclick = async () => {
-  ledger.record('upkeep', 'Crew payroll', -45_000);
-  if (rooms.length) ledger.record('upkeep', 'Shelter maintenance', -rooms.length * 2_000);
-  await ui.showQuarterReport({ quarter: state.quarter, boardTarget: state.boardTarget });
-  if (state.quarter < state.totalQuarters) {
-    state.quarter += 1;
-    state.boardTarget = Math.round(state.boardTarget * 1.25);
-    state.heat = clamp(state.heat - 5);
+function renderActions() {
+  bar.replaceChildren();
+  for (const s of SCHEMES) {
+    if (s.research && !tree.isUnlocked(s.id)) continue;
+    const b = document.createElement('button');
+    b.textContent = `Scheme: ${s.name}`;
+    b.onclick = () => {
+      ledger.record('schemes', s.name, -s.cost);
+      state.tension = clamp(state.tension + s.tension); state.heat = clamp(state.heat + s.heat);
+      redraw();
+    };
+    bar.append(b);
   }
-  redraw();
-};
-bar.append(end);
+  const calm = document.createElement('button');
+  calm.textContent = 'World calms down';
+  calm.onclick = () => { state.tension = clamp(state.tension - 15); redraw(); };
+  const sell = document.createElement('button');
+  sell.textContent = 'Sell shelter';
+  sell.onclick = () => { ledger.record('sales', `Shelter sold (tension ${state.tension})`, Math.round(180_000 * (1 + state.tension / 50))); redraw(); };
+  const fine = document.createElement('button');
+  fine.textContent = 'Regulator fine';
+  fine.onclick = () => { ledger.record('fines', 'Regulator fine', -Math.round(20_000 + state.heat * 1_000)); state.heat = clamp(state.heat - 15); redraw(); };
+  const spd = document.createElement('button');
+  spd.id = 'speed';
+  spd.textContent = `Speed x${speed}`;
+  spd.onclick = () => { speed = speed === 1 ? 10 : speed === 10 ? 50 : 1; spd.textContent = `Speed x${speed}`; };
+  const end = document.createElement('button');
+  end.className = 'end'; end.id = 'end-quarter'; end.textContent = 'END QUARTER';
+  end.onclick = async () => {
+    paused = true;
+    ledger.record('upkeep', 'Crew payroll', -45_000 * tree.crewCount);
+    if (rooms.length) ledger.record('upkeep', 'Shelter maintenance', -rooms.length * 2_000);
+    await ui.showQuarterReport({ quarter: state.quarter, boardTarget: state.boardTarget });
+    if (state.quarter < state.totalQuarters) {
+      state.quarter += 1;
+      state.boardTarget = Math.round(state.boardTarget * 1.25);
+      state.heat = clamp(state.heat - 5);
+    }
+    paused = false;
+    redraw();
+  };
+  bar.append(calm, sell, fine, spd, end);
+}
+
+// ---- clock: research accrues in real time, scaled by the demo speed ----
+let paused = false;
+let last = performance.now();
+setInterval(() => {
+  const now = performance.now();
+  const dt = (now - last) / 1000;
+  last = now;
+  if (!paused) tree.tick(dt * speed, state.tension);
+}, 250);
+
+renderPalette();
+renderActions();
 redraw();
-window.__demo = { ledger, ui, state, redraw };
+window.__demo = { ledger, ui, state, tree, research, redraw };
 </script>
 </body>
 </html>
