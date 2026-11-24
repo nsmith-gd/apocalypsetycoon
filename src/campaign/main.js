@@ -24,6 +24,8 @@ import { LeadMarket, attachCrisis } from '../demand/demand.js';
 import { SchemeBoard } from '../schemes/schemes.js';
 import { MapSales } from '../worldmap/sales.js';
 import { createWorldMapScreen } from '../worldmap/worldmap-ui.js';
+import { TRACK_BY_ID, CLASSIC_ROSTER } from '../world/tracks.js';
+import { showWorldSetup, createThreatsPanel } from '../world/world-ui.js';
 import { CampaignClock, SPEEDS, formatClock, QUARTER_SECONDS } from './clock.js';
 import { createSaveSlot, ledgerSaveable, pushbackSaveable, doomClockSaveable } from './save.js';
 
@@ -56,10 +58,16 @@ function showMainMenu() {
   cont.disabled = !save;
   const demos = el('a', 'mm-link', 'System demos');
   demos.href = 'demos.html';
-  start.onclick = () => startCampaign({ resume: false });
+  // The first campaign is always Classic; after one is finished, NEW CAMPAIGN opens the world setup.
+  start.onclick = () => (campaignsFinished() > 0 ? openSetup() : startCampaign({ resume: false, roster: [...CLASSIC_ROSTER] }));
+  const setup = el('button', 'mm-small', 'WORLD SETUP');
+  setup.title = 'Choose Classic, Random or Custom threat tracks (debug start)';
+  setup.onclick = () => openSetup();
+  const openSetup = () => showWorldSetup({ root: document.body, firstCampaign: campaignsFinished() === 0,
+    onStart: (roster) => startCampaign({ resume: false, roster }), onBack: () => start.focus() });
   cont.onclick = () => startCampaign({ resume: true });
   mm.append(sky, el('div', 'mm-title', 'APOCALYPSE TYCOON'), el('div', 'mm-tag', "You don't survive the apocalypse. You sell it."),
-    start, cont, sub, demos, el('div', 'mm-foot', 'LAST RESORT HOLDINGS · 12 QUARTERS TO MIDNIGHT'));
+    start, cont, setup, sub, demos, el('div', 'mm-foot', 'LAST RESORT HOLDINGS · 12 QUARTERS TO MIDNIGHT'));
   app.append(mm);
   start.focus();
 }
@@ -89,7 +97,15 @@ function drawMenuSky(c) {
 // ======================= Campaign =======================
 let session = null;
 
-function startCampaign({ resume }) {
+const FINISHED_KEY = 'apocalypse-tycoon.campaigns-finished';
+function campaignsFinished() {
+  try { return Number(localStorage.getItem(FINISHED_KEY)) || 0; } catch { return 0; }
+}
+function markCampaignFinished() {
+  try { localStorage.setItem(FINISHED_KEY, String(campaignsFinished() + 1)); } catch { /* ignore */ }
+}
+
+function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   session?.destroy();
   app.replaceChildren();
   const root = el('div', 'gs');
@@ -149,6 +165,9 @@ function startCampaign({ resume }) {
   const WEEK_SECONDS = clock.quarterSeconds / 13; // 13 in-game weeks a quarter
   let weekAcc = 0;
   tree.onUnlock?.(() => { gridUI.refresh(); mapScreen.refresh(); });
+  // The threat roster this campaign runs (6 slots; alternates chosen at the world setup screen).
+  const world = { roster: [...roster], opened: [] };
+  slot.register('world', { toJSON: () => ({ roster: world.roster, opened: world.opened }), load: (d) => { if (d.roster?.length === 6) world.roster = d.roster; world.opened = d.opened ?? []; } });
   if (resume) slot.load(); else slot.clear();
   ledger.setQuarter(clock.quarter);
 
@@ -180,7 +199,10 @@ function startCampaign({ resume }) {
   const endBtn = el('button', null, 'END QUARTER');
   endBtn.title = 'Close the books now (N)';
   endBtn.onclick = () => clock.skipQuarter();
-  bar.append(label, time, track, speeds, endBtn, saveBtn, menuBtn);
+  const threatsBtn = el('button', null, 'THREATS [T]');
+  threatsBtn.title = 'The six threat tracks in this world, when they open, and every scheme';
+  threatsBtn.onclick = () => threats.toggle();
+  bar.append(label, time, track, speeds, threatsBtn, endBtn, saveBtn, menuBtn);
   root.append(bar);
 
   function renderBar() {
@@ -219,6 +241,19 @@ function startCampaign({ resume }) {
     if (pb.board.ousted) { clock.hold('ousted'); slot.clear(); showOusted(quarter); return; }
     if (!isFinal) toast(`Quarter ${quarter + 1} begins. The board wants growth.`);
   });
+  // Campaign play time in minutes at x1 (27 per quarter), the scale the GDD's opening times use.
+  const campaignMinutes = () => (clock.total / clock.quarterSeconds) * 27;
+  const threats = createThreatsPanel({ root: document.body, getRoster: () => world.roster, getMinutes: campaignMinutes });
+  function openDueTracks() {
+    const m = campaignMinutes();
+    for (const id of world.roster) {
+      const t = TRACK_BY_ID[id];
+      if (t.opensAt <= m && !world.opened.includes(id)) {
+        world.opened.push(id);
+        toast(`THREAT OPENS: ${t.name}. ${t.premise}.`);
+      }
+    }
+  }
   clock.onQuarterStart(({ quarter }) => {
     ledger.setQuarter(quarter);
     doom.advanceWeeks(13);
@@ -230,6 +265,7 @@ function startCampaign({ resume }) {
   async function midnight(cause = null) {
     if (midnightStarted) return;
     midnightStarted = true;
+    markCampaignFinished();
     clock.hold('midnight');
     slot.clear();
     renderBar();
@@ -271,6 +307,7 @@ function startCampaign({ resume }) {
     if (clock.running) {
       const g = dt * clock.speed;
       tree.tick(g, pb.tension);
+      openDueTracks();
       grid.tick(g);
       weekAcc += g;
       while (weekAcc >= WEEK_SECONDS) { weekAcc -= WEEK_SECONDS; crisis.advanceWeek(); }
@@ -305,13 +342,14 @@ function startCampaign({ resume }) {
   }
 
   session = {
-    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, crisis, market, schemes, mapSales, mapScreen, slot,
+    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, market, schemes, mapSales, mapScreen, slot,
     destroy() {
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);
       removeEventListener('resize', fit);
       gridUI.destroy();
       ui.destroy();
+      threats.destroy();
       app.replaceChildren();
       session = null;
     },
