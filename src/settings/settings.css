@@ -1,0 +1,42 @@
+/* Settings panel and accessibility options (#94). Options are classes on <html>. */
+.set-overlay[hidden] { display: none; }
+.set-panel { width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; margin: 24px auto; padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; background: var(--at-panel); border: 4px solid var(--at-border); box-shadow: inset 2px 2px 0 var(--at-hi); color: var(--at-ink); font-family: var(--at-font); }
+.set-head, .set-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.set-title { font: 900 20px var(--at-font); letter-spacing: 2px; color: var(--at-gold); }
+.set-btn { font: 700 11px var(--at-font); padding: 5px 8px; color: var(--at-ink); background: var(--at-panel-2); border: 2px solid var(--at-border); cursor: pointer; }
+.set-opts { display: flex; flex-direction: column; gap: 6px; }
+.set-opt { display: grid; grid-template-columns: 22px 1fr; gap: 6px; align-items: start; cursor: pointer; padding: 6px; background: var(--at-panel-2); border: 2px solid var(--at-border); }
+.set-opt input { width: 16px; height: 16px; margin: 1px 0 0; accent-color: var(--at-gold); }
+.set-opt b { display: block; font-size: 12px; }
+.set-opt small { color: var(--at-dim); font-size: 11px; }
+.set-sub { font-size: 10px; letter-spacing: 1px; color: var(--at-dim); margin: 4px 0; }
+.set-keys { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+.set-keys .set-sub { grid-column: span 2; }
+.set-key { display: flex; justify-content: space-between; align-items: center; font-size: 12px; border-bottom: 1px solid var(--at-border); padding: 2px 0; }
+.set-keybtn { min-width: 64px; }
+.set-keybtn[data-waiting='true'] { background: var(--at-gold); color: var(--at-paper-ink); }
+.set-note { font-size: 11px; color: var(--at-amber); }
+.set-later { font-size: 10px; color: var(--at-dim); }
+
+/* ---- Crisis patterns: every crisis zone gets its own texture as well as its colour ---- */
+html.a11y-patterns { --pat-dots: radial-gradient(rgba(0,0,0,.55) 1px, transparent 1.5px) 0 0 / 4px 4px; --pat-stripes: repeating-linear-gradient(45deg, rgba(0,0,0,.55) 0 2px, transparent 2px 5px); --pat-cross: repeating-linear-gradient(45deg, rgba(0,0,0,.6) 0 2px, transparent 2px 5px), repeating-linear-gradient(-45deg, rgba(0,0,0,.6) 0 2px, transparent 2px 5px); }
+html.a11y-patterns .hud-meter[data-zone='uneasy'] .hud-bar-fill, html.a11y-patterns .wm-track[data-zone='uneasy'] .wm-tbar i { background-image: var(--pat-dots); }
+html.a11y-patterns .hud-meter[data-zone='edge'] .hud-bar-fill, html.a11y-patterns .wm-track[data-zone='edge'] .wm-tbar i { background-image: var(--pat-stripes); }
+html.a11y-patterns .hud-meter[data-zone='tipping'] .hud-bar-fill, html.a11y-patterns .wm-track[data-zone='breach'] .wm-tbar i, html.a11y-patterns .wm-track[data-zone='collapsed'] .wm-tbar i { background-image: var(--pat-cross); }
+html.a11y-patterns .wm-track[data-zone='locked'] .wm-tbar i { background-image: repeating-linear-gradient(0deg, rgba(0,0,0,.5) 0 1px, transparent 1px 3px); }
+/* the gauges are only 8px tall: make them taller so the texture reads */
+html.a11y-patterns .hud-bar, html.a11y-patterns .wm-tbar { height: 12px; }
+/* zone words next to crisis numbers on the map list */
+html.a11y-patterns .wm-c[data-zone='uneasy']::after { content: ' ·'; }
+html.a11y-patterns .wm-c[data-zone='edge']::after { content: ' //'; }
+html.a11y-patterns .wm-c[data-zone='tipping']::after { content: ' XX'; }
+
+/* ---- Reduced flashing: nothing blinks, shakes or slams; the breach alert is a steady card ---- */
+html.a11y-reduced-flash *, html.a11y-reduced-flash *::before, html.a11y-reduced-flash *::after { animation: none !important; }
+html.a11y-reduced-flash .br-overlay { background: rgba(10, 8, 7, 0.82); }
+html.a11y-reduced-flash .br-card { border-color: var(--at-amber); }
+html.a11y-reduced-flash .br-title { color: var(--at-amber); }
+
+/* ---- Clean font ---- */
+html.a11y-clean-font { --at-font: Verdana, 'DejaVu Sans', Arial, sans-serif; }
+html.a11y-clean-font body, html.a11y-clean-font .at-ui { font-family: var(--at-font); }

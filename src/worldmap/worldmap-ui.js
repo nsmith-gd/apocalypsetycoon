@@ -18,6 +18,7 @@ import { HEX } from '../art/palette.js';
 import { formatMoney } from '../ledger/ledger.js';
 import { CLIENT_TYPES } from '../clients/clients.js';
 import { ROOM_CATALOG } from '../clients/rooms.js';
+import { settings } from '../settings/settings.js';
 
 // Short map labels (the 3x5 font is 4px a letter) and marker anchors, in cells.
 export const MAP_PLACES = Object.freeze({
@@ -107,6 +108,16 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   canvas.addEventListener('mouseleave', () => { hover = null; });
   canvas.addEventListener('click', (e) => { const id = regionFromEvent(e); if (id) select(id); });
 
+  // Colour-blind patterns (#94): dots = uneasy, stripes = edge, crosshatch = tipping.
+  function hatch(zone, x0, y0) {
+    if (zone === 'calm') return;
+    ctx.fillStyle = 'rgba(10,8,7,.55)';
+    for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) {
+      const d = (x + y) % 4 === 0, a = (x - y + 64) % 4 === 0;
+      if (zone === 'uneasy' ? x % 3 === 1 && y % 3 === 1 : zone === 'edge' ? d : d || a) ctx.fillRect(x0 + x, y0 + y, 1, 1);
+    }
+  }
+
   function drawMap() {
     const anim = Math.floor(frame / 20) % 2;
     ctx.fillStyle = HEX.K;
@@ -119,6 +130,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       if (!id) continue;
       const ov = crisisOverlay(byId[id]?.crisis ?? 0);
       if (ov) drawSprite(ctx, CRISIS_OVERLAYS[ov], c * CELL, r * CELL, { frame: anim });
+      if (settings.get('trackPatterns')) hatch(zoneOf(byId[id]?.crisis ?? 0).name, c * CELL, r * CELL); // #94
       if (id === selected || id === hover) {
         if (id === selected) drawSprite(ctx, CRISIS_OVERLAYS.selected, c * CELL, r * CELL, { frame: anim });
         // outline the region's edge
