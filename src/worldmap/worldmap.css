@@ -75,3 +75,12 @@
 .wm-fund b { display: block; }
 .wm-fund:disabled { background: var(--at-panel); color: var(--at-dim); cursor: not-allowed; }
 .wm-flash-edge { background: var(--at-amber); color: var(--at-paper-ink); font-weight: 700; }
+
+/* #58: your leads in a region */
+.wm-leads { display: flex; flex-direction: column; gap: 6px; }
+.wm-lead { background: var(--at-panel-2); border: 2px solid var(--at-border); border-left: 4px solid var(--at-dim); padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; }
+.wm-lead[data-tier='hot'] { border-left-color: var(--at-red); }
+.wm-lead[data-tier='warm'] { border-left-color: var(--at-amber); }
+.wm-tier { font-style: normal; font-size: 10px; font-weight: 900; padding: 0 3px; border: 1px solid currentColor; }
+.wm-tier[data-tier='hot'] { color: var(--at-red); } .wm-tier[data-tier='warm'] { color: var(--at-amber); } .wm-tier[data-tier='cold'] { color: #8fd3ff; }
+.wm-sell-lead small { display: block; font-size: 10px; color: var(--at-paper-ink); font-weight: 700; opacity: 0.8; }

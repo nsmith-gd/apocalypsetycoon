@@ -28,6 +28,7 @@ import { TRACK_BY_ID, CLASSIC_ROSTER } from '../world/tracks.js';
 import { showWorldSetup, createThreatsPanel } from '../world/world-ui.js';
 import { CampaignClock, SPEEDS, formatClock, QUARTER_SECONDS } from './clock.js';
 import { createSaveSlot, ledgerSaveable, pushbackSaveable, doomClockSaveable } from './save.js';
+import { LeadInventory } from '../leads/leads.js';
 
 export const STARTING_CASH = 400_000;
 
@@ -159,7 +160,10 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   const schemes = new SchemeBoard({ crisis, market, ledger, pushback: pb, isUnlocked: (id) => tree.isUnlocked(id) });
   const mapSales = new MapSales({ market, ledger, pushback: pb, getTensions: tensions, getBreachMultiplier: () => crisis.panicMultiplier,
     getEdgeBonus: (id) => schemes.edgeBonus(id), getQuarter: () => clock.quarter });
-  const mapScreen = createWorldMapScreen({ root: mapView, sales: mapSales, schemes, initial: 'nam', onScheme: () => ui.update(hudState()), onSold: () => ui.update(hudState()) });
+  // Your leads: people met at events (director note D2). Redeemed on the world map for better sales (#58).
+  const leads = new LeadInventory({ getQuarter: () => clock.quarter, getReputation: () => crisis.reputation });
+  slot.register('leads', leads);
+  const mapScreen = createWorldMapScreen({ root: mapView, sales: mapSales, schemes, leads, initial: 'nam', onScheme: () => ui.update(hudState()), onSold: () => ui.update(hudState()) });
   createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => crisis.advanceWeek() });
   crisis.on('week', () => mapScreen.refresh());
   slot.register('sales', mapSales);
@@ -257,6 +261,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   }
   clock.onQuarterStart(({ quarter }) => {
     ledger.setQuarter(quarter);
+    leads.expire(quarter); // unused leads go cold on schedule
     doom.advanceWeeks(13);
     if ((quarter - 1) % 3 === 0) doom.chapterStart((quarter - 1) / 3 + 1);
     slot.save(); // autosave at every quarter close
@@ -343,7 +348,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   }
 
   session = {
-    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, market, schemes, mapSales, mapScreen, slot,
+    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, market, schemes, mapSales, mapScreen, slot, leads,
     destroy() {
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);
