@@ -53,6 +53,7 @@ export const PUSHBACK_DEFAULTS = Object.freeze({
     maxEventsPerQuarter: 2,
   },
   board: {
+    enabled: true, // the campaign turns this off and runs the GDD board (src/board/board.js) instead
     firstTarget: 50_000, // quarterly profit expected in Q1
     growth: 0.08, // each target is 8% above the previous one (pacing harness: 25% ousted every bot by Q7)
     ratchet: 0.25, // a beaten target also moves 25% of the way toward the profit that beat it
@@ -125,6 +126,7 @@ export class Pushback {
       buildCostMultiplier: 1,
       ousted: false,
     };
+    this.schemeHeatMultiplier = 1; // the board's Scrutiny state raises it (src/board/board.js)
     this.pending = []; // choice events waiting on the player
     this.log = []; // everything that happened, newest last
     this.runaways = 0;
@@ -180,7 +182,7 @@ export class Pushback {
     if (this.board.ousted) return [];
     const fired = [];
     this.addTension(tension, label, fired);
-    this.addHeat(heat, label, fired);
+    this.addHeat(heat * this.schemeHeatMultiplier, label, fired);
     this._changed();
     return fired;
   }
@@ -381,6 +383,42 @@ export class Pushback {
     if (profit == null) profit = this.ledger ? this.ledger.summary(quarter).net : this._quarterProfit;
 
     // 1. Board review — on operating profit, before this method's own fines/bonuses.
+    let boardResult = null;
+    if (B.enabled) boardResult = this._boardReview({ quarter, profit, lines, events });
+
+    // 2. Heat: fines if you end the quarter hot, then natural cooling.
+    if (this.heat >= H.fineAt) {
+      const fine = round((this.heat - H.fineAt + 10) * H.finePerPoint * (1 + quarter * 0.15));
+      this._pay('fines', 'Regulator fine', -fine);
+      lines.push(`Regulator fine ${fmt(fine)} (heat ${Math.round(this.heat)}).`);
+    }
+    this.heat = clamp(this.heat - H.decayPerQuarter);
+
+    // 3. Tension: momentum feeds itself, otherwise it eases.
+    if (this.tension >= T.momentumAt) {
+      lines.push(`Tension has momentum: +${T.momentumGain} on its own.`);
+      this.addTension(T.momentumGain, 'Momentum', events);
+    } else {
+      this.tension = clamp(this.tension - T.decayPerQuarter);
+    }
+
+    // 4. Client leverage grows with heat, then clients may act on it.
+    for (const c of this.clients) c.leverage += Math.round(this.heat * L.heatFactor);
+    events.push(...this._leverageEvents());
+
+    this.quarter = quarter + 1;
+    this._investigatedThisQuarter = false;
+    this._runawayThisQuarter = false;
+    this._reliefUses = {};
+    this._quarterProfit = 0;
+    for (const l of lines) this._note('quarter', l);
+    this._changed();
+    return { lines, events, board: boardResult };
+  }
+
+  /** The legacy three-strikes profit target (used by the sim and demos; the campaign uses src/board). */
+  _boardReview({ quarter, profit, lines, events }) {
+    const B = this.cfg.board;
     const target = this.board.target;
     const met = profit >= target;
     this.board.history.push({ quarter, target, profit, met });
@@ -428,35 +466,7 @@ export class Pushback {
     } else {
       this.board.target = round(Math.max(B.firstTarget, (target + Math.max(0, profit)) / 2), 5_000);
     }
-
-    // 2. Heat: fines if you end the quarter hot, then natural cooling.
-    if (this.heat >= H.fineAt) {
-      const fine = round((this.heat - H.fineAt + 10) * H.finePerPoint * (1 + quarter * 0.15));
-      this._pay('fines', 'Regulator fine', -fine);
-      lines.push(`Regulator fine ${fmt(fine)} (heat ${Math.round(this.heat)}).`);
-    }
-    this.heat = clamp(this.heat - H.decayPerQuarter);
-
-    // 3. Tension: momentum feeds itself, otherwise it eases.
-    if (this.tension >= T.momentumAt) {
-      lines.push(`Tension has momentum: +${T.momentumGain} on its own.`);
-      this.addTension(T.momentumGain, 'Momentum', events);
-    } else {
-      this.tension = clamp(this.tension - T.decayPerQuarter);
-    }
-
-    // 4. Client leverage grows with heat, then clients may act on it.
-    for (const c of this.clients) c.leverage += Math.round(this.heat * L.heatFactor);
-    events.push(...this._leverageEvents());
-
-    this.quarter = quarter + 1;
-    this._investigatedThisQuarter = false;
-    this._runawayThisQuarter = false;
-    this._reliefUses = {};
-    this._quarterProfit = 0;
-    for (const l of lines) this._note('quarter', l);
-    this._changed();
-    return { lines, events, board: boardResult };
+    return boardResult;
   }
 
   // ---------- read-out ----------

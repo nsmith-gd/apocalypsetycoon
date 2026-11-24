@@ -13,7 +13,7 @@ const el = (tag, cls, text) => {
   return n;
 };
 
-export function createPressureGauge({ root, pushback, getQuarterProfit = () => null, onRelief }) {
+export function createPressureGauge({ root, pushback, getQuarterProfit = () => null, onRelief, getBoard = null }) {
   const panel = el('aside', 'pg-panel');
   panel.setAttribute('aria-label', 'Pressure');
   const head = el('div', 'pg-head', 'PRESSURE');
@@ -84,9 +84,14 @@ export function createPressureGauge({ root, pushback, getQuarterProfit = () => n
       mark: top?.next?.at,
       next: top ? (top.next ? `${top.next.what} at ${top.next.at} · +${l.growthPerQuarter}/Q from heat` : 'Will blackmail you') : 'Every buyer learns your secrets',
     });
-    const b = p.board;
+    // getBoard() (optional) supplies the GDD board's revenue quota instead of pushback's legacy target.
+    const b = getBoard?.() ?? p.board;
     const prog = b.progress ?? 0;
-    setRow('board', {
+    if (b.label) setRow('board', {
+      value: Math.max(0, prog), max: Math.max(1, b.target), zone: b.zone, valText: `${fmt(prog)} / ${fmt(b.target)}`, mark: null,
+      next: b.label,
+    });
+    else setRow('board', {
       value: Math.max(0, prog), max: Math.max(1, b.target), zone: b.zone,
       valText: `${fmt(prog)} / ${fmt(b.target)}  ${'X'.repeat(b.strikes)}`, mark: null,
       next: b.ousted ? 'Ousted' : `${b.onTrack ? 'On track. ' : ''}${b.next.what}${b.buildCostMultiplier > 1 ? ' · budget freeze' : ''}`,

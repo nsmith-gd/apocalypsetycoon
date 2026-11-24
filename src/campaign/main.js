@@ -8,6 +8,7 @@ import { Ledger } from '../ledger/ledger.js';
 import { createGameUI } from '../ui/hud.js';
 import { createResearchPanel } from '../ui/researchPanel.js';
 import { Pushback } from '../pushback/pushback.js';
+import { Board, quarterRevenue } from '../board/board.js';
 import { createPushbackUI } from '../pushback/pushback-ui.js';
 import { createPressureGauge } from '../pushback/pressure-gauge.js';
 import { DoomClock } from '../doomclock/doomclock.js';
@@ -123,7 +124,13 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   app.append(root);
 
   const ledger = new Ledger({ startingCash: STARTING_CASH });
-  const pb = new Pushback({ ledger, seed: Number(params.get('seed') ?? Date.now() % 100000) });
+  const pb = new Pushback({ ledger, seed: Number(params.get('seed') ?? Date.now() % 100000), config: { board: { enabled: false } } });
+  // The board (#18): five members, a revenue quota +30% a quarter, two directives per meeting.
+  // Replaces pushback's legacy three-strikes target in the campaign.
+  const board = new Board({ ledger, seed: Number(params.get('seed') ?? 11),
+    supports: ['revenue', 'heat', 'tensions', 'brinkTracks', 'breaches', 'handovers', 'schemesRun'] });
+  board.onChange(() => { pb.schemeHeatMultiplier = board.schemeHeatMultiplier; });
+  const qStats = { handovers: 0, breaches: 0, schemesAtStart: 0, crisisConfidence: null };
   const tree = new ResearchTree();
   const clock = new CampaignClock({ quarterSeconds: QS });
   const ui = createGameUI({ root, ledger, views: { grid: gridView, map: mapView } });
@@ -132,6 +139,9 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   const doom = new DoomClock();
   createDoomClockHud({ clock: doom, hud: root.querySelector('.hud') });
   const gauge = createPressureGauge({ root, pushback: pb, getQuarterProfit: () => ledger.summary(ledger.quarter).net,
+    getBoard: () => ({ progress: quarterRevenue(ledger, ledger.quarter), target: board.quota, ousted: board.ousted,
+      zone: { bullish: 'content', steady: 'content', scrutiny: 'displeased', probation: 'last-chance', ousted: 'ousted' }[board.state.id],
+      label: `Revenue quota · confidence ${Math.round(board.average)} ${board.state.label}` }),
     onRelief: (r) => r && pbui.tick(`${r.kind === 'layLow' ? 'Laid low' : 'Funded relief'}: -$${Math.round(r.cost / 1000)}K`, 'ok') });
   const research = createResearchPanel({ root, tree, getCrisis: () => pb.tension });
   root.querySelector('.hud')?.insertBefore(research.chip, root.querySelector('.view-toggle'));
@@ -143,13 +153,14 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   slot.register('clock', clock);
   slot.register('ledger', ledgerSaveable(ledger));
   slot.register('pushback', pushbackSaveable(pb, Pushback));
+  slot.register('board', board);
   slot.register('doom', doomClockSaveable(doom, DoomClock));
   slot.register('research', tree);
   // The shelter grid: your HQ shelter. Board budget freezes raise build costs; research adds crews and rooms.
   let frame = 0;
   // Tile-level bunker (RimWorld-style): dig, wall, wire and furnish; rooms form from what you enclose.
   const grid = new BunkerSite({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: () => tree.crewCount });
-  const gridUI = createBunkerUI({ mount: gridView, grid, getFrame: () => frame, onHandOver: (sh) => { mapSales.addFinished(sh); mapScreen.refresh(); } });
+  const gridUI = createBunkerUI({ mount: gridView, grid, getFrame: () => frame, onHandOver: (sh) => { qStats.handovers += 1; mapSales.addFinished(sh); mapScreen.refresh(); } });
   slot.register('grid', grid);
 
   // ---------- the world: crisis tracks, weekly leads, schemes and map sales ----------
@@ -168,6 +179,12 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   market.week({ tensions: tensions() });
   attachCrisis(market, crisis); // a market week runs after every crisis week
   const schemes = new SchemeBoard({ crisis, market, ledger, pushback: pb, isUnlocked: (id) => tree.isUnlocked(id) });
+  // Board Probation (#18): the Minder vetoes the first scheme you try each quarter (no cost, no effect).
+  const runScheme = schemes.run.bind(schemes);
+  schemes.run = (...args) => {
+    if (board.minderVeto()) throw new Error('VETOED by the board’s Minder. Probation allows one veto a quarter; try again.');
+    return runScheme(...args);
+  };
   const mapSales = new MapSales({ market, ledger, pushback: pb, getTensions: tensions, getBreachMultiplier: () => crisis.panicMultiplier,
     getEdgeBonus: (id) => schemes.edgeBonus(id), getQuarter: () => clock.quarter });
   // Your leads: people met at events (director note D2). Redeemed on the world map for better sales (#58).
@@ -198,6 +215,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   const mapScreen = createWorldMapScreen({ root: mapView, sales: mapSales, schemes, leads, initial: 'nam', onScheme: () => ui.update(hudState()), onSold: () => ui.update(hudState()) });
   createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => crisis.advanceWeek() });
   crisis.on('week', () => mapScreen.refresh());
+  crisis.on('breach', () => { qStats.breaches += 1; });
   slot.register('sales', mapSales);
   const WEEK_SECONDS = clock.quarterSeconds / 13; // 13 in-game weeks a quarter
   let weekAcc = 0;
@@ -207,6 +225,8 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   slot.register('crisis', crisis);
   slot.register('world', { toJSON: () => ({ roster: world.roster, opened: world.opened }), load: (d) => { if (d.roster?.length === 6) world.roster = d.roster; world.opened = d.opened ?? []; } });
   if (resume) slot.load(); else slot.clear();
+  qStats.schemesAtStart = schemes.log.length;
+  pb.schemeHeatMultiplier = board.schemeHeatMultiplier;
   delete doom.tensions.world; // saves from before #69 carried pushback's stand-in track
   for (const id of world.opened) crisis.openTrack(id); // already a no-op for tracks the crisis save reopened
   ledger.setQuarter(clock.quarter);
@@ -215,7 +235,8 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   const shelters = () => [...(grid.built.length ? [grid.toShelter()] : []), ...mapSales.sheltersForMidnight()];
 
   const hudState = () => ({ quarter: clock.quarter, totalQuarters: clock.totalQuarters, heat: pb.heat, tension: pb.tension,
-    boardTarget: pb.board.target, boardProgress: ledger.summary(clock.quarter).net, boardStrikes: pb.board.strikes });
+    boardTarget: board.quota, boardProgress: quarterRevenue(ledger, clock.quarter), boardStrikes: 0,
+    boardTitle: `Revenue quota this quarter. Board confidence ${Math.round(board.average)} (${board.state.label}).` });
 
   // ---------- clock bar ----------
   const bar = el('footer', 'cb');
@@ -274,12 +295,26 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   clock.onQuarterEnd(async ({ quarter, isFinal }) => {
     ledger.record('upkeep', `Shovel crew payroll x${tree.crewCount}`, -45_000 * tree.crewCount);
     pbui.hold();
+    // The quarterly meeting, on the quarter as it ended (before heat cools off).
+    const trackList = Object.values(crisis.tracks);
+    if (qStats.crisisConfidence == null) qStats.crisisConfidence = crisis.boardConfidence;
+    const review = board.review({
+      quarter, heat: pb.heat, tensions: tensions(),
+      openTracks: trackList.filter((t) => t.state !== 'locked' && t.open !== false).map((t) => t.id),
+      brinkTracks: trackList.filter((t) => t.state === 'brink' || t.state === 'breach').length,
+      breaches: qStats.breaches, handovers: qStats.handovers, schemesRun: schemes.log.length - qStats.schemesAtStart,
+      // Breach weeks and containment heroics already dent the crisis system's board confidence: pass that on.
+      confidenceShift: Math.round(crisis.boardConfidence - qStats.crisisConfidence),
+    });
+    crisis.boardConfidence = Math.round(board.average);
+    Object.assign(qStats, { handovers: 0, breaches: 0, schemesAtStart: schemes.log.length, crisisConfidence: crisis.boardConfidence });
     const r = pb.endQuarter({ quarter, profit: ledger.summary(quarter).net });
-    if (r.board.met) audio.play('boardMet');
-    await ui.showQuarterReport({ quarter, board: r.board, heat: pb.heat, tension: pb.tension, notes: r.lines.slice(1) });
+    audio.play(review.met ? 'boardMet' : 'boardMiss');
+    await ui.showQuarterReport({ quarter, heat: pb.heat, tension: pb.tension, notes: [...review.lines.slice(1), ...r.lines],
+      board: { met: review.met, revenue: review.revenue, target: review.quota, state: review.stateLabel, average: review.average } });
     await pbui.drain();
-    if (pb.board.ousted) { clock.hold('ousted'); slot.clear(); showOusted(quarter); return; }
-    if (!isFinal) toast(`Quarter ${quarter + 1} begins. The board wants growth.`);
+    if (board.ousted) { clock.hold('ousted'); slot.clear(); showOusted(quarter); return; }
+    if (!isFinal) toast(`Quarter ${quarter + 1} begins. Quota ${Math.round(board.quota / 1000)}K. ${board.directives.map((d) => d.text).join('. ')}.`);
   });
   // Campaign play time in minutes at x1 (27 per quarter), the scale the GDD's opening times use.
   const campaignMinutes = () => (clock.total / clock.quarterSeconds) * 27;
@@ -374,7 +409,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   renderBar();
   raf = requestAnimationFrame(loop);
 
-  // Game over before Midnight: three missed board targets.
+  // Game over before Midnight: board confidence hit zero.
   function showOusted(quarter) {
     const o = el('div', 'mm');
     o.style.background = 'rgba(20,17,15,.94)';
