@@ -40,7 +40,7 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 export class BunkerSite {
   // research (#16): canBuild(objectId), canBuildStructure(id), canDig(stratumId), lockedReason(type, id).
   // All default to open, so demos and tests without a research tree are unaffected.
-  constructor({ ledger = null, crews = () => 1, costMultiplier = () => 1, cfg = {}, surveyed = false, name = 'Last Resort HQ', research = null } = {}) {
+  constructor({ ledger = null, crews = () => 1, crewSpeed = () => 1, costMultiplier = () => 1, cfg = {}, surveyed = false, name = 'Last Resort HQ', research = null } = {}) {
     this.research = research;
     this.cfg = { ...BUNKER, ...cfg };
     this.W = this.cfg.width;
@@ -48,6 +48,7 @@ export class BunkerSite {
     this.S = this.cfg.sky;
     this.ledger = ledger;
     this.crews = crews;
+    this.crewSpeed = crewSpeed; // #73: Engineering levels speed every crew (+15% each)
     this.costMultiplier = costMultiplier;
     this.name = name;
     this.listeners = new Set();
@@ -361,8 +362,9 @@ export class BunkerSite {
     const crews = Math.max(1, this.crews());
     this.crewAt = [];
     const taken = new Set();
+    const speed = Math.max(0, this.crewSpeed());
     for (let c = 0; c < crews; c++) {
-      let budget = days;
+      let budget = days * speed;
       let guard = 0;
       while (budget > 1e-9 && guard++ < 500) {
         const reach = this.reachable();

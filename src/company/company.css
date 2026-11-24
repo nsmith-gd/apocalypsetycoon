@@ -1,0 +1,18 @@
+/* GREYBOX company panel (#73). */
+.co-tier { cursor: pointer; text-align: left; font-family: var(--at-font); color: var(--at-ink); min-width: 120px; }
+.co-tier .hud-value { color: var(--at-gold); }
+.co-tier-sub { font-size: 10px; color: var(--at-dim); white-space: nowrap; }
+.cp-overlay[hidden] { display: none; }
+.cp-overlay { position: fixed; inset: 0; z-index: 130; background: rgba(10, 8, 7, 0.8); display: flex; align-items: flex-start; justify-content: center; padding: 32px 16px; overflow: auto; }
+.cp { width: min(900px, 100%); background: #1c1916; color: #f2e6c9; border: 2px solid #6b7078; padding: 14px 16px; font: 13px/1.4 'Courier New', monospace; }
+.cp-head { display: flex; justify-content: space-between; align-items: center; }
+.cp-h { margin: 0; font-size: 16px; letter-spacing: 2px; }
+.cp-sub, .cp-dim { color: #a8977a; }
+.cp-t { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.cp-t th { text-align: left; font-size: 11px; color: #a8977a; border-bottom: 1px solid #6b7078; padding: 3px 6px 3px 0; }
+.cp-t td { padding: 4px 6px 4px 0; border-bottom: 1px solid #2f2821; vertical-align: top; }
+.cp-t tr[data-open='false'] td { opacity: 0.45; }
+.cp-lvl { font-weight: 700; white-space: nowrap; }
+.cp-up, .cp-x { font: inherit; font-size: 11px; font-weight: 700; color: #f2e6c9; background: #3a3f46; border: 1px solid #9aa3ad; padding: 3px 8px; cursor: pointer; white-space: nowrap; }
+.cp-up:disabled { background: transparent; color: #a8977a; border-color: #3a3f46; cursor: not-allowed; }
+.cp-msg { color: #f5c542; font-weight: 700; }

@@ -32,6 +32,8 @@ import { showWorldSetup, createThreatsPanel } from '../world/world-ui.js';
 import { CampaignClock, SPEEDS, formatClock, QUARTER_SECONDS } from './clock.js';
 import { createSaveSlot, ledgerSaveable, pushbackSaveable, doomClockSaveable } from './save.js';
 import { finaleArgs } from '../midnight/finale.js';
+import { Company } from '../company/company.js';
+import { createCompanyPanel } from '../company/company-panel.js';
 import { LeadInventory } from '../leads/leads.js';
 import { loadVenueCatalog } from '../events/venues.js';
 import { EventCircuit } from '../events/attend.js';
@@ -156,7 +158,13 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   // The shelter grid: your HQ shelter. Board budget freezes raise build costs; research adds crews and rooms.
   let frame = 0;
   // Tile-level bunker (RimWorld-style): dig, wall, wire and furnish; rooms form from what you enclose.
-  const grid = new BunkerSite({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: () => tree.crewCount, research: tree });
+  // Company tier and departments (#73, L0): Startup = 1 site, 2 crews, department cap 2. Engineering speeds crews.
+  const company = new Company({ ledger, getPlayMinutes: () => (clock.total / clock.quarterSeconds) * 27 });
+  slot.register('company', company);
+  const workingCrews = () => company.crews(1 + tree.crewCount); // the tier's crews, research adds more, the tier caps them
+  const companyPanel = createCompanyPanel({ root, company, getWorkingCrews: workingCrews });
+  root.querySelector('.hud')?.insertBefore(companyPanel.chip, root.querySelector('.view-toggle'));
+  const grid = new BunkerSite({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: workingCrews, crewSpeed: () => company.crewSpeed, research: tree });
   const gridUI = createBunkerUI({ mount: gridView, grid, getFrame: () => frame, onHandOver: (sh) => { mapSales.addFinished(sh); mapScreen.refresh(); } });
   slot.register('grid', grid);
 
@@ -286,7 +294,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
 
   // ---------- end of quarter ----------
   clock.onQuarterEnd(async ({ quarter, isFinal }) => {
-    ledger.record('upkeep', `Shovel crew payroll x${tree.crewCount}`, -45_000 * tree.crewCount);
+    ledger.record('upkeep', `Shovel crew payroll x${workingCrews()}`, -45_000 * workingCrews());
     pbui.hold();
     const r = pb.endQuarter({ quarter, profit: ledger.summary(quarter).net });
     if (r.board.met) audio.play('boardMet');
@@ -404,7 +412,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     if (card) cardQueue.push({ card, week });
   }
 
-  const modalOpen = () => !!document.querySelector('.report-overlay:not([hidden]), .br-overlay:not([hidden]), .pb-overlay, .mn-overlay, .mn-strike, .soc-overlay:not([hidden])');
+  const modalOpen = () => !!document.querySelector('.report-overlay:not([hidden]), .br-overlay:not([hidden]), .pb-overlay, .mn-overlay, .mn-strike, .soc-overlay:not([hidden]), .cp-overlay:not([hidden])');
 
   // ---------- keys ----------
   const onKey = (e) => {
@@ -467,11 +475,12 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   }
 
   session = {
-    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, market, schemes, mapSales, mapScreen, slot, leads, social, firstBreach,
+    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, market, schemes, mapSales, mapScreen, slot, leads, social, company, firstBreach,
     destroy() {
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);
       social.screens?.destroy();
+      companyPanel.destroy();
       removeEventListener('resize', fit);
       gridUI.destroy();
       ui.destroy();
