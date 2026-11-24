@@ -173,6 +173,7 @@ export function createGameUI({ root, ledger, views = {}, onViewChange, initialVi
     const pct = target > 0 ? Math.max(0, Math.min(100, (progress / target) * 100)) : 0;
     boardFill.style.width = `${pct}%`;
     boardBox.dataset.met = target > 0 && progress >= target ? 'true' : 'false';
+    if (state.boardTitle) boardBox.title = state.boardTitle;
     const strikes = state.boardStrikes ?? 0;
     boardStrikes.textContent = strikes ? 'X'.repeat(strikes) : '';
     boardStrikes.title = strikes ? `${strikes} strike${strikes > 1 ? 's' : ''} with the board` : '';
@@ -225,7 +226,11 @@ export function createGameUI({ root, ledger, views = {}, onViewChange, initialVi
     if (board) {
       // Verdict supplied by the board system (quarterly profit vs target).
       verdict.dataset.met = String(board.met);
-      verdict.append(
+      if (board.revenue != null) verdict.append(
+        el('div', 'v-stamp', board.met ? 'QUOTA MET' : 'QUOTA MISSED'),
+        el('div', 'v-text', `Revenue ${formatMoney(board.revenue)} vs a ${formatMoney(board.target)} quota. Board confidence ${board.average}: ${board.state}.`),
+      );
+      else verdict.append(
         el('div', 'v-stamp', board.met ? 'TARGET MET' : 'TARGET MISSED'),
         el('div', 'v-text', `Operating profit ${formatMoney(board.profit)} vs board target ${formatMoney(board.target)}. ${board.met ? 'The board is pleased. For now.' : `Short by ${formatMoney(board.target - board.profit)}. Strike ${board.strikes}.`}`),
       );
