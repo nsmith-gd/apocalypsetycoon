@@ -13,3 +13,17 @@
 - `midnight-ui.js` + `midnight.css`: `await showMidnight({ root, result, onRestart })`, the ending screen.
 - Campaign clock: after the Q12 quarter report, call `computeMidnight(...)` then `showMidnight(...)`.
 - Demo: serve the repo root and open `demo/midnight-demo.html` (`?preset=architect|gilded|ark|nobody` jumps to Q12 with a set-up world).
+
+## Engineered Midnight, Seal Order and Overtime (#29)
+- `engineered.js`: `PROJECTS` (Project Lights Out at 4:50, The Final Product at 5:30 with a 3-of-5 `boardVote`),
+  research unlock ids 41/45/46/48 (`RESEARCH_UNLOCKS`), `APOCALYPSES` (10, each with required Days Sealed and critical
+  ratings) and `combinedRequirement` for a linked pair. `EngineeredMidnight`: `start({ project, target, weeks 4-12 })`,
+  `salesMultiplier` (x3 during LAST CALL), `advanceWeek()` (heat +3/week, then a 2-week Seal Order, then `midnight`),
+  `callOff()` (once, -20 board confidence). `runSealOrder(clients)` (distance, sieges, high leverage -> late/lost;
+  helicopters cut distance risk). `GRADES` / `gradeFor` (Platinum ... The Gerald, -1 if uncontrolled). `Overtime`
+  (quota +30% a quarter, the 4 unused tracks open one per quarter).
+- `computeMidnight({ ..., apocalypse, pickups })` applies Seal Order outcomes (lost = nobody arrives, late = 75% get in)
+  and, for life-systems shelters (rooms with floors), the apocalypse's Days Sealed and critical ratings; it returns `grade`.
+- `engineered-ui.js`: planner, LAST CALL / SEAL ORDER banner, Seal Order board, Overtime offer.
+- In `demo/midnight-demo.html`: ENGINEER MIDNIGHT (unlocks at Q10 / Q11, or `?unlock`), +1 WEEK, and the Overtime offer
+  at the end of Q12.

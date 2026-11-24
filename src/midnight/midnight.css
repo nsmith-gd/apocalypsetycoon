@@ -109,3 +109,4 @@ tr[data-outcome='lost'] .mn-name { text-decoration: line-through; opacity: 0.7; 
 .mn-grade[data-grade='platinum'] { color: #e8f4ff; } .mn-grade[data-grade='gold'] { color: var(--at-gold); }
 .mn-grade[data-grade='silver'] { color: #c8c8d8; } .mn-grade[data-grade='bronze'] { color: #d8904a; }
 .mn-grade[data-grade='tin'] { color: #8a8a8a; } .mn-grade[data-grade='gerald'] { color: var(--at-red); }
+.mn-pickup { color: var(--at-amber); font-size: 10px; font-weight: 700; }

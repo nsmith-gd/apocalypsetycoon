@@ -2,6 +2,7 @@
 // Overtime offer. Plain DOM over the HUD.
 
 import { PROJECTS, APOCALYPSES, requirementFor, ENGINEERED } from './engineered.js';
+import { dockBelowHud } from '../pushback/pushback-ui.js';
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -71,6 +72,7 @@ export function createBanner({ root = document.body, em, onCallOff }) {
   const b = el('div', 'em-banner');
   b.hidden = true;
   root.append(b);
+  dockBelowHud(b, document);
   const render = () => {
     if (em.phase === 'last_call') {
       b.hidden = false;

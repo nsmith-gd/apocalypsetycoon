@@ -102,7 +102,7 @@ export function showMidnight({ root = document.body, result, onRestart } = {}) {
     'div',
     'mn-kind-why',
     result.cause
-      ? `${result.cause} Every shelter needed ${Math.round((result.needMultiplier - 1) * 100)}% more to survive.`
+      ? `${result.cause}${result.needMultiplier > 1 ? ` Every shelter needed ${Math.round((result.needMultiplier - 1) * 100)}% more to survive.` : ''}`
       : result.type === 'engineered'
       ? `Control ${result.control}/100: the end of the world arrived on your schedule.`
       : `Control ${result.control}/100: ${result.world.runaways} runaway cris${result.world.runaways === 1 ? 'is' : 'es'} got there first. Every shelter needed ${Math.round((result.needMultiplier - 1) * 100)}% more to survive.`,
@@ -137,6 +137,7 @@ export function showMidnight({ root = document.body, result, onRestart } = {}) {
     tr.dataset.outcome = s.outcome;
     const name = el('td', 'mn-name', s.name);
     if (s.owner) name.append(el('span', 'mn-owner', s.sold ? ` sold to ${s.owner}` : ` ${s.owner}`));
+    if (s.pickup === 'late' || s.pickup === 'lost') name.append(el('span', 'mn-pickup', s.pickup === 'late' ? ' ARRIVED LATE' : ' NEVER ARRIVED'));
     tr.append(name, el('td', 'mn-num', `${s.survivors}/${s.occupants}`));
     for (const k of STATS) {
       const g = el('td', 'mn-g', s.grades[k]);
