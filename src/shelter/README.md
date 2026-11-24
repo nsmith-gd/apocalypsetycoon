@@ -19,3 +19,17 @@
   dig cost, crew speed, blast base), the adjacency list, phase lengths, morale formula and the per-person use.
   The four depth gates, 6-tile noise radius, 30-day pressure test and -0.25 per missing point are from the ticket.
 - Demo: `demo/shelter-life-demo.html`.
+
+# Shelter grid (#2: the build canvas)
+
+- `grid.js` — `ShelterGrid({ ledger, costMultiplier, crews, isUnlocked })`, rules only. 10 x 6 cells, row 0 surface,
+  column 0 the ladder shaft. Palette = `ROOM_CATALOG` (clients/rooms.js); research-gated rooms need `isUnlocked`.
+  - `quote(col, row, id)` / `place(...)`: room price + digging the cell (`STRATA` by depth, 5 m per row) the first
+    time, times the board's `buildCostMultiplier`. Booked in the ledger at once under Builds.
+  - Crews (`crews()`, research adds more) work the queue one job each; `tick(gameSeconds)`. Dig time by stratum +
+    fit-out time. Rooms count only once built.
+  - `remove(col, row)`: unfinished job = full refund; finished room = 50% salvage; the hole stays dug.
+  - `stats()`: occupants (2 + 4 per bunk room), air/water/food supply vs need with Midnight's grades, prestige,
+    luxury/survival counts, invested, crew status. `toShelter()` feeds `computeMidnight`. `toJSON()/load()`.
+- `grid-ui.js` + `grid.css` — palette strip, click-to-build canvas (hover quote, scaffolding + progress on jobs,
+  floating cost text), right-click or DEMOLISH [X] to remove, stat sheet. Used by the campaign (`index.html`).

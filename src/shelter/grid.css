@@ -1,0 +1,59 @@
+/* Shelter grid screen. Tokens from src/ui/ui.css. */
+.sg { display: flex; flex-direction: column; gap: 8px; align-items: center; font-family: var(--at-font); color: var(--at-ink); width: 100%; }
+.sg-title { font: 900 12px var(--at-font); letter-spacing: 2px; color: var(--at-gold); margin-bottom: 4px; }
+.sg-palette, .sg-sheet { background: var(--at-panel); border: 3px solid var(--at-border); box-shadow: inset 2px 2px 0 var(--at-hi); padding: 6px; display: flex; flex-wrap: wrap; gap: 3px; max-width: min(740px, 100%); box-sizing: border-box; }
+.sg-palette > .sg-title { width: 100%; margin: 0; }
+.sg-palette .sg-room { flex: 1 1 116px; max-width: 160px; }
+.sg-sheet { align-items: stretch; gap: 10px; }
+.sg-sheet > * { flex: 1 1 110px; }
+.sg-sheet .sg-col { display: flex; flex-direction: column; gap: 2px; }
+.sg-room { display: grid; grid-template-columns: 20px 1fr auto; grid-template-rows: auto auto; column-gap: 5px; align-items: center; text-align: left;
+  font: 700 11px var(--at-font); color: var(--at-ink); background: var(--at-panel-2); border: 2px solid var(--at-border); box-shadow: inset 2px 2px 0 var(--at-hi); padding: 3px 5px; cursor: pointer; }
+.sg-room:hover { background: var(--at-hi); }
+.sg-room.on { background: var(--at-gold); color: var(--at-paper-ink); }
+.sg-room[data-locked='true'] { opacity: .45; }
+.sg-icon { grid-row: span 2; width: 20px; height: 20px; image-rendering: pixelated; }
+.sg-name { grid-column: 2 / 4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sg-cost { grid-column: 3; grid-row: 2; color: var(--at-gold); font-size: 10px; }
+.sg-room.on .sg-cost { color: var(--at-paper-ink); }
+.sg-tag { grid-column: 2; grid-row: 2; white-space: nowrap; font-size: 9px; letter-spacing: 1px; color: var(--at-dim); }
+.sg-tag.sg-lux { color: var(--at-gold); }
+.sg-tag.sg-air { color: #b8e0d0; }
+.sg-tag.sg-water { color: #7ab8ff; }
+.sg-tag.sg-food { color: var(--at-green); }
+.sg-room.on .sg-tag { color: var(--at-paper-ink); }
+.sg-palette .sg-demolish { display: flex; align-items: center; justify-content: center; color: var(--at-red); }
+.sg-demolish.on { background: var(--at-red); color: var(--at-paper-ink); }
+
+.sg-centre { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.sg-canvas-row { display: flex; align-items: flex-start; }
+.sg-canvas { image-rendering: pixelated; border: 4px solid var(--at-border); cursor: crosshair; display: block; }
+.sg[data-tool='demolish'] .sg-canvas { cursor: not-allowed; }
+.sg-depth { display: flex; flex-direction: column; padding-top: 4px; margin-right: 4px; }
+.sg-depth-row { display: flex; align-items: center; justify-content: flex-end; font-size: 9px; color: var(--at-dim); border-top: 1px dashed var(--at-hi); box-sizing: border-box; min-width: 48px; }
+.sg-info { min-height: 16px; font: 700 11px var(--at-font); color: var(--at-dim); text-align: center; max-width: 100%; }
+.sg-info[data-kind='bad'] { color: var(--at-red); }
+.sg-info[data-kind='msg'] { color: var(--at-gold); }
+.sg-float { position: absolute; transform: translate(-50%, -100%); font: 900 13px var(--at-font); pointer-events: none; animation: sg-rise 1.1s steps(8) forwards; text-shadow: 2px 2px 0 var(--at-border); }
+.sg-float.sg-down { color: var(--at-red); }
+.sg-float.sg-up { color: var(--at-green); }
+@keyframes sg-rise { to { transform: translate(-50%, -260%); opacity: 0; } }
+
+.sg-people { font: 900 16px var(--at-font); margin-bottom: 4px; }
+.sg-stat { margin-bottom: 4px; }
+.sg-stat-head { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; }
+.sg-stat .hud-bar-fill { background: var(--at-red); }
+.sg-stat[data-grade='A'] .hud-bar-fill, .sg-stat[data-grade='B'] .hud-bar-fill { background: var(--at-green); }
+.sg-stat[data-grade='C'] .hud-bar-fill { background: var(--at-amber); }
+.sg-grade { font-size: 14px; }
+.sg-stat[data-grade='A'] .sg-grade, .sg-stat[data-grade='B'] .sg-grade { color: var(--at-green); }
+.sg-stat[data-grade='C'] .sg-grade { color: var(--at-amber); }
+.sg-stat[data-grade='D'] .sg-grade, .sg-stat[data-grade='F'] .sg-grade { color: var(--at-red); }
+.sg-stat-sub { font-size: 9px; color: var(--at-dim); }
+.sg-prestige { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; }
+.sg-prestige b { color: var(--at-gold); }
+.sg-line { font-size: 10px; color: var(--at-dim); }
+.sg-crew { font: 900 11px var(--at-font); color: var(--at-amber); letter-spacing: 1px; }
+
+
+@media (max-width: 600px) { .sg-depth { display: none; } }
