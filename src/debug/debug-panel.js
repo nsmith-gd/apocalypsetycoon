@@ -7,7 +7,7 @@
 //                schemesAvailable(), scheme(s), sell(kind), build(room), demand(), capacity(), quarter
 //     endQuarter the game's own async end-quarter (report, cards, Midnight)
 
-import { BOTS, botQuarter, botChoice } from './sim.js';
+import { BOTS, botQuarter, botChoice } from './demo-bots.js';
 import { PACING } from './pacing.js';
 
 const el = (tag, cls, text) => {

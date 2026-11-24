@@ -1,14 +1,15 @@
 // Weekly crisis harness (#68): plays the real CrisisSystem over a roster, week by week, with a bot holding
 // its crisis band through scheme-sized pushes, and reports when the first breach lands, naturally or
-// through the first-breach wildcard. The quarter-level pacing sim (sim.js) has no per-track crisis, so
-// this is the check for "first breach by 2:30".
+// through the first-breach wildcard. It isolates the crisis system; the full harness (sim.js) now
+// plays every real system and also reports the first breach.
 //
 //   simulateFirstBreach({ bot: 'cautious', seed: 1 }) -> { firstBreach: { minute, track, how }, weeks: [...] }
 
 import { CrisisSystem } from '../crisis/breach.js';
 import { FirstBreachNudge, FIRST_BREACH } from '../crisis/first-breach.js';
 import { TRACK_BY_ID, CLASSIC_ROSTER } from '../world/tracks.js';
-import { BOTS, SIM } from './sim.js';
+import { BOTS } from './sim.js';
+import { SCHEMES } from '../schemes/schemes.js';
 import { PACING } from './pacing.js';
 import { mulberry32 } from '../pushback/pushback.js';
 
@@ -18,7 +19,7 @@ export const OPEN_TENSION = 20; // TRACK_OPEN_TENSION in the campaign
 /**
  * One campaign's first ~3.5 hours of crisis, week by week.
  * The bot pushes its hottest open track up toward its band with the stand-in schemes (one or two a
- * week, tension values from SIM.schemes), and stops at the top of the band.
+ * week, tension values from the real scheme list), and stops at the top of the band.
  */
 export function simulateFirstBreach({ bot = 'cautious', seed = 1, roster = CLASSIC_ROSTER, untilMinutes = 210, nudge = true } = {}) {
   const profile = BOTS[bot];
@@ -27,7 +28,7 @@ export function simulateFirstBreach({ bot = 'cautious', seed = 1, roster = CLASS
   const crisis = new CrisisSystem({ seed, tracks: roster.map((id) => ({ id, name: TRACK_BY_ID[id].name, open: false })) });
   let minute = 0;
   const nudger = new FirstBreachNudge({ crisis, minutes: () => minute });
-  const schemes = SIM.schemes.filter((s) => !s.research);
+  const schemes = SCHEMES; // the real scheme list (#79), research schemes included: an edge runner has them by 2:30
   let first = null;
   crisis.on('breach', ({ track }) => { if (!first) first = { minute: Math.round(minute), track, how: nudger.fired ? 'wildcard' : 'natural' }; });
   const weeks = [];
