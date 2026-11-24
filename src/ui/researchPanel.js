@@ -9,6 +9,7 @@
 import { BRANCHES, researchZone, effectLabel } from '../research/research.js';
 import { OBJECTS } from '../shelter/bunker-catalog.js';
 import { formatMoney } from '../ledger/ledger.js';
+import { settings, keyHint } from '../settings/settings.js';
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -26,7 +27,7 @@ export function createResearchPanel({ root, tree, getCrisis = () => 0, mode = 'c
   const chip = el('button', 'hud-stat research-chip');
   chip.type = 'button';
   chip.title = 'Research (R). Crises fund your labs: every track at Simmer, Boil or Brink pays research grants each week.';
-  const chipLabel = el('span', 'hud-label', 'RESEARCH [R]');
+  const chipLabel = keyHint(el('span', 'hud-label'), 'RESEARCH', 'research');
   const chipRate = el('span', 'hud-value');
   const chipBar = el('div', 'hud-bar');
   const chipFill = el('div', 'hud-bar-fill');
@@ -42,7 +43,7 @@ export function createResearchPanel({ root, tree, getCrisis = () => 0, mode = 'c
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-label', 'Research');
   const head = el('div', 'research-head');
-  const close = el('button', 'research-close', 'CLOSE [R]');
+  const close = keyHint(el('button', 'research-close'), 'CLOSE', 'research');
   close.type = 'button';
   close.addEventListener('click', () => toggle(false));
   head.append(el('div', 'research-title', 'R&D: CRISIS-FUNDED LABS'), close);
@@ -162,7 +163,7 @@ export function createResearchPanel({ root, tree, getCrisis = () => 0, mode = 'c
   tree.onChange(render);
   tree.ledger?.onChange?.(() => { if (!overlay.hidden) render(); });
   const onKey = (e) => {
-    if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey && !['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) toggle();
+    if (settings.matches(e, 'research')) toggle();
     if (e.key === 'Escape' && !overlay.hidden) toggle(false);
   };
   window.addEventListener('keydown', onKey);

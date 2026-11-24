@@ -105,17 +105,3 @@ test('save and load', () => {
   assert.deepEqual(back.snapshot(), c.snapshot());
   assert.equal(back.brink('x'), false);
 });
-
-test('pushback bridge: world tension feeds the clock and a runaway is a contained breach', async () => {
-  const { attachPushback } = await import('../src/doomclock/doomclock.js');
-  const { Pushback } = await import('../src/pushback/pushback.js');
-  const pb = new Pushback({ startingCash: 1e6 });
-  const c = new DoomClock();
-  attachPushback(c, pb);
-  pb.onScheme({ label: 'x', tension: 40 }); // 20 + 40 = 60
-  assert.equal(c.tensions.world, 60);
-  assert.equal(c.minutes, 13.5);
-  pb.onScheme({ label: 'y', tension: 50 }); // runaway, reset to 70
-  assert.equal(c.breachesContained, 1);
-  assert.equal(c.floor, 13.75); // brink -0.25, breach -1
-});

@@ -458,6 +458,9 @@ export class CrisisSystem {
       }
     }
     // Every week the clock hears every open track's tension and tip (and, in the campaign, the week itself).
+    // Brink drift (#92, GDD Difficulty): a track at its Brink creeps toward the edge on its own each week.
+    const drift = this.cfg.brinkDrift ?? 0;
+    if (drift) for (const t of Object.values(this.tracks)) if (t.open && t.state === 'brink') this.addTension(t.id, drift, 'Brink drift');
     this._sync();
     this._emit('week', { week: this.week });
   }

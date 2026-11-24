@@ -8,6 +8,7 @@
 //   wireAudio(audio, { ledger, pushback })  // hooks builds / sales / schemes / heat / board for you
 
 import { musicStep, MUSIC, SFX, midnightStinger, midnightTimes } from './synth.js';
+import { settings } from '../settings/settings.js';
 
 export { midnightTimes };
 
@@ -173,7 +174,7 @@ export function createSoundToggle(audio) {
   };
   b.addEventListener('click', () => { audio.start(); audio.toggleMute(); });
   window.addEventListener('keydown', (e) => {
-    if ((e.key === 'm' || e.key === 'M') && !['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) { audio.start(); audio.toggleMute(); }
+    if (settings.matches(e, 'mute')) { audio.start(); audio.toggleMute(); }
   });
   audio.onChange(render);
   render();
