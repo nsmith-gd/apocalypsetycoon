@@ -1,7 +1,7 @@
 # Crisis states over the world map: region x state check (#104)
 
-Run against the map that is in the game today. The redone base, borders, markers and heat overlay (#100-#103)
-have not landed yet. Re-run with `node tools/map-crisis-check.cjs` (repo served on :8123) when they do.
+Run against the map in the game today, including #101's new region borders and states (merged while I worked).
+The redone base, markers and heat overlay (#100, #102, #103) have not landed yet. Re-run with `node tools/map-crisis-check.cjs` (repo served on :8123) when they do.
 
 AUTO = measured: the state's art stays inside the region, covers every visible land cell, and reads stronger
 than the state below. EYE = judged on the x4 contact sheets (state-*.png, state-mixed.png).
@@ -12,12 +12,13 @@ than the state below. EYE = judged on the x4 contact sheets (state-*.png, state-
 | Latin America | AUTO pass · EYE fail (weak) | pass | pass | pass |
 | Europe | AUTO pass · EYE fail (weak) | pass | pass | pass |
 | Africa | AUTO pass · EYE fail (weak) | AUTO pass · EYE fail (Sahara: low contrast) | pass | pass |
-| Middle East | AUTO pass · EYE fail (weak) | AUTO pass · EYE fail (desert: low contrast) | pass | pass |
+| Middle East | AUTO pass · EYE fail (weak) | AUTO pass · EYE fail (desert: low contrast) | pass | AUTO pass · EYE fail (hides Edge) |
 | South Asia | AUTO pass · EYE fail (weak) | pass | pass | pass |
 | East Asia | AUTO pass · EYE fail (weak; strip) | AUTO pass · EYE fail (strip) | AUTO pass · EYE fail (strip) | pass |
 | Oceania | AUTO pass · EYE fail (weak) | AUTO pass · EYE fail (desert: low contrast) | pass | pass |
 
 Calm (under 40) has no overlay by design and is the reference frame for every diff.
+The selected outline's dark outer edge sits up to 2 px outside the region by design (#101), and the check allows that.
 Measured coverage of a region's pixels: uneasy 6-8%, edge 21-26%, tipping 40-50%. No state drew a single pixel
 outside its own region (bleed 0 everywhere).
 
@@ -34,6 +35,12 @@ outside its own region (bleed 0 everywhere).
 4. **Tipping buries the terrain.** Readable as an alarm, but it hides all base detail. On a reference-fidelity
    base (#100) that loses the new art; suggest the tipping dither leave the base visible through roughly half
    its pixels, with the blink doing the alarm work.
+
+5. **Selected hides the crisis state.** #101's selected state lays a warm gold tint over the region; over an
+   Edge region (orange dither) the two merge and the Edge reading disappears while it's selected (state-mixed.png,
+   Middle East). Selection is the moment the player is reading that region's crisis, so the crisis state should
+   stay on top: draw the crisis look after the selected tint, or tint only the outline band when a crisis state
+   is showing. This one is shared between #47 (crisis art) and #101 (selected state).
 
 ## Risk once the redone base lands
 All states are drawn as whole 8x8 cells. On a base with pixel-level coastlines like the reference

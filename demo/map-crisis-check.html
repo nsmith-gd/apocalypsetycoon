@@ -123,7 +123,11 @@ for (const r of REGIONS) {
   const box = labelBox(r.id);
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     if (same(px(sel, x, y), px(base, x, y))) continue;
-    if (regionAtCell(Math.floor(x / CELL), Math.floor(y / CELL)) !== r.id && !inBox(box, x, y)) bleed++;
+    if (regionAtCell(Math.floor(x / CELL), Math.floor(y / CELL)) === r.id || inBox(box, x, y)) continue;
+    // the selected outline has a dark outer edge by design (#101): allow 2px around the region
+    let near = false;
+    for (let dy = -2; dy <= 2 && !near; dy++) for (let dx = -2; dx <= 2 && !near; dx++) near = regionAtCell(Math.floor((x + dx) / CELL), Math.floor((y + dy) / CELL)) === r.id;
+    if (!near) bleed++;
   }
   results.push({ region: r.id, name: r.name, state: 'selected', pass: bleed === 0, fails: bleed ? [`${bleed}px outside the region`] : [], bleedPx: bleed });
 }
