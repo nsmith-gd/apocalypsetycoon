@@ -123,7 +123,7 @@ export class MapSales {
     return { ...row, buyerList: buyers, best, quotes };
   }
 
-  quote(regionId, shelterId, { lead: pipelineLead = null } = {}) {
+  quote(regionId, shelterId, { lead: pipelineLead = null, priceBonus = 0 } = {}) {
     const region = this.region(regionId);
     if (!region) return { error: 'Unknown region.' };
     const shelter = this.stock.find((s) => s.id === shelterId);
@@ -134,14 +134,17 @@ export class MapSales {
     const lead = pipelineLead ?? this.buyers(regionId)[0];
     if (!lead) return { error: `No buyers in ${region.name}. Calm worlds don't buy bunkers.` };
     const premium = this.overview().find((r) => r.id === regionId).premium;
-    return { region, shelter, lead, premium, price: salePrice(shelter, lead.wealth, premium, this.cfg) };
+    // Hook (#58): redeeming a pipeline lead adds a price bonus (src/leads/redeem.js).
+    const base = salePrice(shelter, lead.wealth, premium, this.cfg);
+    const price = pipelineLead && priceBonus ? Math.round((base * (1 + priceBonus)) / 1000) * 1000 : base;
+    return { region, shelter, lead, premium, price };
   }
 
   canSell(regionId, shelterId) { return !this.quote(regionId, shelterId).error; }
 
   /** Sell a finished shelter to the region's best waiting buyer. */
-  sell(regionId, shelterId, { lead: pipelineLead = null } = {}) {
-    const q = this.quote(regionId, shelterId, { lead: pipelineLead });
+  sell(regionId, shelterId, { lead: pipelineLead = null, priceBonus = 0 } = {}) {
+    const q = this.quote(regionId, shelterId, { lead: pipelineLead, priceBonus });
     if (q.error) throw new Error(q.error);
     const { region, shelter, lead, price, premium } = q;
     if (!pipelineLead) this.market.work(lead.id); // the buyer leaves the inbox: local demand falls
@@ -162,6 +165,7 @@ export class MapSales {
       soldQuarter: this.getQuarter(),
       price,
       premium,
+      viaLead: !!pipelineLead,
       ratings: { air: r2(graded.ratios.air), water: r2(graded.ratios.water), food: r2(graded.ratios.food) },
       grades: { ...graded.grades },
       prestige: graded.prestige,
