@@ -142,6 +142,7 @@ export const PUSHBACK_DEFAULTS = {
   heat: {
     start: 5,
     decayPerQuarter: 8, // heat cools off on its own when you lay low
+    decayPerWeek: 0, // the campaign uses weekly decay from the difficulty table instead (#92): weekTick()
     investigationAt: 50, // crossing this mid-quarter opens an investigation (once per quarter)
     fineAt: 65, // ending a quarter at or above this draws a regulator fine
     finePerPoint: 1_500, // fine = (heat - fineAt + 10) * finePerPoint
