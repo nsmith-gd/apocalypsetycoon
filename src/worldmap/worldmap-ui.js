@@ -20,10 +20,12 @@ import { CLIENT_TYPES } from '../clients/clients.js';
 import { ROOM_CATALOG } from '../clients/rooms.js';
 import { settings } from '../settings/settings.js';
 import { buildRegionMask, drawRegionLayer } from '../art/map-regions.js';
+import { mapBase } from '../art/map-base.js';
 
 let MASK = null;
 /** Per-pixel region mask from the clickable hit areas (built once). */
-export const regionMask = () => (MASK ??= buildRegionMask({ w: MAP_W, h: MAP_H, cell: CELL, regionAtCell }));
+// Borders hug the painted coastline of the base layer (#100), inside the same clickable cells.
+export const regionMask = () => (MASK ??= buildRegionMask({ w: MAP_W, h: MAP_H, cell: CELL, regionAtCell, isLandPx: mapBase().isLandPx }));
 
 // Short map labels (the 3x5 font is 4px a letter) and marker anchors, in cells.
 export const MAP_PLACES = Object.freeze({
