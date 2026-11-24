@@ -34,6 +34,8 @@ import { createSaveSlot, ledgerSaveable, pushbackSaveable, doomClockSaveable } f
 import { finaleArgs } from '../midnight/finale.js';
 import { Company } from '../company/company.js';
 import { createCompanyPanel } from '../company/company-panel.js';
+import { StoryBeats } from '../story/beats.js';
+import { showBeat } from '../story/beat-ui.js';
 import { LeadInventory } from '../leads/leads.js';
 import { loadVenueCatalog } from '../events/venues.js';
 import { EventCircuit } from '../events/attend.js';
@@ -396,8 +398,21 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     addResearch: (n) => { tree.pool += n; },
     note: (text) => toast(text),
   };
+  // ---------- story beats (#76, L0): timed text popups that pause the game ----------
+  const story = new StoryBeats();
+  slot.register('story', story);
+  const beatQueue = [];
+  let beatOpen = false;
+  async function pumpBeats() {
+    if (beatOpen || !beatQueue.length || modalOpen() || midnightStarted) return;
+    beatOpen = true;
+    const beat = beatQueue.shift();
+    const m = Math.round(campaignMinutes());
+    await showBeat({ root: document.body, beat, clockLabel: `Y1 Q${clock.quarter} · ${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')} played` });
+    beatOpen = false;
+  }
   async function pumpCards() {
-    if (cardOpen || !cardQueue.length || modalOpen() || midnightStarted) return;
+    if (beatOpen || beatQueue.length || cardOpen || !cardQueue.length || modalOpen() || midnightStarted) return;
     cardOpen = true;
     const { card, week, special } = cardQueue.shift();
     const pick = await showWeeklyCard({ root: document.body, card, week, trackName, canAfford: (cost) => ledger.cash >= cost });
@@ -415,7 +430,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     if (card) cardQueue.push({ card, week });
   }
 
-  const modalOpen = () => !!document.querySelector('.report-overlay:not([hidden]), .br-overlay:not([hidden]), .pb-overlay, .mn-overlay, .mn-strike, .soc-overlay:not([hidden]), .cp-overlay:not([hidden])');
+  const modalOpen = () => !!document.querySelector('.report-overlay:not([hidden]), .br-overlay:not([hidden]), .pb-overlay, .mn-overlay, .mn-strike, .soc-overlay:not([hidden]), .cp-overlay:not([hidden]), .sb-overlay');
 
   // ---------- keys ----------
   const onKey = (e) => {
@@ -443,11 +458,13 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
       weekAcc += g;
       while (weekAcc >= WEEK_SECONDS) { weekAcc -= WEEK_SECONDS; crisis.advanceWeek(); }
       syncDoomWeeks();
+      beatQueue.push(...story.due({ minutes: campaignMinutes(), quarter: clock.quarter, crisis, pushback: pb }));
       drawWeeklyCard();
       const wild = firstBreach.check();
       if (wild) cardQueue.unshift({ card: wild, week: campaignWeek(), special: true });
     }
     clock.tick(dt);
+    pumpBeats();
     pumpCards();
     acc += dt;
     if (acc > 0.25) { acc = 0; frame++; drawViews(); }
@@ -478,7 +495,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   }
 
   session = {
-    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, market, schemes, mapSales, mapScreen, slot, leads, social, company, firstBreach,
+    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, market, schemes, mapSales, mapScreen, slot, leads, social, company, story, firstBreach,
     destroy() {
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);
