@@ -8,8 +8,11 @@
   - Crisis tracks (#4): `setTensions({ id: tension }, { tips })` (auto-detects Brink within 10 of the fragile tip),
     `brink(id)`, `breachContained(id)`, `collapse(id)`. Campaign clock (#1): `chapterStart(n)`, `advanceWeeks(n)`.
   - `snapshot()`, `toJSON()` / `DoomClock.fromJSON()`.
-  - `attachPushback(clock, pushback)`: until #4's tracks land, pushback's world tension is one track and each runaway
-    counts as a Brink plus a contained breach (replaces pushback's old `doomsdayShift` counter).
+  - In the campaign the clock is fed by the `CrisisSystem` running the roster's six tracks (#69): every week, and on every
+    tension change, it pushes each OPEN track's tension and pre-fragility tip (`setTensions(open, { tips })`) and advances
+    the clock a week (`clockWeeks: true`). Closed tracks don't count toward the sum, but fragility lowers their rolled tip
+    all along, so they open fragile. `attachPushback` (pushback's single world track) is no longer used by the campaign;
+    it stays only for the old demos.
 - `doomclock-hud.js` + `doomclock.css`: the DOOM CLOCK box on the HUD (pixel face, red wedge for time lost to the
   floor, minutes and floor, FINAL COUNTDOWN in weeks).
 - Uncontrolled Midnight: pass `forceType: 'failed', cause` to `computeMidnight` (src/midnight).

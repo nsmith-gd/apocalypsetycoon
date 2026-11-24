@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { nextFear, regionLeads, panicPremium, LeadMarket, REGIONS, EXPOSURE, DEMAND, attachCrisis } from '../src/demand/demand.js';
 import { CrisisSystem } from '../src/crisis/breach.js';
+import { TRACKS as GDD_TRACKS } from '../src/world/tracks.js';
 
 const region = (exposure) => ({ id: 'x', name: 'X', exposure, pool: { prepper: 1 }, wealth: 'rich' });
 
@@ -27,7 +28,7 @@ test('exposure weights are 1 / 0.5 / 0.25 and every one of the 8 regions has a f
   assert.deepEqual(EXPOSURE, { high: 1, medium: 0.5, low: 0.25 });
   assert.equal(REGIONS.length, 8);
   for (const r of REGIONS) {
-    assert.deepEqual(Object.keys(r.exposure).sort(), ['climate', 'markets', 'pandemic', 'unrest', 'war']);
+    for (const k of ['climate', 'markets', 'pandemic', 'unrest', 'war', ...GDD_TRACKS.map((t) => t.id)]) assert.ok(EXPOSURE[r.exposure[k]], `${r.id} ${k}`);
     assert.ok(r.siteCost > 0);
     assert.ok(Object.keys(r.pool).length >= 3);
   }
