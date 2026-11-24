@@ -10,6 +10,7 @@
 // on the world map land in the same numbers the moment they happen.
 
 import { CATEGORIES, formatMoney } from '../ledger/ledger.js';
+import { keyHint } from '../settings/settings.js';
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -37,7 +38,7 @@ export function createLedgerChip({ ledger, onOpen }) {
   const chip = el('button', 'hud-stat ledger-chip');
   chip.type = 'button';
   chip.title = 'The ledger: every build, sale, scheme and fine. Click or press L for the full books.';
-  chip.append(el('span', 'hud-label', 'LEDGER [L]'));
+  chip.append(keyHint(el('span', 'hud-label'), 'LEDGER', 'ledger'));
   const net = el('span', 'hud-value');
   const last = el('span', 'ledger-chip-last');
   chip.append(net, last);

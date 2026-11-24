@@ -49,6 +49,8 @@ import { showWeeklyCard } from '../events/weekly-ui.js';
 import { SocialSession } from '../social/viewmodel.js';
 import { worldState } from '../dialogue/world-state.js';
 import { createSocialScreens } from '../social/text-screens.js';
+import { settings, keyHint } from '../settings/settings.js';
+import { createSettingsPanel } from '../settings/settings-ui.js';
 
 export const STARTING_CASH = 400_000;
 // A threat opens already simmering (GDD bands: Calm 0-19, Simmer 20-44). Provisional.
@@ -109,7 +111,7 @@ function showMainMenu() {
   sound.title = 'Mute or unmute the game [M]';
   sound.onclick = () => { menuAudio.setMuted(!menuAudio.muted); renderSound(); };
   renderSound();
-  const onKey = (e) => { if ((e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey) sound.click(); };
+  const onKey = (e) => { if (settings.matches(e, 'mute')) sound.click(); };
   addEventListener('keydown', onKey);
   const leave = () => { removeEventListener('keydown', onKey); menuKeyOff = null; };
   menuKeyOff = leave;
@@ -370,10 +372,11 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   const endBtn = el('button', null, 'END QUARTER');
   endBtn.title = 'Close the books now (N)';
   endBtn.onclick = () => clock.skipQuarter();
-  const threatsBtn = el('button', null, 'THREATS [T]');
+  const settingsPanel = createSettingsPanel({ root: document.body }); // #94 accessibility + key bindings
+  const threatsBtn = keyHint(el('button'), 'THREATS', 'threats');
   threatsBtn.title = 'The six threat tracks in this world, when they open, and every scheme';
   threatsBtn.onclick = () => threats.toggle();
-  bar.append(label, time, track, speeds, threatsBtn, endBtn, telemetryBtn, menuBtn);
+  bar.append(label, time, track, speeds, settingsPanel.button, threatsBtn, endBtn, telemetryBtn, menuBtn);
   root.append(bar);
 
   function renderBar() {
@@ -555,11 +558,12 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   // ---------- keys ----------
   const onKey = (e) => {
     if (e.target?.tagName === 'INPUT' || e.target?.tagName === 'TEXTAREA') return;
-    if (e.code === 'Space') { e.preventDefault(); clock.togglePause(); }
-    else if (e.key === '.' || e.key === '>') clock.setSpeed(SPEEDS[Math.min(SPEEDS.length - 1, SPEEDS.indexOf(clock.speed) + 1)] ?? 1);
-    else if (e.key === ',' || e.key === '<') clock.setSpeed(SPEEDS[Math.max(0, SPEEDS.indexOf(clock.speed) - 1)] ?? 1);
-    else if (e.key === 'n' || e.key === 'N') { if (!modalOpen()) clock.skipQuarter(); }
-    else if ((e.key === 'e' || e.key === 'E') && social.screens && !modalOpen()) social.screens.toggle();
+    // keys come from the rebinding table (#94, Settings)
+    if (settings.matches(e, 'pause')) { e.preventDefault(); clock.togglePause(); }
+    else if (settings.matches(e, 'speedUp')) clock.setSpeed(SPEEDS[Math.min(SPEEDS.length - 1, SPEEDS.indexOf(clock.speed) + 1)] ?? 1);
+    else if (settings.matches(e, 'speedDown')) clock.setSpeed(SPEEDS[Math.max(0, SPEEDS.indexOf(clock.speed) - 1)] ?? 1);
+    else if (settings.matches(e, 'endQuarter')) { if (!modalOpen()) clock.skipQuarter(); }
+    else if (settings.matches(e, 'events') && social.screens && !modalOpen()) social.screens.toggle();
   };
   addEventListener('keydown', onKey);
 
@@ -625,6 +629,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
       gridUI.destroy();
       ui.destroy();
       threats.destroy();
+      settingsPanel.destroy();
       app.replaceChildren();
       session = null;
     },
