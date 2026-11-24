@@ -21,6 +21,7 @@ import { ROOM_CATALOG } from '../clients/rooms.js';
 import { settings } from '../settings/settings.js';
 import { buildRegionMask, drawRegionLayer } from '../art/map-regions.js';
 import { drawMarker, drawLabelPlate, drawCountTag } from '../art/map-markers.js';
+import { drawHeatLayer } from '../art/map-heat.js';
 
 let MASK = null;
 /** Per-pixel region mask from the clickable hit areas (built once). */
@@ -123,30 +124,15 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   canvas.addEventListener('mouseleave', () => { hover = null; });
   canvas.addEventListener('click', (e) => { const id = regionFromEvent(e); if (id) select(id); });
 
-  // Colour-blind patterns (#94): dots = uneasy, stripes = edge, crosshatch = tipping.
-  function hatch(zone, x0, y0) {
-    if (zone === 'calm') return;
-    ctx.fillStyle = 'rgba(10,8,7,.55)';
-    for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) {
-      const d = (x + y) % 4 === 0, a = (x - y + 64) % 4 === 0;
-      if (zone === 'uneasy' ? x % 3 === 1 && y % 3 === 1 : zone === 'edge' ? d : d || a) ctx.fillRect(x0 + x, y0 + y, 1, 1);
-    }
-  }
-
   function drawMap() {
     const anim = Math.floor(frame / 20) % 2;
     ctx.fillStyle = HEX.K;
     ctx.fillRect(0, 0, MAP_W, MAP_H);
     drawWorldMap(ctx, { frame: anim, labels: false });
-    const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
-    // crisis overlays + selection/hover per cell of each of the eight regions
-    for (let r = 0; r < MAP_ROWS; r++) for (let c = 0; c < MAP_COLS; c++) {
-      const id = regionAtCell(c, r);
-      if (!id) continue;
-      const ov = crisisOverlay(byId[id]?.crisis ?? 0);
-      if (ov) drawSprite(ctx, CRISIS_OVERLAYS[ov], c * CELL, r * CELL, { frame: anim });
-      if (settings.get('trackPatterns')) hatch(zoneOf(byId[id]?.crisis ?? 0).name, c * CELL, r * CELL); // #94
-    }
+    // demand heat (#103): veil + wash + texture + rim per region, readable on busy terrain. The textures
+    // are always on now; Crisis patterns (#94) makes them bolder, Reduced flashing stops the tipping pulse.
+    const levels = Object.fromEntries(rows.map((r) => [r.id, crisisOverlay(r.crisis ?? 0)]));
+    drawHeatLayer(ctx, regionMask(), levels, { frame: Math.floor(frame / 10), strong: settings.get('trackPatterns'), steady: settings.get('reducedFlash') });
     // cities (#102): a skyline icon over each city cell, sitting on its cell's bottom edge
     for (let r = 0; r < MAP_ROWS; r++) for (let c = 0; c < MAP_COLS; c++) if (WORLD_LAYOUT[r][c] === 'c') drawMarker(ctx, 'city', c * CELL - 1, r * CELL - 2);
     // region borders and idle / hover / selected states (#101), on the region hit areas
