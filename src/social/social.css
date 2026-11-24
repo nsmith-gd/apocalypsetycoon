@@ -1,0 +1,28 @@
+/* PLACEHOLDER text-only social screens (#60). Deliberately plain: final screens come later. */
+.soc-overlay[hidden] { display: none; }
+.soc-overlay { position: fixed; inset: 0; z-index: 140; background: rgba(10, 8, 7, 0.86); display: flex; align-items: flex-start; justify-content: center; padding: 24px 16px; overflow: auto; }
+.soc { width: min(760px, 100%); background: #14110f; color: #f2e6c9; border: 2px solid #a8977a; padding: 16px 18px; font: 14px/1.5 'Courier New', ui-monospace, monospace; }
+.soc-head { border-bottom: 1px dashed #a8977a; margin-bottom: 10px; padding-bottom: 6px; }
+.soc-h { margin: 0; font-size: 18px; letter-spacing: 2px; color: #f5c542; }
+.soc-sub { margin: 4px 0 0; color: #a8977a; }
+.soc-list, .soc-choices { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.soc-item { border: 1px solid #3b2f26; padding: 6px 8px; display: flex; flex-direction: column; gap: 2px; }
+.soc-item[data-open='false'], .soc-item[data-status='lost'], .soc-item[data-status='met'] { opacity: 0.55; }
+.soc-item[data-status='won'] { border-color: #7ed957; }
+.soc-title { font-weight: 700; }
+.soc-dim, .soc-why { color: #a8977a; font-size: 12px; }
+.soc-blurb { font-size: 12px; font-style: italic; }
+.soc-btn { align-self: flex-start; display: inline-flex; gap: 8px; align-items: baseline; text-align: left; font: inherit; font-weight: 700; color: #f2e6c9; background: #2f2821; border: 1px solid #a8977a; padding: 4px 10px; cursor: pointer; }
+.soc-btn:hover:not(:disabled) { background: #4a3f33; }
+.soc-key { color: #f5c542; }
+.soc-choice { width: 100%; flex-wrap: wrap; }
+.soc-tags { width: 100%; padding-left: 18px; font-size: 11px; color: #ff9f1c; letter-spacing: 1px; }
+.soc-log { border-left: 2px solid #3b2f26; padding-left: 10px; margin-bottom: 10px; max-height: 40vh; overflow: auto; }
+.soc-line { margin: 4px 0; }
+.soc-you { color: #8fd3ff; }
+.soc-now { color: #fff1a8; }
+.soc-results { margin: 0 0 10px; padding-left: 18px; }
+.soc-good { color: #7ed957; } .soc-bad { color: #ff5a4f; }
+.soc-err { color: #ff5a4f; font-weight: 700; }
+.soc-foot { margin-top: 12px; display: flex; gap: 8px; }
+.soc-narrator { font-style: italic; color: #a8977a; }
