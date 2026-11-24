@@ -1,0 +1,5 @@
+quarter,week,minutes,type,track,name,card,title,client,q,met,target,profit,strikes,option
+1,0,1.08,track_open,atomic,Atomic Standoff,,,,,,,,,
+1,12,27,choice_card,,,board,The board is displeased,,,,,,,
+1,12,27,quota,,,,,,1,false,50000,-456000,1,
+1,12,27,choice_made,,,board,,,,,,,,ok

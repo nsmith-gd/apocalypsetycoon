@@ -36,6 +36,7 @@ import { Company } from '../company/company.js';
 import { createCompanyPanel } from '../company/company-panel.js';
 import { StoryBeats } from '../story/beats.js';
 import { showBeat } from '../story/beat-ui.js';
+import { Telemetry } from '../telemetry/telemetry.js';
 import { LeadInventory } from '../leads/leads.js';
 import { loadVenueCatalog } from '../events/venues.js';
 import { EventCircuit } from '../events/attend.js';
@@ -223,6 +224,10 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => crisis.advanceWeek() });
   crisis.on('week', () => mapScreen.refresh());
   slot.register('sales', mapSales);
+  // Telemetry (#78): weekly meters and every event, exportable as CSV (TELEMETRY button).
+  const telemetry = new Telemetry({ getTime: () => ({ quarter: clock.quarter, week: crisis.week, minutes: (clock.total / clock.quarterSeconds) * 27 }) });
+  telemetry.attach({ crisis, pushback: pb, ledger, tree, schemes, mapSales });
+  slot.register('telemetry', telemetry);
   // Crisis profits fund the labs too: the panic-premium share of every map sale becomes RP (#16).
   mapSales.onChange((e) => { if (e.type === 'sale' && e.record.premium > 1) tree.fundFromIncome(e.record.price * (1 - 1 / e.record.premium), `${e.record.owner}'s panic premium`); });
   const WEEK_SECONDS = clock.quarterSeconds / 13; // 13 in-game weeks a quarter
@@ -260,6 +265,9 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   });
   const saveBtn = el('button', null, 'SAVE');
   saveBtn.onclick = () => toast(slot.save() ? 'Campaign saved.' : 'Could not save: browser storage is unavailable.');
+  const telemetryBtn = el('button', null, 'TELEMETRY');
+  telemetryBtn.title = 'Download this campaign\'s weekly meters and event log as CSV';
+  telemetryBtn.onclick = () => { telemetry.download(); toast(`Telemetry: ${telemetry.weeks.length} weeks, ${telemetry.events.length} events saved as CSV.`); };
   const menuBtn = el('button', null, 'MENU');
   menuBtn.onclick = () => { slot.save(); session.destroy(); showMainMenu(); };
   const endBtn = el('button', null, 'END QUARTER');
@@ -268,7 +276,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   const threatsBtn = el('button', null, 'THREATS [T]');
   threatsBtn.title = 'The six threat tracks in this world, when they open, and every scheme';
   threatsBtn.onclick = () => threats.toggle();
-  bar.append(label, time, track, speeds, threatsBtn, endBtn, saveBtn, menuBtn);
+  bar.append(label, time, track, speeds, threatsBtn, endBtn, saveBtn, telemetryBtn, menuBtn);
   root.append(bar);
 
   function renderBar() {
@@ -301,6 +309,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     ledger.record('upkeep', `Shovel crew payroll x${workingCrews()}`, -45_000 * workingCrews());
     pbui.hold();
     const r = pb.endQuarter({ quarter, profit: ledger.summary(quarter).net });
+    telemetry.quota(quarter, r.board);
     if (r.board.met) audio.play('boardMet');
     await ui.showQuarterReport({ quarter, board: r.board, heat: pb.heat, tension: pb.tension, notes: r.lines.slice(1) });
     await pbui.drain();
@@ -365,6 +374,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
       await showClockStrike({ root: document.body, tolls: tolls.map((s) => s + 0.05), duration: boom + 0.05 });
     }
     session && (session.midnightResult = result);
+    telemetry.ending(result);
     await showMidnight({ root: document.body, result, onRestart: () => { document.querySelectorAll('.mn-overlay').forEach((n) => n.remove()); session.destroy(); showMainMenu(); } });
   }
   clock.onMidnight(() => midnight());
@@ -495,7 +505,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   }
 
   session = {
-    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, market, schemes, mapSales, mapScreen, slot, leads, social, company, story, firstBreach,
+    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, market, schemes, mapSales, mapScreen, slot, leads, social, company, story, telemetry, firstBreach,
     destroy() {
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);
