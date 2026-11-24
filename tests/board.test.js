@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { Board, BOARD, MEMBERS, DIRECTIVES, quotaFor, quarterRevenue, stateOf, INVESTMENT_LABEL } from '../src/board/board.js';
 import { Ledger } from '../src/ledger/ledger.js';
 import { Pushback } from '../src/pushback/pushback.js';
+import { MONEY } from '../src/config/tuning.js';
 
 const gdd = { ...BOARD, quotaScale: 1 };
 
@@ -12,7 +13,9 @@ test('quota follows the GDD curve: $6M Q1, ~$13M Q4, ~$38M Q8, ~$108M Q12, +30% 
   assert.ok(Math.abs(quotaFor(8, gdd) - 38_000_000) < 600_000);
   assert.ok(Math.abs(quotaFor(12, gdd) - 108_000_000) < 1_000_000);
   for (let q = 2; q <= 14; q++) assert.ok(Math.abs(quotaFor(q, gdd) / quotaFor(q - 1, gdd) - 1.3) < 0.001, `Q${q}`);
-  assert.equal(quotaFor(1), 150_000, 'scaled to the current $K economy');
+  assert.equal(BOARD.quotaScale, 1, '#91: the economy runs on the GDD $M scale');
+  assert.equal(quotaFor(1), MONEY.quotaQ1, 'the default board uses the GDD curve unscaled');
+  assert.equal(quotaFor(5), quotaFor(5, gdd));
 });
 
 test('revenue counts income only and never investment rounds', () => {

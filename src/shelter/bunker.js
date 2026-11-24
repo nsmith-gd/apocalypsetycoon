@@ -101,9 +101,13 @@ export class BunkerSite {
   _charge(label, amount, category = 'builds') {
     const cost = Math.round(amount * this.costMultiplier());
     if (cost) this.ledger?.record(category, label, -cost);
+    if (category === 'builds') this.spent = (this.spent ?? 0) + cost; // what this shelter cost: its sale price builds on it (#91)
     return cost;
   }
-  _refund(label, amount, category = 'builds') { if (amount) this.ledger?.record(category, `Refund: ${label}`, amount); }
+  _refund(label, amount, category = 'builds') {
+    if (amount) this.ledger?.record(category, `Refund: ${label}`, amount);
+    if (category === 'builds') this.spent = Math.max(0, (this.spent ?? 0) - amount);
+  }
 
   // ---------- orders ----------
   _queue(job) {
@@ -745,7 +749,8 @@ export class BunkerSite {
     if (this.jobs.length) return { ok: false, reason: 'The crew is still working' };
     if (!this.objects.size) return { ok: false, reason: 'Build something first' };
     const sh = this.toShelter();
-    const shelter = { name, rooms: sh.rooms, occupants: sh.occupants, sealed: sh.sealed };
+    const shelter = { name, rooms: sh.rooms, occupants: sh.occupants, sealed: sh.sealed, buildCost: this.spent ?? 0 };
+    this.spent = 0;
     this.handedOver += 1;
     this.reset(false);
     this._changed({ type: 'handover', shelter });
@@ -757,7 +762,7 @@ export class BunkerSite {
       v: 2, W: this.W, H: this.H, S: this.S,
       dug: Array.from(this.dug), structure: this.structure, conduit: Array.from(this.conduits),
       objects: [...this.objects.values()], jobs: this.jobs, id: this._id, finish: this.finish,
-      surveyed: this.surveyed, surveyLeft: this.surveyLeft, pressureTest: this.pressureTest, day: this.day, handedOver: this.handedOver, stallDays: this.stallDays ?? 0,
+      surveyed: this.surveyed, surveyLeft: this.surveyLeft, pressureTest: this.pressureTest, day: this.day, handedOver: this.handedOver, stallDays: this.stallDays ?? 0, spent: this.spent ?? 0,
     };
   }
 
@@ -777,6 +782,7 @@ export class BunkerSite {
     this.surveyLeft = d.surveyLeft;
     this.pressureTest = d.pressureTest;
     this.stallDays = d.stallDays ?? 0;
+    this.spent = d.spent ?? 0;
     this.day = d.day;
     this.handedOver = d.handedOver ?? 0;
     this._changed({ type: 'load' });

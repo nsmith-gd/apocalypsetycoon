@@ -4,6 +4,7 @@ import { runHarness, simulateCampaign } from '../src/debug/sim.js';
 import { PacingLog, quarterMinutes, PACING } from '../src/debug/pacing.js';
 import { Ledger } from '../src/ledger/ledger.js';
 import { Pushback } from '../src/pushback/pushback.js';
+import { PUSHBACK_DEFAULTS } from '../src/config/tuning.js';
 
 test('a quarter on the fixed clock is the clock plus paused reading time', () => {
   const t = quarterMinutes({ choices: 2 });
@@ -11,15 +12,19 @@ test('a quarter on the fixed clock is the clock plus paused reading time', () =>
 });
 
 test('the log records one row per quarter with cash, crisis, heat and sales', () => {
-  const ledger = new Ledger({ startingCash: 100_000 });
+  // #91: amounts follow the pushback board's GDD-scale target (the sale beats it, as before)
+  const target = PUSHBACK_DEFAULTS.board.firstTarget;
+  const sale = target * 6;
+  const ledger = new Ledger({ startingCash: target * 2 });
   const pb = new Pushback({ ledger });
   const log = new PacingLog({ ledger, pushback: pb });
-  ledger.record('sales', 'Bunker', 300_000);
+  ledger.record('sales', 'Bunker', sale);
   pb.onScheme({ label: 'x', heat: 10, tension: 10 });
   const r = pb.endQuarter({ quarter: 1 });
   const row = log.endQuarter(1, r.board);
   assert.equal(row.sales, 1);
-  assert.equal(row.salesRevenue, 300_000);
+  assert.equal(row.salesRevenue, sale);
+  assert.equal(r.board.met, true, 'the sale meets the board target, so no clawback');
   assert.ok(row.crisis > 0 && row.heat >= 0 && row.cash > 0);
   assert.match(log.toCSV(), /^quarter,hours,/);
 });

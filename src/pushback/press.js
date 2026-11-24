@@ -44,16 +44,19 @@ export const PRESS = Object.freeze({
     },
   },
   counters: {
-    bury: { label: 'Bury', cost: 120_000, story: -25, repeatMarkup: 0.5, blurb: 'Lawyers and ad money. Story -25%. Each repeat on the same story costs 50% more.' },
+    bury: { label: 'Bury', cost: 2_000_000, // GDD (Legal, $2M)
+      story: -25, repeatMarkup: 0.5, blurb: 'Lawyers and ad money. Story -25%. Each repeat on the same story costs 50% more.' },
     discredit: {
-      label: 'Discredit', cost: 80_000,
+      label: 'Discredit', cost: 3_000_000, // GDD (Communications, $3M)
       sloppy: { story: -60 }, // works on Gil: his facts are shaky
       accurate: { story: -10, heat: 10, trust: -2 }, // backfires on Iris: she has the receipts
       blurb: 'Smear the reporter. Crushes a sloppy story; backfires on an accurate one.',
     },
-    distraction: { label: 'Distraction', cost: 50_000, story: -20, trackShove: 8, blurb: 'Give the news a bigger fire. Story -20%, a random threat track +8.' },
+    distraction: { label: 'Distraction', cost: 1_000_000, // GDD scheme price
+      story: -20, trackShove: 8, blurb: 'Give the news a bigger fire. Story -20%, a random threat track +8.' },
     kompromat: {
-      label: 'Kompromat', cost: 400_000, intelCost: 1, quietWeeks: 8, leakChance: 0.25, leak: { heat: 15, reputation: -10 },
+      label: 'Kompromat', cost: 2_000_000, // GDD $2M
+      intelCost: 1, quietWeeks: 8, leakChance: 0.25, leak: { heat: 15, reputation: -10 },
       blurb: 'Their own secrets. Kills the story and silences them for 8 weeks. Spends 1 intel if you have it, else $400K. 25% chance it leaks.',
     },
     interview: {
@@ -64,15 +67,16 @@ export const PRESS = Object.freeze({
     },
   },
   reputation: PRESS_REPUTATION, // GDD row: Reputation 0-100, starting at 40 (#77 tuning table)
-  inspector: { cost: 200_000, passSecurity: 3, maxVisible: 2, pass: { reputation: 6 }, onceEveryWeeks: 13 },
+  inspector: { cost: 2_000_000, // #91: GDD scale (stand-in x10)
+    passSecurity: 3, maxVisible: 2, pass: { reputation: 6 }, onceEveryWeeks: 13 },
   pitchforks: {
     openAtTension: 60, // The Pitchforks opens when world tension first reaches 60 (or openPitchforks())
     tensionPerPoint: 20, // strength = tension / 20 + visible features (ticket)
     siegeChancePerTension: 0.01, // weekly chance a siege happens = tension%
     occupied: { reputation: -5, leverage: 10, weeklyReputation: -1 },
     repelled: { reputation: 1 },
-    retake: { cost: 300_000, heat: 5 },
-    decoy: { cost: 150_000, defence: 2 },
+    retake: { cost: 3_000_000, heat: 5 },
+    decoy: { cost: 1_500_000, defence: 2 },
   },
 });
 

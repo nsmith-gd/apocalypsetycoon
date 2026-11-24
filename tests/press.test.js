@@ -88,8 +88,10 @@ test('counters: bury escalates in price, discredit backfires on Iris but crushes
   press.journalists.gil.story.progress = 80;
   const b1 = press.counter('iris', 'bury');
   const b2 = press.counter('iris', 'bury');
-  assert.equal(b1.cost, 120_000);
-  assert.equal(b2.cost, 180_000);
+  const B = PRESS.counters.bury;
+  assert.equal(b1.cost, B.cost);
+  assert.equal(b1.cost, 2_000_000); // GDD: Bury (Legal) $2M
+  assert.equal(b2.cost, B.cost * (1 + B.repeatMarkup));
   assert.equal(press.journalists.iris.story.progress, 0);
   press.journalists.iris.story.progress = 50;
   press.journalists.iris.trust = 3;
@@ -129,7 +131,8 @@ test('kompromat kills the story and silences the reporter; spends intel when ava
   assert.ok(r.usedIntel);
   assert.equal(press.journalists.gil.story, null);
   assert.equal(press.journalists.gil.restWeeks, 8);
-  assert.equal(press.counterCost('iris', 'kompromat'), 400_000);
+  assert.equal(press.counterCost('iris', 'kompromat'), PRESS.counters.kompromat.cost);
+  assert.equal(PRESS.counters.kompromat.cost, 2_000_000); // GDD: Kompromat $2M
   assert.ok(!ledger.entries.some((e) => e.label.startsWith('Kompromat')));
 });
 
@@ -193,7 +196,7 @@ test('The Pitchforks opens at tension 60 and then sieges come weekly', () => {
   assert.equal(press.sites[0].occupied, true);
 });
 
-test('the Inspector costs $0.2M a walkthrough and certifies only sound, quiet sites', () => {
+test('the Inspector costs $2M a walkthrough and certifies only sound, quiet sites', () => {
   const { ledger, press } = setup();
   const good = press.addSite({ name: 'Vault', security: 4, visible: 1 });
   const bad = press.addSite({ name: 'Dome', security: 1, visible: 4 });
@@ -203,7 +206,8 @@ test('the Inspector costs $0.2M a walkthrough and certifies only sound, quiet si
   const r2 = press.inspect(bad.id);
   assert.equal(r2.pass, false);
   assert.equal(r2.fixes.length, 2);
-  assert.equal(ledger.entries.filter((e) => e.label.startsWith('Inspector')).reduce((s, e) => s + e.amount, 0), -400_000);
+  assert.equal(PRESS.inspector.cost, 2_000_000);
+  assert.equal(ledger.entries.filter((e) => e.label.startsWith('Inspector')).reduce((s, e) => s + e.amount, 0), -2 * PRESS.inspector.cost);
   assert.equal(press.inspect(good.id).ok, false);
 });
 

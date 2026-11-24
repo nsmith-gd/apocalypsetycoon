@@ -76,7 +76,10 @@ test('blockers: wrong quarter, twice a quarter, out of days, out of cash, one vi
 });
 
 test('agenda and cash limits show up in options()', () => {
-  const poor = setup({ cash: 20_000 }).circuit;
+  const fair = catalog.byId['county-preparedness-fair'].cost.cash;
+  const expo = catalog.byId['prepper-expo'].cost.cash;
+  assert.ok(fair < expo);
+  const poor = setup({ cash: Math.round((fair + expo) / 2) }).circuit; // affords the fair, not the expo
   const opts = poor.options(1);
   assert.deepEqual(opts.find((o) => o.venue.id === 'county-preparedness-fair'), { venue: catalog.byId['county-preparedness-fair'], canAttend: true, reason: null });
   assert.equal(opts.find((o) => o.venue.id === 'prepper-expo').reason, 'not enough cash');

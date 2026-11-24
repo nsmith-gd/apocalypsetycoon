@@ -9,6 +9,7 @@
 //   runHarness({ bots, seeds })                -> { runs, checks, gdd }   gdd = GDD balance-target checks
 
 import { Ledger } from '../ledger/ledger.js';
+import { MONEY } from '../config/tuning.js';
 import { Pushback, mulberry32 } from '../pushback/pushback.js';
 import { ResearchTree } from '../research/research.js';
 import { computeMidnight } from '../midnight/midnight.js';
@@ -27,7 +28,7 @@ import { PacingLog, PACING } from './pacing.js';
 
 // Mirrors of the campaign's own constants (src/campaign/main.js).
 export const CAMPAIGN = Object.freeze({
-  startingCash: 400_000, trackOpenTension: 20, payrollPerCrew: 45_000, chapterStarts: { 3: 2, 5: 3, 8: 4, 11: 5 }, weeksPerQuarter: 13,
+  startingCash: MONEY.startingCash, trackOpenTension: 20, payrollPerCrew: MONEY.crewPerWeek * 13, chapterStarts: { 3: 2, 5: 3, 8: 4, 11: 5 }, weeksPerQuarter: 13,
 });
 const WEEK_MINUTES = PACING.quarterMinutes / CAMPAIGN.weeksPerQuarter;
 
@@ -128,7 +129,7 @@ export function botWeek(game) {
   for (const id of game.roster) if (TRACK_BY_ID[id].opensAt <= game.minute && !crisis.tracks[id].open) crisis.openTrack(id, { tension: CAMPAIGN.trackOpenTension });
   // research: next affordable project on the bot's list, keeping a cash reserve
   if (!tree.active) {
-    const next = p.research.find((id) => tree.status(id) === 'available' && tree.byId.get(id).cash <= ledger.cash - 250_000); // build money first
+    const next = p.research.find((id) => tree.status(id) === 'available' && tree.byId.get(id).cash <= ledger.cash - 2_500_000); // build money first
     if (next) tree.start(next);
   }
   // schemes: push the hottest open track toward the band (max two a week), within the heat cap
@@ -165,7 +166,7 @@ export function botWeek(game) {
     for (let c = 0; c < game.workingCrews(); c++) {
       const design = DESIGNS[p.sell[(mapSales.sold.length + mapSales.stock.length + c) % p.sell.length]];
       const cost = Math.round(buildCost(design) * pb.board.buildCostMultiplier);
-      if (cost > ledger.cash - 50_000) break;
+      if (cost > ledger.cash - 500_000) break;
       ledger.record('builds', `${design.label} shelter build`, -cost);
       mapSales.addFinished({ name: `${design.label} #${mapSales.sold.length + mapSales.stock.length + 1}`, rooms: [...design.rooms], occupants: design.occupants });
     }

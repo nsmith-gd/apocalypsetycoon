@@ -1,9 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Pushback } from '../src/pushback/pushback.js';
+import { Pushback, PUSHBACK_DEFAULTS } from '../src/pushback/pushback.js';
+import { MONEY } from '../src/config/tuning.js';
+
+// #91: this module's stand-in money x PB = GDD dollars; the fixtures below scale the same way.
+const PB = MONEY.fromStandIn.pushback;
 
 // Minimal ledger stand-in with the same surface as src/ledger/ledger.js.
-function fakeLedger(cash = 250_000) {
+function fakeLedger(cash = 250_000 * PB) {
   const entries = [];
   let quarter = 1;
   return {
@@ -47,14 +51,14 @@ test('maxing heat triggers a raid with a big fine', () => {
   const fired = pb.onScheme({ label: 'Everything at once', heat: 100 });
   assert.ok(fired.some((e) => e.type === 'raid'));
   assert.equal(pb.heat, pb.cfg.heat.raidHeatAfter);
-  assert.ok(ledger.entries.some((e) => e.label === 'Federal raid' && e.amount <= -150_000));
+  assert.ok(ledger.entries.some((e) => e.label === 'Federal raid' && e.amount <= -PUSHBACK_DEFAULTS.heat.raidFine));
 });
 
 test('ending a quarter hot draws a regulator fine', () => {
   const ledger = fakeLedger();
   const pb = new Pushback({ ledger });
   pb.heat = 80;
-  ledger.record('sales', 'Bunker', 500_000); // meet the board so only the fine shows
+  ledger.record('sales', 'Bunker', 500_000 * PB); // meet the board so only the fine shows
   const r = pb.endQuarter({ quarter: 1 });
   assert.ok(ledger.entries.some((e) => e.label === 'Regulator fine' && e.amount < 0));
   assert.ok(r.lines.some((l) => l.startsWith('Regulator fine')));
@@ -64,7 +68,7 @@ test('ending a quarter hot draws a regulator fine', () => {
 test('tension at 100 is a runaway: damages, reset, doomsday shift', () => {
   const ledger = fakeLedger();
   const pb = new Pushback({ ledger });
-  pb.onSale({ client: 'Mr. Vance', price: 200_000 });
+  pb.onSale({ client: 'Mr. Vance', price: 200_000 * PB });
   let runaway = null;
   pb.on('runaway', (e) => { runaway = e; });
   pb.onScheme({ label: 'Pandemic leak', tension: 90 });
@@ -86,7 +90,7 @@ test('tension above momentum feeds itself at quarter end', () => {
 
 test('high-leverage clients blackmail you', () => {
   const pb = new Pushback({ ledger: fakeLedger(), seed: 7 });
-  const c = pb.onSale({ client: 'Duchess Okoro', price: 300_000 });
+  const c = pb.onSale({ client: 'Duchess Okoro', price: 300_000 * PB });
   c.leverage = 90;
   const r = pb.endQuarter({ quarter: 1, profit: 1e9 });
   const bm = r.events.find((e) => e.type === 'blackmail');
@@ -97,7 +101,7 @@ test('high-leverage clients blackmail you', () => {
 
 test('mid-leverage clients make demands; refusing adds heat', () => {
   const pb = new Pushback({ ledger: fakeLedger(), seed: 3 });
-  const c = pb.onSale({ client: 'Chad', price: 150_000 });
+  const c = pb.onSale({ client: 'Chad', price: 150_000 * PB });
   c.leverage = 45;
   pb.heat = 0;
   const r = pb.endQuarter({ quarter: 1, profit: 1e9 });
@@ -111,7 +115,7 @@ test('board: target grows; a miss is a strike with a clawback; three strikes ous
   const ledger = fakeLedger();
   const pb = new Pushback({ ledger });
   const t1 = pb.board.target;
-  let r = pb.endQuarter({ quarter: 1, profit: t1 + 10_000 });
+  let r = pb.endQuarter({ quarter: 1, profit: t1 + 10_000 * PB });
   assert.equal(r.board.met, true);
   assert.ok(pb.board.target > t1);
 
@@ -135,17 +139,18 @@ test('board: target grows; a miss is a strike with a clawback; three strikes ous
 test('board uses ledger net profit when profit is not passed', () => {
   const ledger = fakeLedger();
   const pb = new Pushback({ ledger });
-  ledger.record('sales', 'Bunker', 400_000);
+  ledger.record('sales', 'Bunker', 400_000 * PB);
   const r = pb.endQuarter({ quarter: 1 });
-  assert.equal(r.board.profit, 400_000);
+  assert.equal(r.board.profit, 400_000 * PB);
+  assert.ok(r.board.profit > PUSHBACK_DEFAULTS.board.firstTarget);
   assert.equal(r.board.met, true);
 });
 
 test('after a miss the board recalibrates toward what you made instead of compounding', () => {
   const pb = new Pushback({ ledger: fakeLedger() });
-  pb.board.target = 1_000_000;
-  pb.endQuarter({ quarter: 1, profit: 200_000 });
-  assert.equal(pb.board.target, 600_000);
+  pb.board.target = 1_000_000 * PB;
+  pb.endQuarter({ quarter: 1, profit: 200_000 * PB });
+  assert.equal(pb.board.target, 600_000 * PB); // halfway between target and profit, not target x growth
 });
 
 test('only one runaway per quarter', () => {
@@ -164,9 +169,9 @@ test('only one runaway per quarter', () => {
 
 test('pressures() exposes all four sources with value, zone and next consequence', () => {
   const pb = new Pushback({ ledger: fakeLedger() });
-  pb.onSale({ client: 'Vance', price: 200_000 });
+  pb.onSale({ client: 'Vance', price: 200_000 * PB });
   pb.onScheme({ label: 'x', heat: 30, tension: 40 });
-  const p = pb.pressures({ quarterProfit: 10_000 });
+  const p = pb.pressures({ quarterProfit: 10_000 * PB });
   assert.equal(p.heat.value, pb.heat);
   assert.deepEqual(p.heat.next, { at: 50, what: 'Federal investigation opens' });
   assert.equal(p.tension.value, pb.tension);
@@ -193,14 +198,17 @@ test('Lay low sheds heat for cash, and costs more each time in a quarter', () =>
   const pb = new Pushback({ ledger });
   pb.heat = 60;
   const cash = ledger.cash;
+  const L = PUSHBACK_DEFAULTS.relief.layLow.cost;
+  const markup = 1 + PUSHBACK_DEFAULTS.relief.repeatMarkup;
+  assert.equal(L, 1_000_000); // GDD: Everything Is Fine, $1M
   const r1 = pb.layLow();
   assert.equal(pb.heat, 45);
-  assert.equal(ledger.cash, cash - 40_000);
-  assert.equal(r1.nextCost, 60_000);
+  assert.equal(ledger.cash, cash - L);
+  assert.equal(r1.nextCost, L * markup);
   pb.layLow();
-  assert.equal(ledger.cash, cash - 100_000);
+  assert.equal(ledger.cash, cash - L - L * markup);
   pb.endQuarter({ quarter: 1, profit: 1e9 });
-  assert.equal(pb.reliefCost('layLow'), 40_000); // resets each quarter
+  assert.equal(pb.reliefCost('layLow'), L); // resets each quarter
 });
 
 test('Fund relief lowers tension (stopping the runaway spiral) but draws a little heat', () => {
@@ -217,7 +225,7 @@ test('Fund relief lowers tension (stopping the runaway spiral) but draws a littl
 test('save and load round-trips every pressure', () => {
   const ledger = fakeLedger();
   const pb = new Pushback({ ledger, seed: 5 });
-  pb.onSale({ client: 'Okoro', price: 300_000 });
+  pb.onSale({ client: 'Okoro', price: 300_000 * PB });
   pb.onScheme({ label: 'riots', heat: 55, tension: 30 });
   pb.endQuarter({ quarter: 1, profit: 0 });
   pb.fundRelief();

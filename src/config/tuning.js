@@ -62,6 +62,33 @@ export const GDD_CONSTANTS = Object.freeze([
 
 const T = TUNING;
 
+// ---------------- Money (#91): the GDD $M scale ----------------
+// Every price in the game is in GDD dollars. The GDD-backed rows (Economy and tuning > The quota, Contract pricing,
+// Build and running costs; Shelter canvas > Product lines, Strata) are set here; systems read them from MONEY.
+// Systems whose stand-in prices were tuned in the old $K economy convert through the `fromStandIn` factors below,
+// each one the ratio that puts that system's numbers on the GDD scale (checked against a GDD price it names).
+export const MONEY = Object.freeze({
+  startingCash: 5_000_000, // (stand-in) the GDD names no opening treasury: enough for a first Solo Pod and a quarter of crews
+  crewPerWeek: 100_000, // GDD: $0.1M per crew per week
+  staffPerWeek: 50_000, // GDD: $0.05M per person per week
+  quotaQ1: 6_000_000, // GDD: Q = 6 x 1.3^(n-1) $M
+  quotaGrowth: 0.3,
+  departmentLevelsM: [2, 4, 8, 16], // GDD: levels 2 / 3 / 4 / 5
+  siteCost: { low: 2_000_000, medium: 5_000_000, high: 12_000_000, veryHigh: 25_000_000 },
+  contractMargin: 0.4, // GDD: base = dig + room cost, plus a 40% margin
+  classMultiplier: { C1: 1, C2: 1.1, C3: 1.2, C4: 1.35, C5: 1.5 },
+  soloPodPrice: [3_000_000, 5_000_000], // GDD Product lines: what a Solo Pod typically sells for (a check, not a rule)
+  fromStandIn: Object.freeze({
+    bunker: 10, // the tile grid's old PRICE_SCALE was 0.1 (GDD x 0.1)
+    research: 10, // the research tree's cash followed the bunker catalog (GDD x 0.1)
+    rooms: 40, // the client-package room list: $12K-$200K -> $0.48M-$8M, inside the GDD tier ranges
+    schemes: 33, // the six map schemes: Fund doom podcast $15K -> $0.5M (the GDD's Leak)
+    pushback: 25, // investigation, raid, fines and relief: Lay low $40K -> $1M (Everything Is Fine)
+    clients: 40, // client fees and wants follow the room list
+    venues: 10, // social venues follow the bunker economy ($15K fair -> $150K)
+  }),
+});
+
 // ---------------- Demand (src/demand/demand.js) ----------------
 export const DEMAND = {
   get fearPerTension() { return T.fear.perTension; },
@@ -138,7 +165,8 @@ export const PRESS_REPUTATION = {
 
 // ---------------- Pushback (src/pushback/pushback.js) ----------------
 // Quarter-based heat / tension / leverage / board model that predates the GDD's weekly rules.
-// All stand-ins, tuned with the pacing harness (#12).
+// All stand-ins, tuned with the pacing harness (#12). Money x PB = the GDD $M scale (#91).
+const PB = MONEY.fromStandIn.pushback;
 export const PUSHBACK_DEFAULTS = {
   heat: {
     start: 5,
@@ -146,9 +174,9 @@ export const PUSHBACK_DEFAULTS = {
     decayPerWeek: 0, // the campaign uses weekly decay from the difficulty table instead (#92): weekTick()
     investigationAt: 50, // crossing this mid-quarter opens an investigation (once per quarter)
     fineAt: 65, // ending a quarter at or above this draws a regulator fine
-    finePerPoint: 1_500, // fine = (heat - fineAt + 10) * finePerPoint
+    finePerPoint: 1_500 * PB, // fine = (heat - fineAt + 10) * finePerPoint
     raidAt: 100, // maxing heat triggers a federal raid
-    raidFine: 150_000,
+    raidFine: 150_000 * PB,
     raidHeatAfter: 55,
   },
   tension: {
@@ -158,8 +186,8 @@ export const PUSHBACK_DEFAULTS = {
     momentumGain: 6,
     runawayAt: 100,
     runawayDamagePct: 0.15, // runaway costs 15% of cash (min floor below) in damages
-    runawayDamageMin: 60_000,
-    runawayDamageMax: 600_000, // cap: uncapped, a rich late game lost millions per runaway (pacing harness)
+    runawayDamageMin: 60_000 * PB,
+    runawayDamageMax: 600_000 * PB, // cap: uncapped, a rich late game lost millions per runaway (pacing harness)
     runawayResetTo: 70,
   },
   leverage: {
@@ -171,21 +199,21 @@ export const PUSHBACK_DEFAULTS = {
   },
   board: {
     enabled: true, // the campaign turns this off and runs the GDD board (src/board/board.js) instead
-    firstTarget: 50_000, // quarterly profit expected in Q1
+    firstTarget: 50_000 * PB, // quarterly profit expected in Q1
     growth: 0.08, // each target is 8% above the previous one (pacing harness: 25% ousted every bot by Q7)
     ratchet: 0.25, // a beaten target also moves 25% of the way toward the profit that beat it
     strikesToOust: 3,
     missClawbackPct: 0.10, // executive clawback: 10% of cash (min floor)
-    missClawbackMin: 25_000,
-    missClawbackMax: 200_000, // cap: uncapped, one miss snowballed into three (pacing harness)
+    missClawbackMin: 25_000 * PB,
+    missClawbackMax: 200_000 * PB, // cap: uncapped, one miss snowballed into three (pacing harness)
     freezeMultiplier: 1.25, // second strike: builds cost 25% more next quarter
     beatBonusPct: 0.05, // beating the target pays a bonus of 5% of profit
   },
   // Relief valves: paid ways to push back on the pushback. Each use in the same quarter costs
   // 50% more than the last ("nothing is free"), and each has a side effect.
   relief: {
-    layLow: { cost: 40_000, heat: -15, label: 'Lay low', blurb: 'Lawyers, shredders, a quiet quarter. Heat -15.' },
-    fundRelief: { cost: 50_000, tension: -14, heat: 3, label: 'Fund disaster relief', blurb: 'Calm the world a little. Tension -14, but the press asks where the money came from (heat +3).' },
+    layLow: { cost: 40_000 * PB, heat: -15, label: 'Lay low', blurb: 'Lawyers, shredders, a quiet quarter. Heat -15.' },
+    fundRelief: { cost: 50_000 * PB, tension: -14, heat: 3, label: 'Fund disaster relief', blurb: 'Calm the world a little. Tension -14, but the press asks where the money came from (heat +3).' },
     repeatMarkup: 0.5,
   },
 };

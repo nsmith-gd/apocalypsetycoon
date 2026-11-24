@@ -5,6 +5,7 @@
 // are placeholders until their tasks land; they should replace drawGridView/drawMapView.
 
 import { Ledger } from '../ledger/ledger.js';
+import { MONEY } from '../config/tuning.js';
 import { createGameUI } from '../ui/hud.js';
 import { createResearchPanel } from '../ui/researchPanel.js';
 import { Pushback } from '../pushback/pushback.js';
@@ -52,7 +53,7 @@ import { createSocialScreens } from '../social/text-screens.js';
 import { settings, keyHint } from '../settings/settings.js';
 import { createSettingsPanel } from '../settings/settings-ui.js';
 
-export const STARTING_CASH = 400_000;
+export const STARTING_CASH = MONEY.startingCash; // GDD $M scale (#91)
 // A threat opens already simmering (GDD bands: Calm 0-19, Simmer 20-44). Provisional.
 export const TRACK_OPEN_TENSION = 20;
 export const CHAPTER_STARTS = Object.freeze({ 3: 2, 5: 3, 8: 4, 11: 5 });
@@ -219,7 +220,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     getBoard: () => ({ progress: quarterRevenue(ledger, ledger.quarter), target: board.quota, ousted: board.ousted,
       zone: { bullish: 'content', steady: 'content', scrutiny: 'displeased', probation: 'last-chance', ousted: 'ousted' }[board.state.id],
       label: `Revenue quota · confidence ${Math.round(board.average)} ${board.state.label}` }),
-    onRelief: (r) => r && pbui.tick(`${r.kind === 'layLow' ? 'Laid low' : 'Funded relief'}: -$${Math.round(r.cost / 1000)}K`, 'ok') });
+    onRelief: (r) => r && pbui.tick(`${r.kind === 'layLow' ? 'Laid low' : 'Funded relief'}: -$${(r.cost / 1e6).toFixed(2)}M`, 'ok') });
   // Research reads the crisis tracks (#90): each track rescaled so it peaks just below its own tipping point.
   const research = createResearchPanel({ root, tree, getCrisis: () => (pb.crisis ? researchCrisis(pb.crisis) : 0), mode: 'weekly' });
   root.querySelector('.hud')?.insertBefore(research.chip, root.querySelector('.view-toggle'));
@@ -406,7 +407,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
 
   // ---------- end of quarter ----------
   clock.onQuarterEnd(async ({ quarter, isFinal }) => {
-    ledger.record('upkeep', `Shovel crew payroll x${workingCrews()}`, -45_000 * workingCrews());
+    ledger.record('upkeep', `Shovel crew payroll x${workingCrews()}`, -MONEY.crewPerWeek * 13 * workingCrews()); // GDD $0.1M a crew a week
     pbui.hold();
     // The quarterly meeting, on the quarter as it ended (before heat cools off).
     const trackList = Object.values(crisis.tracks);
@@ -428,7 +429,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
       board: { met: review.met, revenue: review.revenue, target: review.quota, state: review.stateLabel, average: review.average } });
     await pbui.drain();
     if (board.ousted) { clock.hold('ousted'); slot.clear(); showOusted(quarter); return; }
-    if (!isFinal) toast(`Quarter ${quarter + 1} begins. Quota ${Math.round(board.quota / 1000)}K. ${board.directives.map((d) => d.text).join('. ')}.`);
+    if (!isFinal) toast(`Quarter ${quarter + 1} begins. Quota $${(board.quota / 1e6).toFixed(1)}M. ${board.directives.map((d) => d.text).join('. ')}.`);
   });
   // Campaign play time in minutes at x1 (27 per quarter), the scale the GDD's opening times use.
   const campaignMinutes = () => (clock.total / clock.quarterSeconds) * 27;

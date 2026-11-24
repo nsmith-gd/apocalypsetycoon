@@ -19,14 +19,15 @@
 // not track yet are never issued (pass `supports`).
 
 import { mulberry32 } from '../pushback/pushback.js';
+import { MONEY } from '../config/tuning.js';
 
 export const BOARD = Object.freeze({
   // GDD quota is $6M in Q1 growing 30% a quarter. The game's economy still runs in $K (gap review item 3),
   // so the curve is scaled to it: 0.025 => $150K in Q1, ~$330K Q4, ~$940K Q8, ~$2.7M Q12.
   // Set to 1 when prices move to the GDD's $M economy.
-  quotaQ1: 6_000_000,
-  quotaGrowth: 0.3,
-  quotaScale: 0.025,
+  quotaQ1: MONEY.quotaQ1, // GDD $6M in Q1, +30% a quarter (#91: the economy is on the GDD scale now)
+  quotaGrowth: MONEY.quotaGrowth,
+  quotaScale: 1,
   startConfidence: 60,
   quota: { hit: 5, miss: -15, beatBy: 0.25, beat: 10 },
   directive: { fulfilled: 8, failed: -5, refused: -3 },

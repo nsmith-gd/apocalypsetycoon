@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import { Company, TIERS } from '../src/company/company.js';
 import { Ledger } from '../src/ledger/ledger.js';
 import { BunkerSite } from '../src/shelter/bunker.js';
+import { MONEY } from '../src/config/tuning.js';
+
+const M = 1_000_000;
+const [L2, L3] = MONEY.departmentLevelsM.map((m) => m * M);
 
 test('Startup: 1 site, 2 crews, department cap 2', () => {
   const co = new Company();
@@ -15,11 +19,11 @@ test('Startup: 1 site, 2 crews, department cap 2', () => {
 });
 
 test('the cap is enforced: Engineering can reach 2 but not 3 at Startup', () => {
-  const ledger = new Ledger({ startingCash: 1_000_000 });
+  const ledger = new Ledger({ startingCash: L2 + L3 });
   const co = new Company({ ledger });
   assert.equal(co.level('engineering'), 1);
-  assert.deepEqual(co.levelUp('engineering'), { ok: true, level: 2, cost: 200_000 });
-  assert.equal(ledger.cash, 800_000);
+  assert.deepEqual(co.levelUp('engineering'), { ok: true, level: 2, cost: L2 });
+  assert.equal(ledger.cash, L3, 'enough left for level 3, so only the cap can refuse it');
   const r = co.levelUp('engineering');
   assert.equal(r.ok, false);
   assert.match(r.reason, /Startup cap: level 2/);
@@ -65,12 +69,13 @@ test('save/load', () => {
   assert.equal(c2.level('sales'), 2);
 });
 
-test('#72: level-ups cost the GDD $2/4/8/16M at the bunker price scale', () => {
+test('#72/#91: level-ups cost the GDD $2/4/8/16M', () => {
   const co = new Company({ ledger: new Ledger({ startingCash: 1e9 }) });
   co.setTier('last_resort');
   const costs = [];
   for (let i = 0; i < 4; i++) { costs.push(co.levelCost('engineering')); co.levelUp('engineering'); }
-  assert.deepEqual(costs, [200_000, 400_000, 800_000, 1_600_000]);
+  assert.deepEqual(costs, [2 * M, 4 * M, 8 * M, 16 * M]);
+  assert.deepEqual(costs, MONEY.departmentLevelsM.map((m) => m * M));
   assert.equal(co.level('engineering'), 5);
 });
 
