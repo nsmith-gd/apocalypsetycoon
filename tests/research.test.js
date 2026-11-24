@@ -28,7 +28,7 @@ test('prerequisites gate nodes; unlock fires and amenity becomes available', () 
   const unlocked = [];
   t.onUnlock((n) => unlocked.push(n.unlocks.id));
   t.start('a_hydro');
-  t.tick(1000, 50);
+  t.tick(2000, 50);
   assert.deepEqual(unlocked, ['hydroponics']);
   assert.ok(t.isUnlocked('hydroponics'));
   assert.equal(t.status('a_cryo'), 'available');

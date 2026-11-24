@@ -1,30 +1,43 @@
 // Research tree funded by crises (pillar 1: crises fund your research).
 //
-// Research points (RP) accrue every tick at a rate set by the world's crisis level.
-// The curve mirrors the profit-at-the-edge idea: RP climbs steeply as the world gets
-// worse, peaks just below the tipping point, and falls off once the world tips
-// (your labs and suppliers get caught in the chaos too).
+// Research points (RP) come from two crisis-driven sources:
+//   1. CRISIS GRANTS: a steady trickle every tick, set by the world's crisis level. It climbs as
+//      the world gets worse, peaks just below the tipping point, and falls off once the world
+//      tips (your labs and suppliers get caught in the chaos too).
+//   2. CRISIS PROFITS: the part of every sale that exists only because the world is scared
+//      (the crisis premium on the price) is ploughed into the labs: fundFromIncome($).
+// RP is spent on projects from the data-driven tree in tree-data.js. A project fills from banked
+// RP; buy() finishes one at once when the bank covers it. Finished projects apply their effects:
+// amenities, schemes, crews, grid rows, shelter slots, scheme heat and luxury prices.
 //
 // Usage:
 //   const tree = new ResearchTree();
-//   tree.start('a_cryo');
+//   tree.start('a_cryo');  /  tree.buy('a_cryo')
 //   tree.tick(dtSeconds, crisisLevel /* 0..100 */);
-//   tree.onUnlock((node) => ...);           // node.unlocks = { type, id, label }
-//   tree.isUnlocked('cryo_pod');            // by unlock id (amenity / scheme id)
-//   tree.crewCount                           // base crews + researched crews
+//   tree.fundFromIncome(crisisPremiumDollars, 'Shelter sale');
+//   tree.onUnlock((node) => ...);            // node.effects, node.unlocks = { type, id, label }
+//   tree.isUnlocked('cryo_pod');             // amenity / scheme id
+//   tree.effects()                           // { amenities, schemes, crews, gridRows, shelterSlots, schemeHeatMult, luxuryPriceMult }
 
+import { BRANCHES, TREE_NODES, effectLabel } from './tree-data.js';
+
+export { BRANCHES, effectLabel };
 export const TIPPING_POINT = 90;
 
-/** RP per second at a crisis level (0..100). */
-export function researchRate(crisis) {
+export const FUNDING = Object.freeze({
+  grantBase: 0.15, // RP/s in a calm world
+  grantPeak: 1.0, // RP/s just below the tipping point
+  dollarsPerRP: 500, // crisis profits: $500 of crisis premium buys 1 RP
+});
+
+/** Crisis-grant RP per second at a crisis level (0..100). */
+export function researchRate(crisis, f = FUNDING) {
   const c = Math.max(0, Math.min(100, crisis));
-  const base = 0.5;
-  const peak = 4.5; // reached just below the tipping point
   const edge = TIPPING_POINT - 2;
-  if (c <= edge) return base + (peak - base) * (c / edge) ** 2;
-  if (c < TIPPING_POINT) return peak;
+  if (c <= edge) return f.grantBase + (f.grantPeak - f.grantBase) * (c / edge) ** 2;
+  if (c < TIPPING_POINT) return f.grantPeak;
   // past the tipping point: chaos disrupts the labs, down to 40% of peak at 100
-  return peak * (1 - 0.6 * ((c - TIPPING_POINT) / (100 - TIPPING_POINT)));
+  return f.grantPeak * (1 - 0.6 * ((c - TIPPING_POINT) / (100 - TIPPING_POINT)));
 }
 
 export function researchZone(crisis) {
@@ -34,47 +47,32 @@ export function researchZone(crisis) {
   return { name: 'calm', label: 'CALM WORLD, THIN FUNDING' };
 }
 
-export const BRANCHES = Object.freeze({
-  amenities: 'Amenities',
-  schemes: 'Schemes',
-  crews: 'Build crews',
-});
+/** Normalise data nodes: adds the legacy `unlocks` summary (first effect) for older callers. */
+export function buildNodes(data = TREE_NODES) {
+  return data.map((n) => {
+    const first = n.effects[0];
+    const id = first.id ?? `${n.id}_${first.type}`;
+    return Object.freeze({ ...n, unlocks: { type: first.type, id, label: n.effects.map(effectLabel).join(' · ') } });
+  });
+}
 
-// Costs assume ~27 real minutes per quarter: tier 1 takes ~1-3 min at an uneasy world,
-// the top of each branch needs several quarters near the edge.
-export const RESEARCH_NODES = Object.freeze([
-  // Amenities (what clients want, and what Midnight grades)
-  { id: 'a_hydro', branch: 'amenities', name: 'Hydroponic garden', cost: 150, requires: [], unlocks: { type: 'amenity', id: 'hydroponics', label: 'Hydroponic garden' }, blurb: 'Fresh food for decades. Grades well at Midnight.' },
-  { id: 'a_water', branch: 'amenities', name: 'Deep-well recycler', cost: 220, requires: [], unlocks: { type: 'amenity', id: 'water_recycler', label: 'Deep-well recycler' }, blurb: 'Clean water without the surface.' },
-  { id: 'a_cryo', branch: 'amenities', name: 'Cryo pod suite', cost: 350, requires: ['a_hydro'], unlocks: { type: 'amenity', id: 'cryo_pod', label: 'Cryo pod suite' }, blurb: 'Sleep through the worst of it. Clients adore it.' },
-  { id: 'a_scrubber', branch: 'amenities', name: 'Military air scrubber', cost: 480, requires: ['a_water'], unlocks: { type: 'amenity', id: 'mil_scrubber', label: 'Military air scrubber' }, blurb: 'Filters fallout, spores and bad press.' },
-  { id: 'a_cellar', branch: 'amenities', name: 'Wine cellar & panic room', cost: 400, requires: ['a_cryo'], unlocks: { type: 'amenity', id: 'wine_cellar', label: 'Wine cellar & panic room' }, blurb: 'Pure prestige. Midnight does not care.' },
-  { id: 'a_butler', branch: 'amenities', name: 'AI butler core', cost: 1100, requires: ['a_cellar', 'a_scrubber'], unlocks: { type: 'amenity', id: 'ai_butler', label: 'AI butler core' }, blurb: 'Runs the bunker. Mostly obeys.' },
-
-  // Schemes (new ways to stoke crises)
-  { id: 's_thinktank', branch: 'schemes', name: 'Astroturf think tank', cost: 180, requires: [], unlocks: { type: 'scheme', id: 'astroturf', label: 'Astroturf think tank' }, blurb: 'Experts agree: things look bad.' },
-  { id: 's_deepfake', branch: 'schemes', name: 'Deepfake broadcast', cost: 450, requires: ['s_thinktank'], unlocks: { type: 'scheme', id: 'deepfake', label: 'Deepfake broadcast' }, blurb: 'A president says the quiet part loud.' },
-  { id: 's_shortage', branch: 'schemes', name: 'Engineered shortage', cost: 750, requires: ['s_deepfake'], unlocks: { type: 'scheme', id: 'shortage', label: 'Engineered shortage' }, blurb: 'Empty shelves sell full bunkers.' },
-  { id: 's_blackout', branch: 'schemes', name: 'Grid blackout', cost: 1300, requires: ['s_shortage'], unlocks: { type: 'scheme', id: 'blackout', label: 'Grid blackout' }, blurb: 'Lights out. Phones ring.' },
-
-  // Build crews
-  { id: 'c_crew2', branch: 'crews', name: 'Second shovel crew', cost: 200, requires: [], unlocks: { type: 'crew', id: 'crew_2', label: '+1 build crew' }, blurb: 'Two holes at once.' },
-  { id: 'c_borer', branch: 'crews', name: 'Tunnel boring machine', cost: 600, requires: ['c_crew2'], unlocks: { type: 'crew', id: 'crew_3', label: '+1 build crew' }, blurb: 'A crew that never sleeps.' },
-  { id: 'c_crew4', branch: 'crews', name: 'Black-site contractors', cost: 1000, requires: ['c_borer'], unlocks: { type: 'crew', id: 'crew_4', label: '+1 build crew' }, blurb: 'No questions, no paperwork.' },
-]);
+export const RESEARCH_NODES = Object.freeze(buildNodes());
 
 export class ResearchTree {
-  constructor({ nodes = RESEARCH_NODES, baseCrews = 1 } = {}) {
+  constructor({ nodes = RESEARCH_NODES, baseCrews = 1, funding = FUNDING } = {}) {
     this.nodes = nodes;
     this.byId = new Map(nodes.map((n) => [n.id, n]));
     this.baseCrews = baseCrews;
+    this.funding = funding;
     this.pool = 0; // banked RP not yet spent
     this.totalEarned = 0;
+    this.sources = { grants: 0, income: 0 }; // RP earned, by source
+    this.incomeLog = []; // recent crisis-profit deposits { label, dollars, rp }
     this.progress = new Map(); // nodeId -> RP spent
     this.done = new Set();
     this.active = null;
-    this.rate = researchRate(0);
-    this.listeners = { unlock: new Set(), change: new Set() };
+    this.rate = researchRate(0, funding);
+    this.listeners = { unlock: new Set(), change: new Set(), fund: new Set() };
   }
 
   status(id) {
@@ -84,6 +82,16 @@ export class ResearchTree {
     return node.requires.every((r) => this.done.has(r)) ? 'available' : 'locked';
   }
 
+  remaining(id) {
+    return this.byId.get(id).cost - (this.progress.get(id) ?? 0);
+  }
+
+  canAfford(id) {
+    const s = this.status(id);
+    return (s === 'available' || s === 'active') && this.pool >= this.remaining(id) - 1e-9;
+  }
+
+  /** Point the labs at a project; banked RP is spent into it straight away. */
   start(id) {
     const s = this.status(id);
     if (s !== 'available' && s !== 'active') return false;
@@ -93,13 +101,41 @@ export class ResearchTree {
     return true;
   }
 
+  /** Spend banked RP to finish a project now. Returns false if the bank can't cover it. */
+  buy(id) {
+    if (!this.canAfford(id)) return false;
+    const prev = this.active;
+    this.active = id;
+    this.spendPool();
+    if (prev && prev !== id && !this.done.has(prev)) this.active = prev;
+    this.emit('change');
+    return true;
+  }
+
   tick(dt, crisis) {
-    this.rate = researchRate(crisis);
+    this.rate = researchRate(crisis, this.funding);
     const gained = this.rate * dt;
     this.pool += gained;
     this.totalEarned += gained;
+    this.sources.grants += gained;
     this.spendPool();
     this.emit('change');
+  }
+
+  /** Crisis profits: dollars that exist only because of the crisis go to the labs. */
+  fundFromIncome(dollars, label = 'Crisis profits') {
+    if (!(dollars > 0)) return 0;
+    const rp = dollars / this.funding.dollarsPerRP;
+    this.pool += rp;
+    this.totalEarned += rp;
+    this.sources.income += rp;
+    const entry = { label, dollars: Math.round(dollars), rp: Math.round(rp) };
+    this.incomeLog.unshift(entry);
+    this.incomeLog.length = Math.min(this.incomeLog.length, 8);
+    this.spendPool();
+    this.emit('fund', entry);
+    this.emit('change');
+    return rp;
   }
 
   spendPool() {
@@ -112,6 +148,7 @@ export class ResearchTree {
     if (spent + use >= node.cost - 1e-9) {
       this.done.add(node.id);
       this.active = null;
+      this._effects = null;
       this.emit('unlock', node);
     }
   }
@@ -121,34 +158,64 @@ export class ResearchTree {
     return Math.min(1, (this.progress.get(id) ?? 0) / node.cost);
   }
 
-  isUnlocked(unlockId) {
-    for (const id of this.done) if (this.byId.get(id).unlocks.id === unlockId) return true;
-    return false;
+  /** Everything finished research grants, aggregated from the data. */
+  effects() {
+    if (this._effects) return this._effects;
+    const fx = { amenities: new Set(), schemes: new Set(), crews: this.baseCrews, gridRows: 0, shelterSlots: 0, schemeHeatMult: 1, luxuryPriceMult: 1 };
+    for (const id of this.done) {
+      for (const e of this.byId.get(id).effects ?? []) {
+        if (e.type === 'amenity') fx.amenities.add(e.id);
+        else if (e.type === 'scheme') fx.schemes.add(e.id);
+        else if (e.type === 'crew') fx.crews += e.amount;
+        else if (e.type === 'grid_rows') fx.gridRows += e.amount;
+        else if (e.type === 'shelter_slots') fx.shelterSlots += e.amount;
+        else if (e.type === 'scheme_heat') fx.schemeHeatMult *= e.mult;
+        else if (e.type === 'luxury_price') fx.luxuryPriceMult *= e.mult;
+      }
+    }
+    this._effects = fx;
+    return fx;
   }
 
-  /** Every unlock id that research can provide, of a type ('amenity' | 'scheme' | 'crew'). */
+  isUnlocked(unlockId) {
+    const fx = this.effects();
+    return fx.amenities.has(unlockId) || fx.schemes.has(unlockId);
+  }
+
+  /** Every unlock that research can provide, of an effect type ('amenity' | 'scheme' | ...). */
   researchable(type) {
-    return this.nodes.filter((n) => n.unlocks.type === type).map((n) => n.unlocks);
+    return this.nodes.flatMap((n) => n.effects.filter((e) => e.type === type).map((e) => ({ ...e, node: n.id, label: effectLabel(e) })));
+  }
+
+  /** Apply research to a scheme list: locked research schemes are dropped, heat is scaled. */
+  applyToSchemes(schemes) {
+    const fx = this.effects();
+    return schemes
+      .filter((s) => !s.research || fx.schemes.has(s.id))
+      .map((s) => (fx.schemeHeatMult === 1 ? s : { ...s, heat: Math.round(s.heat * fx.schemeHeatMult) }));
   }
 
   get crewCount() {
-    return this.baseCrews + [...this.done].filter((id) => this.byId.get(id).unlocks.type === 'crew').length;
+    return this.effects().crews;
   }
 
   onUnlock(fn) { this.listeners.unlock.add(fn); return () => this.listeners.unlock.delete(fn); }
   onChange(fn) { this.listeners.change.add(fn); return () => this.listeners.change.delete(fn); }
+  onFund(fn) { this.listeners.fund.add(fn); return () => this.listeners.fund.delete(fn); }
   emit(kind, payload) { for (const fn of this.listeners[kind]) fn(payload, this); }
 
   toJSON() {
-    return { pool: this.pool, totalEarned: this.totalEarned, progress: [...this.progress], done: [...this.done], active: this.active };
+    return { pool: this.pool, totalEarned: this.totalEarned, sources: this.sources, progress: [...this.progress], done: [...this.done], active: this.active };
   }
 
   load(data) {
     this.pool = data.pool ?? 0;
     this.totalEarned = data.totalEarned ?? 0;
+    this.sources = { grants: 0, income: 0, ...(data.sources ?? {}) };
     this.progress = new Map(data.progress ?? []);
     this.done = new Set(data.done ?? []);
     this.active = data.active ?? null;
+    this._effects = null;
     this.emit('change');
   }
 }

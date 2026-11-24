@@ -59,20 +59,22 @@ export function createSimGame({ seed = 1, bot = 'edge' } = {}) {
   const log = new PacingLog({ ledger, pushback: pb, research: tree, label: `${bot} #${seed}` });
   const game = {
     ledger, pb, tree, hq, shelters, rng, log, quarter: 1, bot, soldThisQuarter: 0,
-    schemesAvailable() { return SIM.schemes.filter((s) => !s.research || tree.isUnlocked(s.id)); },
+    schemesAvailable() { return tree.applyToSchemes(SIM.schemes); },
     scheme(s) { ledger.record('schemes', s.name, -s.cost); pb.onScheme({ label: s.name, heat: s.heat, tension: s.tension }); },
     // Buyers this quarter, with a little seeded luck (+/-1) so seeds differ.
     demand() { return Math.max(0, 1 + Math.floor(pb.tension / SIM.demandPerCrisis) + Math.floor(rng() * 3) - 1); },
     capacity() { return tree.crewCount * SIM.sellsPerCrew; },
     sell(kind) {
       const p = SIM.packages[kind];
-      const price = Math.round(p.base * (1 + pb.tension / SIM.priceCrisisFactor) * (0.9 + rng() * 0.2));
+      const calmPrice = p.base * (0.9 + rng() * 0.2);
+      const price = Math.round(calmPrice * (1 + pb.tension / SIM.priceCrisisFactor));
       const cost = Math.round(p.rooms.reduce((s, r) => s + (SIM.roomCost[r] ?? 0), 0) * SIM.buildCostShare * pb.board.buildCostMultiplier);
       const n = shelters.length;
       const client = `Client ${n}`;
       ledger.record('builds', `${p.label} bunker build`, -cost);
       ledger.record('sales', `${p.label} bunker sold`, price);
       pb.onSale({ client, price });
+      tree.fundFromIncome(price - calmPrice, `${p.label} bunker crisis premium`); // crisis profits fund research
       shelters.push({ id: `s${n}`, name: `${p.label} bunker #${n}`, owner: client, occupants: p.occupants, rooms: [...p.rooms], sold: true });
       game.soldThisQuarter++;
     },
