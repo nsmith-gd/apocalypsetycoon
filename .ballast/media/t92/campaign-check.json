@@ -1,0 +1,25 @@
+{
+ "started": {
+  "difficulty": "hostile",
+  "tipRange": [
+   78,
+   92
+  ],
+  "quotaGrowth": 0.35,
+  "brinkDrift": 2,
+  "heatDecayPerWeek": 0.5,
+  "q2quota": 150000
+ },
+ "resumed": {
+  "difficulty": "hostile",
+  "tipRange": [
+   78,
+   92
+  ],
+  "quotaGrowth": 0.35,
+  "brinkDrift": 2,
+  "heatDecayPerWeek": 0.5,
+  "q2quota": 150000
+ },
+ "errs": []
+}
