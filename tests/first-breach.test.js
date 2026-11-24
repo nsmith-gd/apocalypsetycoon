@@ -66,5 +66,7 @@ test('cautious-bot harness: without the nudge a cautious player never breaches; 
   }
   const h = firstBreachHarness({ seeds: [1, 2, 3, 4, 5] });
   assert.equal(h.checks.everyRunBreachesByDeadline, true);
-  assert.ok(h.runs.some((r) => r.firstBreach.how === 'natural'), 'an edge runner can still get there first');
+  // With the real scheme list (#79), a natural edge-runner breach before the wildcard is rarer: check more seeds.
+  const edge = firstBreachHarness({ bots: ['edge'], seeds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] });
+  assert.ok(edge.runs.some((r) => r.firstBreach.how === 'natural'), 'an edge runner can still get there first');
 });

@@ -1,0 +1,13 @@
+quarter,hours,pacedHours,wallMinutes,cash,net,crisis,heat,sales,salesRevenue,builds,schemes,fines,events,boardTarget,boardMet,strikes,runaways,unlocks,tension,breaches
+1,0.54,0.2,0,1230000,830000,17,0,3,1510000,3,0,0,,50000,true,0,0,,20,0
+2,1.02,0.37,0,2672000,1442000,14,0,4,2587000,4,0,0,,255000,true,0,0,"Think Tank Grant, A second crew, Clay digging",20,0
+3,1.49,0.55,0,3860000,1188000,51,28,4,2350000,4,2,0,,575000,true,0,0,"Hydroponics Bay, Deepfake broadcast",60,0
+4,1.97,0.73,0,7157000,3297000,68,38,4,4462000,4,1,0,,770000,true,0,0,"HEPA Scrubber Bay, Spin doctors on retainer",80,0
+5,2.44,0.88,0,9883000,2726000,65,30,4,3360000,4,0,0,,1470000,true,0,0,,80,0
+6,2.94,1.15,0,12071000,2188000,48,57,6,4008000,7,5,484000,investigation blackmail demand,1890000,true,0,0,,60,1
+7,3.44,1.34,0,13414000,1343000,45,49,4,2695000,5,0,508000,board blackmail demand,2225000,false,1,0,,60,1
+8,3.93,1.52,0,15527000,2113000,42,41,4,2889000,6,0,0,demand demand,2070000,true,0,0,,60,1
+9,4.43,1.71,0,19013000,3486000,59,39,4,4471000,5,1,302000,investigation blackmail demand,2250000,true,0,0,,80,1
+10,4.93,1.89,0,20406000,1393000,56,31,4,2868000,4,0,691000,board blackmail blackmail,2800000,false,1,0,,80,1
+11,5.43,2.07,0,21286000,880000,53,23,4,2285000,4,0,643000,board blackmail blackmail,2440000,false,2,0,,80,1
+12,5.92,2.28,0,23132000,1846000,50,15,6,3456000,6,0,350000,blackmail blackmail,1980000,true,1,0,,80,1

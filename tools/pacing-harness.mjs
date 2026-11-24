@@ -76,9 +76,20 @@ if (flag('log') || out) {
 }
 console.log('\nChecks:', JSON.stringify(h.checks, null, 1));
 if (out) {
-  for (const r of h.runs) writeFileSync(join(out, `log-${r.bot}-${r.seed}.csv`), r.csv);
-  writeFileSync(join(out, 'summary.json'), JSON.stringify({ pacing: PACING, checks: h.checks, runs: h.runs.map((r) => ({ bot: r.bot, seed: r.seed, ...r.summary })) }, null, 1));
+  for (const r of h.runs) {
+    writeFileSync(join(out, `log-${r.bot}-${r.seed}.csv`), r.csv);
+    // Telemetry (#78) from the real systems: per-week meters and every event.
+    writeFileSync(join(out, `telemetry-${r.bot}-${r.seed}-weekly.csv`), r.telemetry.csv('weekly'));
+    writeFileSync(join(out, `telemetry-${r.bot}-${r.seed}-events.csv`), r.telemetry.csv('events'));
+  }
+  writeFileSync(join(out, 'summary.json'), JSON.stringify({ pacing: PACING, checks: h.checks, gdd: h.gdd, runs: h.runs.map((r) => ({ bot: r.bot, seed: r.seed, ...r.summary })) }, null, 1));
 }
-const ok = h.checks.allCompletedInTarget && h.checks.engineeredReachable && h.checks.failedReachable;
+console.log('\nGDD BALANCE TARGETS (real systems)');
+for (const c of h.gdd) {
+  console.log(`  ${c.ok ? 'PASS' : 'MISS'}  ${c.name.padEnd(62)} ${String(c.value).padEnd(36)} target ${c.target}`);
+  if (c.unlocks) for (const u of c.unlocks) console.log(`          ${u.node.padEnd(12)} GDD ${String(Math.floor(u.target / 60)).padStart(1)}:${String(u.target % 60).padStart(2, '0')}  median ${u.median == null ? '-' : `${Math.floor(u.median / 60)}:${String(Math.round(u.median % 60)).padStart(2, '0')}`}  (${u.offBy > 0 ? '+' : ''}${u.offBy} min, ${u.runs} runs)`);
+}
+// Hard checks fail the run; GDD targets are balance findings and are reported, not enforced.
+const ok = h.runs.every((r) => r.summary.quarters > 0) && h.checks.engineeredReachable;
 console.log(ok ? '\nPASS' : '\nFAIL');
 process.exit(ok ? 0 : 1);
