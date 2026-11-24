@@ -167,7 +167,7 @@ export class LeadInventory {
 
   /** The shape the world map's sales hook takes as a buyer. */
   asBuyer(l) {
-    return { id: `lead-${l.id}`, pipelineId: l.id, region: l.salesRegion, wealth: l.salesWealth, type: l.clientType, name: l.guest.name, quality: l.quality };
+    return { id: `lead-${l.id}`, pipelineId: l.id, region: l.salesRegion, wealth: l.salesWealth, type: l.clientType, name: l.guest.name, quality: l.quality, leverage: l.leverage ?? 0 };
   }
 
   _enforceCap(quarter) {
