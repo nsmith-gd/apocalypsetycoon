@@ -294,17 +294,21 @@ export class BunkerSite {
       if (!this.surveyed) return;
     }
     const crews = Math.max(1, this.crews());
+    this.crewAt = [];
+    const taken = new Set();
     for (let c = 0; c < crews; c++) {
       let budget = days;
       let guard = 0;
       while (budget > 1e-9 && guard++ < 500) {
         const reach = this.reachable();
-        const j = this.jobs.find((k) => !k.claimed && this._workable(k, reach));
+        const j = this.jobs.find((k) => !taken.has(k) && this._workable(k, reach));
         if (!j) break;
+        this.crewAt[c] = { x: j.x, y: j.y, type: j.type, job: j };
         const use = Math.min(budget, j.days - j.progress);
         j.progress += use;
         budget -= use;
         if (j.progress >= j.days - 1e-9) this._complete(j);
+        else taken.add(j); // another crew picks a different job
       }
     }
   }

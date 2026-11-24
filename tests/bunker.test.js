@@ -17,14 +17,14 @@ function starter({ surveyed = true, ledger = null } = {}) {
 const room = (b) => b.simulate().rooms.find((r) => r.minY === 1 && r.minX === 2);
 
 test('GDD strata: dig cost per tile and crew speed', () => {
-  assert.deepEqual(STRATA.map((s) => [s.from, s.digCost, s.speed, s.blast]), [[0, 10_000, 6, 1], [10, 25_000, 4, 2], [25, 80_000, 2, 3], [60, 200_000, 1, 4], [120, 500_000, 0.5, 5]]);
+  assert.deepEqual(STRATA.map((s) => [s.from, s.gddDigCost, s.speed, s.blast]), [[0, 10_000, 6, 1], [10, 25_000, 4, 2], [25, 80_000, 2, 3], [60, 200_000, 1, 4], [120, 500_000, 0.5, 5]]);
   const ledger = new Ledger({ startingCash: 1e9 });
   const b = new BunkerSite({ ledger, surveyed: true });
   b.dig(5, 0);
   b.dig(5, 12);
   assert.equal(ledger.entries.length, 2);
-  assert.equal(-ledger.entries[0].amount, 10_000);
-  assert.equal(-ledger.entries[1].amount, 25_000);
+  assert.equal(-ledger.entries[0].amount, 10_000 * PRICE_SCALE);
+  assert.equal(-ledger.entries[1].amount, 25_000 * PRICE_SCALE);
 });
 
 test('crews must reach a tile from the surface: you dig down, one tile at a time', () => {

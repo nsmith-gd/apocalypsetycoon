@@ -16,23 +16,23 @@ export const WATER_TABLE_M = 12; // clay: water table at 12 m needs sump pumps
 
 // GDD strata: dig cost per tile ($), crew speed (tiles per day), base blast rating.
 export const STRATA = Object.freeze([
-  { id: 'topsoil', name: 'Topsoil', from: 0, to: 10, digCost: 10_000, speed: 6, blast: 1, color: '#6b4a32' },
-  { id: 'clay', name: 'Clay', from: 10, to: 25, digCost: 25_000, speed: 4, blast: 2, color: '#8a5a36' },
-  { id: 'bedrock', name: 'Bedrock', from: 25, to: 60, digCost: 80_000, speed: 2, blast: 3, color: '#5e5a60' },
-  { id: 'deep', name: 'Deep Rock', from: 60, to: 120, digCost: 200_000, speed: 1, blast: 4, color: '#3e3a44' },
-  { id: 'abyss', name: 'The Abyss', from: 120, to: 1e9, digCost: 500_000, speed: 0.5, blast: 5, color: '#24202a' },
-]);
+  { id: 'topsoil', name: 'Topsoil', from: 0, to: 10, gddDigCost: 10_000, speed: 6, blast: 1, color: '#6b4a32' },
+  { id: 'clay', name: 'Clay', from: 10, to: 25, gddDigCost: 25_000, speed: 4, blast: 2, color: '#8a5a36' },
+  { id: 'bedrock', name: 'Bedrock', from: 25, to: 60, gddDigCost: 80_000, speed: 2, blast: 3, color: '#5e5a60' },
+  { id: 'deep', name: 'Deep Rock', from: 60, to: 120, gddDigCost: 200_000, speed: 1, blast: 4, color: '#3e3a44' },
+  { id: 'abyss', name: 'The Abyss', from: 120, to: 1e9, gddDigCost: 500_000, speed: 0.5, blast: 5, color: '#24202a' },
+].map((s) => ({ ...s, digCost: Math.round(s.gddDigCost * PRICE_SCALE) })));
 export const stratumAt = (depthM) => STRATA.find((s) => depthM >= s.from && depthM < s.to) ?? STRATA.at(-1);
 
 // Structures built tile by tile.
 export const STRUCTURES = Object.freeze({
-  wall: { name: 'Concrete wall / slab', cost: 4_000, days: 0.25 },
-  spine: { name: 'Utility Spine', cost: 15_000, days: 0.5, passable: true, carries: ['air', 'water', 'power'] },
+  wall: { name: 'Concrete wall / slab', cost: 4_000 * PRICE_SCALE, days: 0.25 },
+  spine: { name: 'Utility Spine', cost: 15_000 * PRICE_SCALE, days: 0.5, passable: true, carries: ['air', 'water', 'power'] },
 });
 export const CONDUITS = Object.freeze({
-  air: { name: 'Air duct', cost: 1_000, days: 0.05, color: '#6ab4ff' },
-  water: { name: 'Water pipe', cost: 1_000, days: 0.05, color: '#3ad0c0' },
-  power: { name: 'Power cable', cost: 800, days: 0.05, color: '#ffd23a' },
+  air: { name: 'Air duct', cost: 1_000 * PRICE_SCALE, days: 0.05, color: '#6ab4ff' },
+  water: { name: 'Water pipe', cost: 1_000 * PRICE_SCALE, days: 0.05, color: '#3ad0c0' },
+  power: { name: 'Power cable', cost: 800 * PRICE_SCALE, days: 0.05, color: '#ffd23a' },
 });
 
 // Objects: furniture, machines, doors and decor. w x h in tiles (side view: h is height).

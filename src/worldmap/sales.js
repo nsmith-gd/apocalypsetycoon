@@ -80,8 +80,8 @@ export class MapSales {
   _emit(evt) { for (const fn of this._listeners) fn(evt, this); }
 
   /** A shelter has finished construction (handover) and can be sold on the map. */
-  addFinished({ name, rooms = [], occupants = 6 } = {}) {
-    const s = { id: `spec${++this._ids}`, name: name ?? `Spec shelter #${this._ids}`, rooms: [...rooms], occupants };
+  addFinished({ name, rooms = [], occupants = 6, sealed = null } = {}) {
+    const s = { id: `spec${++this._ids}`, name: name ?? `Spec shelter #${this._ids}`, rooms: [...rooms], occupants, ...(sealed ? { sealed } : {}) }; // sealed: a tile-built bunker's simulated Days Sealed and ratings
     s.value = specValue(s, this.cfg);
     this.stock.push(s);
     this._emit({ type: 'stock', shelter: s });

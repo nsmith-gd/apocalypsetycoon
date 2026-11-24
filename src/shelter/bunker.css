@@ -1,0 +1,33 @@
+/* Bunker editor. Uses the --at-* tokens from src/ui/ui.css. */
+.bk { display: grid; grid-template-columns: 190px auto 260px; gap: 10px; align-items: start; font-family: var(--at-font); color: var(--at-ink); }
+.bk-pal { display: flex; flex-direction: column; gap: 2px; max-height: 78vh; overflow: auto; background: var(--at-panel); border: 3px solid var(--at-border); padding: 6px; }
+.bk-grp { font-size: 9px; letter-spacing: 2px; color: var(--at-dim); margin: 6px 0 2px; }
+.bk-obj { display: grid; grid-template-columns: 10px 1fr; column-gap: 6px; text-align: left; font-family: var(--at-font); font-size: 10px; padding: 3px 5px; color: var(--at-ink); background: var(--at-panel-2); border: 2px solid var(--at-border); cursor: pointer; }
+.bk-obj i { width: 10px; height: 10px; grid-row: span 2; align-self: center; }
+.bk-obj small { color: var(--at-dim); font-size: 9px; }
+.bk-obj.on { border-color: var(--at-gold); color: var(--at-gold); }
+.bk-centre { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.bk-tools { display: flex; flex-wrap: wrap; gap: 4px; }
+.bk-tool, .bk-overlay, .bk-actions button { font-family: var(--at-font); font-weight: 700; font-size: 11px; padding: 5px 7px; color: var(--at-ink); background: var(--at-panel-2); border: 2px solid var(--at-border); cursor: pointer; }
+.bk-tool.on { background: var(--at-gold); color: var(--at-paper-ink); }
+.bk-scroll { overflow: auto; border: 3px solid var(--at-border); max-height: 70vh; }
+.bk-canvas { display: block; image-rendering: pixelated; cursor: crosshair; }
+.bk-info { font-size: 11px; color: var(--at-dim); min-height: 15px; }
+.bk-side { display: flex; flex-direction: column; gap: 6px; font-size: 11px; }
+.bk-side > div { background: var(--at-panel); border: 3px solid var(--at-border); padding: 6px 8px; }
+.bk-days span { font-size: 30px; font-weight: 900; color: var(--at-gold); }
+.bk-days small { display: block; color: var(--at-dim); font-size: 10px; letter-spacing: 1px; }
+.bk-sys { display: grid; grid-template-columns: 52px 1fr; column-gap: 6px; }
+.bk-sys span { text-align: right; font-weight: 900; }
+.bk-sys small { grid-column: span 2; color: var(--at-dim); font-size: 10px; }
+.bk-sys[data-limit='true'] b, .bk-sys[data-limit='true'] span { color: var(--at-red); }
+.bk-rat { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.bk-rat b { color: var(--at-gold); }
+.bk-room small, .bk-phase small { color: var(--at-dim); }
+.bk-actions { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.bk-actions button:disabled { opacity: .4; cursor: default; }
+.bk-notes div { color: var(--at-amber); font-size: 10px; line-height: 1.4; margin: 2px 0; }
+@media (max-width: 900px) { .bk { grid-template-columns: 1fr; } .bk-pal { max-height: 220px; } }
+/* In the campaign the Pressure panel (left) and Clients panel (right) float over the stage: keep clear. */
+.gs .bk { margin: 0 270px; grid-template-columns: 180px auto 240px; }
+@media (max-width: 1300px) { .gs .bk { margin: 0; } }

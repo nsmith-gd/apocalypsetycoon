@@ -16,8 +16,8 @@ import { ResearchTree } from '../research/research.js';
 import { createAudio, wireAudio, createSoundToggle, startOnFirstGesture, midnightTimes } from '../audio/audio.js';
 import { computeMidnight } from '../midnight/midnight.js';
 import { showMidnight, showClockStrike } from '../midnight/midnight-ui.js';
-import { ShelterGrid } from '../shelter/grid.js';
-import { createGridUI } from '../shelter/grid-ui.js';
+import { BunkerSite } from '../shelter/bunker.js';
+import { createBunkerUI } from '../shelter/bunker-ui.js';
 import { CrisisSystem } from '../crisis/breach.js';
 import { createContainmentUI } from '../crisis/breach-ui.js';
 import { LeadMarket, attachCrisis } from '../demand/demand.js';
@@ -140,8 +140,9 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   slot.register('research', tree);
   // The shelter grid: your HQ shelter. Board budget freezes raise build costs; research adds crews and rooms.
   let frame = 0;
-  const grid = new ShelterGrid({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: () => tree.crewCount, isUnlocked: (id) => tree.isUnlocked(id) });
-  const gridUI = createGridUI({ mount: gridView, grid, getFrame: () => frame, onHandOver: (sh) => { mapSales.addFinished(sh); mapScreen.refresh(); } });
+  // Tile-level bunker (RimWorld-style): dig, wall, wire and furnish; rooms form from what you enclose.
+  const grid = new BunkerSite({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: () => tree.crewCount });
+  const gridUI = createBunkerUI({ mount: gridView, grid, getFrame: () => frame, onHandOver: (sh) => { mapSales.addFinished(sh); mapScreen.refresh(); } });
   slot.register('grid', grid);
 
   // ---------- the world: crisis tracks, weekly leads, schemes and map sales ----------
