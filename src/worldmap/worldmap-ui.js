@@ -10,7 +10,7 @@
 // Middle East / South Asia / East Asia, so all eight demand regions are clickable.
 
 import { quoteLead, redeemLead } from '../leads/redeem.js';
-import { drawWorldMap, regionAt as artRegionAt, crisisOverlay, MAP_W, MAP_H, MAP_COLS, MAP_ROWS, CELL } from '../art/worldmap.js';
+import { drawWorldMap, regionAt as artRegionAt, crisisOverlay, MAP_W, MAP_H, MAP_COLS, MAP_ROWS, CELL, WORLD_LAYOUT } from '../art/worldmap.js';
 import { MAP_MARKERS, CRISIS_OVERLAYS } from '../art/sprites-map.js';
 import { drawSprite } from '../art/render.js';
 import { drawText, textWidth } from '../art/font.js';
@@ -20,6 +20,7 @@ import { CLIENT_TYPES } from '../clients/clients.js';
 import { ROOM_CATALOG } from '../clients/rooms.js';
 import { settings } from '../settings/settings.js';
 import { buildRegionMask, drawRegionLayer } from '../art/map-regions.js';
+import { drawMarker, drawLabelPlate, drawCountTag } from '../art/map-markers.js';
 
 let MASK = null;
 /** Per-pixel region mask from the clickable hit areas (built once). */
@@ -78,6 +79,15 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   const toast = el('div', 'wm-toast');
   toast.hidden = true;
   mapWrap.append(canvas, toast, legend);
+  // #102 legibility: show the map at a whole-number zoom (2x, 3x...) so every pixel of the labels and
+  // icons stays crisp; fractional scales smear the 3x5 font.
+  const snap = () => {
+    const avail = mapWrap.clientWidth;
+    if (!avail) return;
+    const z = Math.max(1, Math.floor((avail - 8) / MAP_W));
+    canvas.style.width = `${MAP_W * z}px`;
+  };
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(snap).observe(mapWrap);
 
   const panel = el('aside', 'wm-panel');
   root.append(mapWrap, panel);
@@ -153,6 +163,8 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       if (ov) drawSprite(ctx, CRISIS_OVERLAYS[ov], c * CELL, r * CELL, { frame: anim });
       if (settings.get('trackPatterns')) hatch(zoneOf(byId[id]?.crisis ?? 0).name, c * CELL, r * CELL); // #94
     }
+    // cities (#102): a skyline icon over each city cell, sitting on its cell's bottom edge
+    for (let r = 0; r < MAP_ROWS; r++) for (let c = 0; c < MAP_COLS; c++) if (WORLD_LAYOUT[r][c] === 'c') drawMarker(ctx, 'city', c * CELL - 1, r * CELL - 2);
     // region borders and idle / hover / selected states (#101), on the region hit areas
     drawRegionLayer(ctx, regionMask(), { hover, selected, frame: Math.floor(frame / 3) });
     // sold bunkers
@@ -164,17 +176,18 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       if (!p) continue;
       const x = p.at[0] * CELL;
       const y = p.at[1] * CELL;
-      const nameColor = row.id === selected ? HEX.L : HEX.W;
-      drawText(ctx, p.short, x, y - 7, nameColor);
-      drawText(ctx, String(row.crisis), x + textWidth(p.short) + 4, y - 7, crisisColor(row.crisis));
+      // #102: name + crisis on a plate; below it the buyer icon and count, sold shelters, your site flag
+      drawLabelPlate(ctx, p.short, x - 2, y - 11, { num: row.crisis, numColor: crisisColor(row.crisis), selected: row.id === selected });
       const bob = row.buyers > 0 && anim ? -1 : 0;
-      drawSprite(ctx, MAP_MARKERS.client, x, y + bob);
-      drawText(ctx, `${row.buyers}`, x + 10, y + 2, row.buyers > 0 ? HEX.G : HEX.S);
+      let cx = x;
+      drawMarker(ctx, 'client', cx, y + bob);
+      cx += 9 + drawCountTag(ctx, row.buyers, cx + 9, y + 1, row.buyers > 0 ? HEX.G : HEX.S);
       if (soldIn[row.id]) {
-        const bx = x + 10 + textWidth(String(row.buyers)) + 4;
-        drawSprite(ctx, MAP_MARKERS.bunker, bx, y - 1);
-        if (soldIn[row.id] > 1) drawText(ctx, `${soldIn[row.id]}`, bx + 11, y + 2, HEX.Y);
+        drawMarker(ctx, 'bunker', cx + 2, y - 1);
+        cx += 13;
+        if (soldIn[row.id] > 1) cx += drawCountTag(ctx, soldIn[row.id], cx, y + 1, HEX.Y);
       }
+      if (row.siteOwned) drawMarker(ctx, 'site', cx + 2, y - 2);
     }
     // floating sale text
     floaters = floaters.filter((f) => f.t < 70);
