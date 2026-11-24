@@ -16,7 +16,8 @@ import { ResearchTree } from '../research/research.js';
 import { createAudio, wireAudio, createSoundToggle, startOnFirstGesture, midnightTimes } from '../audio/audio.js';
 import { computeMidnight } from '../midnight/midnight.js';
 import { showMidnight, showClockStrike } from '../midnight/midnight-ui.js';
-import { drawShelter } from '../art/shelterView.js';
+import { ShelterGrid } from '../shelter/grid.js';
+import { createGridUI } from '../shelter/grid-ui.js';
 import { drawWorldMap, MAP_REGIONS, MAP_W, MAP_H } from '../art/worldmap.js';
 import { CampaignClock, SPEEDS, formatClock, QUARTER_SECONDS } from './clock.js';
 import { createSaveSlot, ledgerSaveable, pushbackSaveable, doomClockSaveable } from './save.js';
@@ -88,9 +89,6 @@ function startCampaign({ resume }) {
   app.replaceChildren();
   const root = el('div', 'gs');
   const gridView = el('main', 'stage');
-  const gridCanvas = el('canvas'); gridCanvas.width = 160; gridCanvas.height = 96;
-  const gridCap = el('div', 'cap', 'SHELTER SITE #1 · one shovel crew awaiting orders');
-  gridView.append(gridCanvas, gridCap);
   const mapView = el('main', 'stage');
   const mapCanvas = el('canvas'); mapCanvas.width = MAP_W; mapCanvas.height = MAP_H;
   mapView.append(mapCanvas, el('div', 'cap', 'WORLD MAP · where crises sell bunkers'));
@@ -121,12 +119,18 @@ function startCampaign({ resume }) {
   slot.register('pushback', pushbackSaveable(pb, Pushback));
   slot.register('doom', doomClockSaveable(doom, DoomClock));
   slot.register('research', tree);
+  // The shelter grid: your HQ shelter. Board budget freezes raise build costs; research adds crews and rooms.
+  let frame = 0;
+  const grid = new ShelterGrid({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: () => tree.crewCount, isUnlocked: (id) => tree.isUnlocked(id) });
+  const gridUI = createGridUI({ mount: gridView, grid, getFrame: () => frame });
+  slot.register('grid', grid);
+  tree.onUnlock?.(() => gridUI.refresh());
   if (resume) slot.load(); else slot.clear();
   ledger.setQuarter(clock.quarter);
 
-  // HQ shelter: placeholder until the shelter grid lands. Midnight grades it alongside sold shelters.
-  const hq = { id: 'hq', name: 'Last Resort HQ', owner: 'your board', occupants: 6, rooms: [], sold: false };
-  const shelters = [hq];
+  // Midnight grades the HQ grid alongside every shelter sold (sold ones join this list from the map/clients).
+  const soldShelters = [];
+  const shelters = () => [grid.toShelter(), ...soldShelters];
 
   const hudState = () => ({ quarter: clock.quarter, totalQuarters: clock.totalQuarters, heat: pb.heat, tension: pb.tension,
     boardTarget: pb.board.target, boardProgress: ledger.summary(clock.quarter).net, boardStrikes: pb.board.strikes });
@@ -168,25 +172,26 @@ function startCampaign({ resume }) {
   }
 
   // ---------- views (placeholders) ----------
-  let frame = 0;
   function drawViews() {
-    const g = gridCanvas.getContext('2d');
-    drawShelter(g, { cols: 10, rows: 6, rooms: hq.rooms.filter((r) => typeof r === 'object'), frame });
+    if (!gridView.hidden) gridUI.render();
     const crisis = Object.fromEntries(MAP_REGIONS.map((r, i) => [r.id, Math.max(0, Math.min(100, pb.tension + (i - 2) * 8))]));
     drawWorldMap(mapCanvas.getContext('2d'), { crisis, frame });
   }
   const fit = () => {
-    for (const c of [gridCanvas, mapCanvas]) {
-      const scale = Math.max(1, Math.floor(Math.min((innerWidth - 40) / c.width, (innerHeight - 220) / c.height)));
-      c.style.width = `${c.width * scale}px`;
-    }
+    const hudH = root.querySelector('.hud')?.offsetHeight ?? 150;
+    const sideW = innerWidth >= 1100 ? 540 : 40; // the pressure and client panels sit on both sides
+    // On narrow screens the page scrolls, so size the grid by width only.
+    gridUI.fit(innerWidth < 600 ? innerWidth - 40 : Math.min(innerWidth - sideW, 740) - 60, innerWidth < 700 ? Infinity : innerHeight - hudH - gridUI.chromeHeight() - (root.querySelector('.cb')?.offsetHeight ?? 44) - 20);
+    const scale = Math.max(1, Math.floor(Math.min((innerWidth - sideW) / mapCanvas.width, (innerHeight - hudH - 90) / mapCanvas.height)));
+    mapCanvas.style.width = `${mapCanvas.width * scale}px`;
   };
   fit();
+  requestAnimationFrame(fit);
   addEventListener('resize', fit);
 
   // ---------- end of quarter ----------
   clock.onQuarterEnd(async ({ quarter, isFinal }) => {
-    ledger.record('upkeep', 'Shovel crew payroll', -45_000);
+    ledger.record('upkeep', `Shovel crew payroll x${tree.crewCount}`, -45_000 * tree.crewCount);
     pbui.hold();
     const r = pb.endQuarter({ quarter, profit: ledger.summary(quarter).net });
     if (r.board.met) audio.play('boardMet');
@@ -209,7 +214,7 @@ function startCampaign({ resume }) {
     clock.hold('midnight');
     slot.clear();
     renderBar();
-    const result = computeMidnight({ shelters, world: { tension: pb.tension, heat: pb.heat, runaways: pb.runaways }, cash: ledger.cash,
+    const result = computeMidnight({ shelters: shelters(), world: { tension: pb.tension, heat: pb.heat, runaways: pb.runaways }, cash: ledger.cash,
       ...(cause ? { forceType: 'failed', cause } : {}) });
     const { tolls, boom } = midnightTimes();
     audio.midnight(result.type);
@@ -244,7 +249,7 @@ function startCampaign({ resume }) {
     const dt = Math.min(0.25, (now - last) / 1000);
     last = now;
     if (modalOpen()) clock.hold('modal'); else clock.release('modal');
-    if (clock.running) tree.tick(dt * clock.speed, pb.tension);
+    if (clock.running) { tree.tick(dt * clock.speed, pb.tension); grid.tick(dt * clock.speed); }
     clock.tick(dt);
     acc += dt;
     if (acc > 0.25) { acc = 0; frame++; drawViews(); }
@@ -275,11 +280,12 @@ function startCampaign({ resume }) {
   }
 
   session = {
-    clock, doom, gauge, ledger, pb, tree, ui, shelters, hq, slot,
+    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, soldShelters, slot,
     destroy() {
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);
       removeEventListener('resize', fit);
+      gridUI.destroy();
       ui.destroy();
       app.replaceChildren();
       session = null;
