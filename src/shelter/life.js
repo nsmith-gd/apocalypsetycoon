@@ -18,6 +18,7 @@
 // Pure rules, no DOM. #2's grid can feed `rooms` straight in: { type, floor, col }.
 // Numbers marked provisional stand in for GDD tables not yet readable in the repo.
 
+import { LIFE } from '../config/tuning.js';
 export const FLOOR_METERS = 5; // floor n sits at n * 5 m below the surface (floor 0 = surface)
 export const SPINE_COL = 0;
 export const PER_PERSON = { air: 1, water: 1, food: 1, power: 1 }; // person-days used per occupant per day
@@ -91,17 +92,7 @@ export const ADJACENCY = Object.freeze([
   { a: 'armory', b: 'airlock', effect: { security: 1 }, text: 'Armory covering the airlock: +1 security' },
 ]);
 
-export const LIFE = Object.freeze({
-  noiseRadius: 6, // tiles
-  noiseComfort: 1, // comfort lost per noisy room within range of quarters (once per pair)
-  baseSeal: 1,
-  baseSecurity: 1,
-  visibilityPerSecurity: 2, // every 2 visibility costs 1 security
-  moraleBase: 1,
-  peoplePerComfort: 4, // morale = base + comfort per 4 occupants, minus crowding
-  ratingMax: 5,
-  missingPointPenalty: 0.25,
-});
+export { LIFE }; // lives in the single tuning table (#77)
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 

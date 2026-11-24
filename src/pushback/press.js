@@ -18,6 +18,7 @@
 // addTension(trackId, n) for Gil's random track shove and Distraction.
 
 import { mulberry32 } from './pushback.js';
+import { PRESS_REPUTATION } from '../config/tuning.js';
 
 // Numbers the ticket states are marked (ticket). The rest are provisional until the GDD text
 // is readable from agent sessions; all of them live here.
@@ -62,7 +63,7 @@ export const PRESS = Object.freeze({
       blurb: 'Sit down on the record. With Iris and a cool head: trust +1, story -15%. Too hot, or with Gil: it feeds the story.',
     },
   },
-  reputation: { start: 40, min: 0, max: 100 },
+  reputation: PRESS_REPUTATION, // GDD row: Reputation 0-100, starting at 40 (#77 tuning table)
   inspector: { cost: 200_000, passSecurity: 3, maxVisible: 2, pass: { reputation: 6 }, onceEveryWeeks: 13 },
   pitchforks: {
     openAtTension: 60, // The Pitchforks opens when world tension first reaches 60 (or openPitchforks())

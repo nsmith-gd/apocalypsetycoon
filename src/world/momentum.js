@@ -11,6 +11,7 @@
 
 import { TRACK_BY_ID, openTracks } from './tracks.js';
 import { SCHEME_BY_ID, schemesForRoster, schemeTargets, schemeSlots, SPECIAL_PROJECTS_LEVELS } from './schemeCatalog.js';
+import { MOMENTUM } from '../config/tuning.js';
 
 export const BANDS = Object.freeze([
   { id: 'calm', name: 'Calm', from: 0, drift: -1, heatMult: 1, grantRP: 0, premium: 0 },
@@ -18,7 +19,7 @@ export const BANDS = Object.freeze([
   { id: 'boil', name: 'Boil', from: 45, drift: 0.5, heatMult: 1.1, grantRP: 6, premium: 0.25 },
   { id: 'brink', name: 'Brink', from: 70, drift: 1.5, heatMult: 1.25, grantRP: 15, premium: 0.5 },
 ]);
-export const MOMENTUM = Object.freeze({ release: 0.25, calmRepeatPenalty: 0.25, calmRepeatWindow: 8, defaultWeeks: 2 });
+export { MOMENTUM }; // lives in the single tuning table (#77)
 
 export function bandOf(tension) {
   let b = BANDS[0];

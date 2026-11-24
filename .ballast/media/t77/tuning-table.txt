@@ -1,0 +1,22 @@
+Momentum carried into the next week        | {"carry":0.75,"release":0.25}                                          | GDD: 75%, with a quarter released as tension each week
+Fear                                       | {"perTension":2,"perBreachWeek":10,"decayPerWeek":0.15}                | GDD: +2 per point of tension gained, +10 per breach week, −15% per week
+Tipping point                              | {"base":90,"offset":[-8,4]}                                            | GDD: 90 plus an offset from −8 to +4
+Tipping-point band shown                   | [10,5,3,1]                                                             | GDD: ±10, then ±5, ±3, ±1 with intel
+Scar per contained breach                  | 3                                                                      | GDD: Tipping point −3
+Containment window                         | [6,4,3]                                                                | GDD: 6, then 4, then 3 weeks
+Breach spillover, strong / medium / weak   | {"strong":6,"medium":3,"weak":1.5}                                     | GDD: +6 / +3 / +1.5 momentum per week
+Collapse shove, strong / medium / weak     | {"strong":15,"medium":8,"weak":4}                                      | GDD: +15 / +8 / +4 tension
+Doom Clock                                 | {"startMinutes":15,"tensionDivisor":40}                                | GDD: 15 minutes, tension sum divided by 40
+Heat decay                                 | {"perWeek":1,"perCommunicationsLevel":1,"notorietyFloorByTier":[0,5,10,20,30]} | GDD: 1 per week plus 1 per Communications level, floored at Notoriety (0 to 30 by company tier)
+Whistleblower chance                       | 0.25                                                                   | GDD: 25% per quarter when eligible
+Condo gossip                               | 0.1                                                                    | GDD: 10% per week toward the highest resident
+Retainer                                   | 0.04                                                                   | GDD: 4% of build price per quarter
+Change-order markup                        | 0.15                                                                   | GDD: 15%
+Brink costs                                | {"heatPerWeekPerTrack":1,"volatility":3,"volatilityLastResort":6}      | GDD: +1 heat per week per Brink track; volatility up to ±3, rising to ±6 at The Last Resort
+Repeat calming                             | {"penalty":0.25,"windowWeeks":8}                                       | GDD: −25% effect per use on the same track within 8 weeks
+Fragility                                  | {"perFloorMinute":1,"tippingFloor":72}                                 | GDD: Every tipping point −1 per floor minute; never below 72
+Shelter-in-place test                      | {"pass":{"reputation":2},"fail":{"reputation":-5,"leverage":15}}       | GDD: Pass: reputation +2. Fail: reputation −5, client leverage +15
+Leads                                      | {"perWeekWithSite":0.5,"fearDivisor":50,"waitWeeks":4}                 | GDD: 0.5 a week where you own a site, plus Fear × exposure ÷ 50; unworked leads wait 4 weeks
+Reputation                                 | {"min":0,"max":100,"start":40}                                         | GDD: 0–100, starting at 40
+Siege strength                             | {"tensionDivisor":20,"perVisibleFeature":1}                            | GDD: Pitchforks tension ÷ 20, +1 per visible surface feature
+Loyalty drivers                            | {"raise":5,"brokenPromise":-10}                                        | GDD: Set per head; raises +5, broken promises −10

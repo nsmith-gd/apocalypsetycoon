@@ -17,21 +17,12 @@
 // Feed tensions weekly with `week({ tensions, breaching })`, or `attachCrisis(market, crisisSystem)`.
 
 import { TRACKS as GDD_TRACKS } from '../world/tracks.js';
+import { DEMAND } from '../config/tuning.js';
 
 export const EXPOSURE = Object.freeze({ high: 1, medium: 0.5, low: 0.25 });
 export const WEALTH = Object.freeze(['comfortable', 'rich', 'ultra', 'apex']);
 
-export const DEMAND = Object.freeze({
-  fearPerTension: 2,
-  fearBreachWeek: 10,
-  fearDecay: 0.15,
-  baseLeadsWithSite: 0.5,
-  fearDivisor: 50,
-  rivalAfterWeeks: 4,
-  reputationForUpgrade: 40,
-  showroomPrestigeForUpgrade: 1, // site prestige needed (a Showroom gives 1+)
-  maxPanicPremium: 0.5, // a track at 100 tension adds up to +50% to prices in a high-exposure region (provisional)
-});
+export { DEMAND }; // lives in the single tuning table (#77)
 
 // The eight regions. Exposure (h/m/l) per crisis track, client pool weights, site cost.
 // `art` maps each to the six-region placeholder world map until #3's map lands. Provisional
