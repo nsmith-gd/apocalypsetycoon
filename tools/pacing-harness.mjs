@@ -5,6 +5,7 @@
 //   node tools/pacing-harness.mjs                 # all bots, seeds 1-5, summary + one log per bot
 //   node tools/pacing-harness.mjs --bot edge --seed 3 --log   # one run, full per-quarter table
 //   node tools/pacing-harness.mjs --out <dir>     # also write CSV logs and summary.json
+//   node tools/pacing-harness.mjs --breach [--no-nudge]   # when the first breach lands (real crisis tracks, #68)
 // Exit code 1 if a check fails.
 
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -27,6 +28,21 @@ function table(rows) {
   const cells = [cols.map((c) => c[0]), ...rows.map((r) => cols.map((c) => String(c[1](r))))];
   const w = cols.map((_, i) => Math.max(...cells.map((row) => row[i].length)));
   return cells.map((row) => row.map((c, i) => c.padStart(i === cols.length - 1 ? 0 : w[i])).join('  ')).join('\n');
+}
+
+if (flag('breach')) {
+  const { firstBreachHarness } = await import('../src/debug/breach-sim.js');
+  const h = firstBreachHarness({ nudge: !flag('no-nudge') });
+  console.log('bot        seed  first breach  track        how       wildcard pushed');
+  for (const r of h.runs) {
+    const f = r.firstBreach;
+    const t = f ? `${Math.floor(f.minute / 60)}:${String(f.minute % 60).padStart(2, '0')}` : 'never';
+    console.log(`${r.bot.padEnd(10)} ${String(r.seed).padStart(4)}  ${t.padStart(12)}  ${(f?.track ?? '-').padEnd(11)}  ${(f?.how ?? '-').padEnd(8)}  ${r.wildcard ? `${r.wildcard.from} -> ${r.wildcard.to}` : '-'}`);
+  }
+  console.log('\nChecks:', JSON.stringify(h.checks));
+  const ok = h.checks.everyRunBreachesByDeadline;
+  console.log(ok ? '\nPASS' : '\nFAIL');
+  process.exit(ok ? 0 : 1);
 }
 
 const out = opt('out');
