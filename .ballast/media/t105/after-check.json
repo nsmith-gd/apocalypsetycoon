@@ -27,9 +27,9 @@
    "seamFree": true
   },
   {
-   "scale": 2,
-   "shownW": 640,
-   "shownH": 384,
+   "scale": 3,
+   "shownW": 960,
+   "shownH": 576,
    "aspectOk": true,
    "rendering": "pixelated",
    "hits": {
@@ -47,7 +47,7 @@
    "viewport": "1920x1080",
    "errs": [],
    "columnWidths": [
-    2
+    3
    ],
    "seamFree": true
   },

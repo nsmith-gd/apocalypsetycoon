@@ -31,9 +31,11 @@ import { REGIONS } from '../src/demand/demand.js';
 import { textWidth } from '../src/art/font.js';
 
 // Freeze time: the screen's draw loop only runs when we call it, so ocean and blink frames are fixed.
-let pending = null;
-window.requestAnimationFrame = (fn) => { pending = fn; return 1; };
-window.cancelAnimationFrame = () => { pending = null; };
+// Every queued callback runs once per step (the screen queues its draw loop and a one-off resize fit).
+let queue = [];
+window.requestAnimationFrame = (fn) => { queue.push(fn); return queue.length; };
+window.cancelAnimationFrame = () => { queue = []; };
+const pending = () => { const q = queue; queue = []; for (const fn of q) fn(performance.now()); };
 
 export const STATES = [
   { id: 'calm', crisis: 10 },
@@ -57,8 +59,9 @@ function fakeSales(levels) {
 function render(levels, { selected = null, frames = 1 } = {}) {
   const root = document.getElementById('stage');
   root.replaceChildren();
+  queue = []; // drop the previous screen's loop
   const screen = createWorldMapScreen({ root, sales: fakeSales(levels), initial: selected });
-  for (let i = 0; i < frames; i++) pending?.();
+  for (let i = 0; i < frames; i++) pending();
   const img = screen.canvas.getContext('2d').getImageData(0, 0, MAP_W, MAP_H);
   return { img, screen, canvas: screen.canvas };
 }
@@ -71,7 +74,8 @@ function labelBox(id) {
   const p = MAP_PLACES[id];
   const x = p.at[0] * CELL, y = p.at[1] * CELL;
   // name + crisis number line above, buyer icon + count below (plus the 1px font outline)
-  return { x0: x - 2, y0: y - 9, x1: x + textWidth(p.short) + 4 + textWidth('100') + 2, y1: y + 10 };
+  // #102's name plate (with its crisis box and the selected gold frame) starts 2px left and 11px up
+  return { x0: x - 5, y0: y - 14, x1: x + textWidth(p.short) + textWidth('100') + 16, y1: y + 12 };
 }
 const inBox = (b, x, y) => x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1;
 

@@ -79,15 +79,9 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   const toast = el('div', 'wm-toast');
   toast.hidden = true;
   mapWrap.append(canvas, toast, legend);
-  // #102 legibility: show the map at a whole-number zoom (2x, 3x...) so every pixel of the labels and
-  // icons stays crisp; fractional scales smear the 3x5 font.
-  const snap = () => {
-    const avail = mapWrap.clientWidth;
-    if (!avail) return;
-    const z = Math.max(1, Math.floor((avail - 8) / MAP_W));
-    canvas.style.width = `${MAP_W * z}px`;
-  };
-  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(snap).observe(mapWrap);
+  // #102 legibility + #105: the map shows at a whole-number zoom (2x, 3x...) so every pixel of the labels and
+  // icons stays crisp; fractional scales smear the 3x5 font. fitMap() below does it (width AND height, so the
+  // aspect and the click mapping stay exact).
 
   const panel = el('aside', 'wm-panel');
   root.append(mapWrap, panel);

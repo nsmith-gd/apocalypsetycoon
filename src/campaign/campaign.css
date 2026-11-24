@@ -50,7 +50,6 @@ html, body { margin: 0; height: 100%; background: var(--at-bg); }
 .gs .stage-map .wm-map { position: static; }
 /* #102: give the map the whole stage between the side rails, so it can show at 2x */
 .gs .stage-map.wm, .gs .stage-map .wm { max-width: none; }
-@media (min-width: 1100px) { .gs .stage-map.wm { padding: 0 284px; } } /* clear the Pressure and Clients panels */
 
 /* #81 title screen greybox: start-over confirm and the sound toggle */
 .mm-confirm { display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 320px; text-align: center; font: 12px var(--at-font); color: var(--at-amber); border: 1px dashed var(--at-amber); padding: 8px; }
