@@ -10,7 +10,7 @@
 // Middle East / South Asia / East Asia, so all eight demand regions are clickable.
 
 import { quoteLead, redeemLead } from '../leads/redeem.js';
-import { drawWorldMap, regionAt as artRegionAt, crisisOverlay, MAP_W, MAP_H, MAP_COLS, MAP_ROWS, CELL } from '../art/worldmap.js';
+import { drawWorldMap, regionAt as artRegionAt, crisisOverlay, MAP_W, MAP_H, MAP_COLS, MAP_ROWS, CELL, WORLD_LAYOUT } from '../art/worldmap.js';
 import { MAP_MARKERS, CRISIS_OVERLAYS } from '../art/sprites-map.js';
 import { drawSprite } from '../art/render.js';
 import { drawText, textWidth } from '../art/font.js';
@@ -21,6 +21,8 @@ import { ROOM_CATALOG } from '../clients/rooms.js';
 import { settings } from '../settings/settings.js';
 import { buildRegionMask, drawRegionLayer } from '../art/map-regions.js';
 import { mapBase } from '../art/map-base.js';
+import { drawMarker, drawLabelPlate, drawCountTag } from '../art/map-markers.js';
+import { drawHeatLayer } from '../art/map-heat.js';
 
 let MASK = null;
 /** Per-pixel region mask from the clickable hit areas (built once). */
@@ -80,6 +82,15 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   const toast = el('div', 'wm-toast');
   toast.hidden = true;
   mapWrap.append(canvas, toast, legend);
+  // #102 legibility: show the map at a whole-number zoom (2x, 3x...) so every pixel of the labels and
+  // icons stays crisp; fractional scales smear the 3x5 font.
+  const snap = () => {
+    const avail = mapWrap.clientWidth;
+    if (!avail) return;
+    const z = Math.max(1, Math.floor((avail - 8) / MAP_W));
+    canvas.style.width = `${MAP_W * z}px`;
+  };
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(snap).observe(mapWrap);
 
   const panel = el('aside', 'wm-panel');
   root.append(mapWrap, panel);
@@ -115,30 +126,17 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   canvas.addEventListener('mouseleave', () => { hover = null; });
   canvas.addEventListener('click', (e) => { const id = regionFromEvent(e); if (id) select(id); });
 
-  // Colour-blind patterns (#94): dots = uneasy, stripes = edge, crosshatch = tipping.
-  function hatch(zone, x0, y0) {
-    if (zone === 'calm') return;
-    ctx.fillStyle = 'rgba(10,8,7,.55)';
-    for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) {
-      const d = (x + y) % 4 === 0, a = (x - y + 64) % 4 === 0;
-      if (zone === 'uneasy' ? x % 3 === 1 && y % 3 === 1 : zone === 'edge' ? d : d || a) ctx.fillRect(x0 + x, y0 + y, 1, 1);
-    }
-  }
-
   function drawMap() {
     const anim = Math.floor(frame / 20) % 2;
     ctx.fillStyle = HEX.K;
     ctx.fillRect(0, 0, MAP_W, MAP_H);
     drawWorldMap(ctx, { frame: anim, labels: false });
-    const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
-    // crisis overlays + selection/hover per cell of each of the eight regions
-    for (let r = 0; r < MAP_ROWS; r++) for (let c = 0; c < MAP_COLS; c++) {
-      const id = regionAtCell(c, r);
-      if (!id) continue;
-      const ov = crisisOverlay(byId[id]?.crisis ?? 0);
-      if (ov) drawSprite(ctx, CRISIS_OVERLAYS[ov], c * CELL, r * CELL, { frame: anim });
-      if (settings.get('trackPatterns')) hatch(zoneOf(byId[id]?.crisis ?? 0).name, c * CELL, r * CELL); // #94
-    }
+    // demand heat (#103): veil + wash + texture + rim per region, readable on busy terrain. The textures
+    // are always on now; Crisis patterns (#94) makes them bolder, Reduced flashing stops the tipping pulse.
+    const levels = Object.fromEntries(rows.map((r) => [r.id, crisisOverlay(r.crisis ?? 0)]));
+    drawHeatLayer(ctx, regionMask(), levels, { frame: Math.floor(frame / 10), strong: settings.get('trackPatterns'), steady: settings.get('reducedFlash') });
+    // cities (#102): a skyline icon over each city cell, sitting on its cell's bottom edge
+    for (let r = 0; r < MAP_ROWS; r++) for (let c = 0; c < MAP_COLS; c++) if (WORLD_LAYOUT[r][c] === 'c') drawMarker(ctx, 'city', c * CELL - 1, r * CELL - 2);
     // region borders and idle / hover / selected states (#101), on the region hit areas
     drawRegionLayer(ctx, regionMask(), { hover, selected, frame: Math.floor(frame / 3) });
     // sold bunkers
@@ -150,17 +148,18 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       if (!p) continue;
       const x = p.at[0] * CELL;
       const y = p.at[1] * CELL;
-      const nameColor = row.id === selected ? HEX.L : HEX.W;
-      drawText(ctx, p.short, x, y - 7, nameColor);
-      drawText(ctx, String(row.crisis), x + textWidth(p.short) + 4, y - 7, crisisColor(row.crisis));
+      // #102: name + crisis on a plate; below it the buyer icon and count, sold shelters, your site flag
+      drawLabelPlate(ctx, p.short, x - 2, y - 11, { num: row.crisis, numColor: crisisColor(row.crisis), selected: row.id === selected });
       const bob = row.buyers > 0 && anim ? -1 : 0;
-      drawSprite(ctx, MAP_MARKERS.client, x, y + bob);
-      drawText(ctx, `${row.buyers}`, x + 10, y + 2, row.buyers > 0 ? HEX.G : HEX.S);
+      let cx = x;
+      drawMarker(ctx, 'client', cx, y + bob);
+      cx += 9 + drawCountTag(ctx, row.buyers, cx + 9, y + 1, row.buyers > 0 ? HEX.G : HEX.S);
       if (soldIn[row.id]) {
-        const bx = x + 10 + textWidth(String(row.buyers)) + 4;
-        drawSprite(ctx, MAP_MARKERS.bunker, bx, y - 1);
-        if (soldIn[row.id] > 1) drawText(ctx, `${soldIn[row.id]}`, bx + 11, y + 2, HEX.Y);
+        drawMarker(ctx, 'bunker', cx + 2, y - 1);
+        cx += 13;
+        if (soldIn[row.id] > 1) cx += drawCountTag(ctx, soldIn[row.id], cx, y + 1, HEX.Y);
       }
+      if (row.siteOwned) drawMarker(ctx, 'site', cx + 2, y - 2);
     }
     // floating sale text
     floaters = floaters.filter((f) => f.t < 70);
