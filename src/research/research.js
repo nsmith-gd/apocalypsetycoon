@@ -28,7 +28,7 @@ export const TIPPING_POINT = 90;
 export const FUNDING = Object.freeze({
   grantBase: 0.15, // tick(): RP/s in a calm world (demos and the pacing simulator)
   grantPeak: 1.0, // tick(): RP/s just below the tipping point
-  dollarsPerRP: 5_000, // crisis profits: $5K of panic premium buys 1 RP
+  dollarsPerRP: 50_000, // crisis profits: $50K of panic premium buys 1 RP (#91: GDD scale)
   noGrantStates: ['breach', 'locked', 'collapsed'], // "the track's grants stop"
 });
 

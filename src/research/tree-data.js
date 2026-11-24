@@ -1,3 +1,4 @@
+import { MONEY } from '../config/tuning.js';
 // The research tree as pure data (GDD: Research, unlocks and fan-outs). Add, remove or rebalance
 // projects here; no code changes needed. `node --test tests/research.test.js` validates it.
 //
@@ -32,7 +33,8 @@ export const STARTER = Object.freeze({
   strata: ['topsoil'],
 });
 
-const n = (id, branch, tier, name, rp, cash, requires, blurb, effects) => ({ id, branch, tier, name, rp, cash, requires, blurb, effects });
+// #91: the cash below was written at GDD x 0.1; MONEY.fromStandIn.research puts it on the GDD scale.
+const n = (id, branch, tier, name, rp, cash, requires, blurb, effects) => ({ id, branch, tier, name, rp, cash: Math.round(cash * MONEY.fromStandIn.research), requires, blurb, effects });
 
 export const TREE_NODES = Object.freeze([
   // ---------- Structure: digging, strata, blast doors ----------

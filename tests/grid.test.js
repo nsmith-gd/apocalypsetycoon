@@ -6,7 +6,7 @@ import { ROOM_CATALOG } from '../src/clients/rooms.js';
 import { STRATA } from '../src/shelter/life.js';
 
 const setup = (opts = {}) => {
-  const ledger = new Ledger({ startingCash: 400_000 });
+  const ledger = new Ledger({ startingCash: 100_000_000 });
   const grid = new ShelterGrid({ ledger, ...opts });
   return { ledger, grid };
 };
@@ -16,7 +16,7 @@ test('placing a room charges room price plus digging, and only queues it', () =>
   const r = grid.place(1, 1, 'gold_taps');
   assert.ok(r.ok);
   assert.equal(r.dig, STRATA[0].digCost);
-  assert.equal(ledger.cash, 400_000 - ROOM_CATALOG.gold_taps.cost - STRATA[0].digCost);
+  assert.equal(ledger.cash, 100_000_000 - ROOM_CATALOG.gold_taps.cost - STRATA[0].digCost);
   assert.equal(grid.built.length, 0);
   assert.equal(grid.stats().underConstruction, 1);
 });

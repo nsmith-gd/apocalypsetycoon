@@ -9,7 +9,7 @@
 //     local demand falls), pays out through the one ledger as a 'sales' entry, hands the client
 //     to Pushback (leverage), and stores a Midnight-ready shelter record.
 //
-// Price = spec value (room costs x markup) x client wealth class x (the region's panic premium + any edge bonus).
+// Price = spec value (build cost + 40% margin, GDD) x client wealth class x (the region's panic premium + any edge bonus).
 //
 //   const sales = new MapSales({ market, ledger, pushback, getTensions, getBreachMultiplier });
 //   sales.addFinished({ name, rooms: ['bunk', 'gold_taps', ...], occupants });
@@ -18,15 +18,18 @@
 //   sales.sell('eur', shelterId)       -> sold shelter record (throws if no buyer / no stock)
 
 import { REGIONS, EXPOSURE, WEALTH } from '../demand/demand.js';
+import { MONEY } from '../config/tuning.js';
 import { ROOM_CATALOG } from '../clients/rooms.js';
 import { CLIENT_TYPES } from '../clients/clients.js';
 import { gradeShelter } from '../midnight/midnight.js';
 
 export const SALES = Object.freeze({
-  specMarkup: 2, // a finished shelter sells for twice what its rooms cost to build...
-  specBaseFee: 150_000, // ...plus the dig, shell and handover
-  // ...times what the buyer's wealth class will pay (provisional until the GDD tables are in the repo)
-  wealthMultiplier: { comfortable: 0.8, rich: 1, ultra: 1.35, apex: 1.8 },
+  // GDD Contract pricing: base = the shelter's dig and room cost + a 40% margin, x panic premium x class.
+  margin: MONEY.contractMargin,
+  // Shelters handed over without a build cost (packages, sims): rooms at catalog price plus this for dig and shell.
+  digShellEstimate: 1_500_000,
+  // GDD class multipliers (C1 1.0, C2 1.1, C3 1.2, C4 1.35, C5 1.5) on the map's four wealth bands.
+  wealthMultiplier: { comfortable: MONEY.classMultiplier.C1, rich: MONEY.classMultiplier.C2, ultra: MONEY.classMultiplier.C4, apex: MONEY.classMultiplier.C5 },
 });
 
 const r2 = (n) => Math.round(n * 100) / 100;
@@ -44,9 +47,10 @@ export function regionCrisis(region, tensions = {}) {
 
 /** What a finished shelter is worth before the buyer and the region's panic. */
 export function specValue(shelter, cfg = SALES) {
-  const rooms = shelter.rooms ?? [];
-  const build = rooms.reduce((s, id) => s + (ROOM_CATALOG[id]?.cost ?? 0), 0);
-  return Math.round((cfg.specBaseFee + build * cfg.specMarkup) / 1000) * 1000;
+  const base = shelter.buildCost > 0
+    ? shelter.buildCost // what the dig and rooms actually cost on the grid
+    : cfg.digShellEstimate + (shelter.rooms ?? []).reduce((s, id) => s + (ROOM_CATALOG[id]?.cost ?? 0), 0);
+  return Math.round((base * (1 + cfg.margin)) / 1000) * 1000;
 }
 
 /** Final sale price for a shelter to a lead of this wealth class at this premium. */

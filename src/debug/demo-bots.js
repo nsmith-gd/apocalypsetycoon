@@ -13,27 +13,28 @@ import { computeMidnight } from '../midnight/midnight.js';
 import { PacingLog, PACING } from './pacing.js';
 
 export const SIM = Object.freeze({
-  startingCash: 400_000,
-  payroll: 45_000,
+  // #91: this demo sim's own economy, x25 like pushback's stand-ins (GDD $M scale).
+  startingCash: 10_000_000,
+  payroll: 1_125_000,
   hqOccupants: 6,
   // Stand-in schemes: base three plus the research unlocks (#4 will replace these).
   schemes: [
-    { id: 'podcast', name: 'Fund doom podcast', cost: 15_000, heat: 4, tension: 7 },
-    { id: 'memo', name: 'Leak pandemic memo', cost: 30_000, heat: 14, tension: 18 },
-    { id: 'riots', name: 'Bankroll riots', cost: 60_000, heat: 22, tension: 26 },
-    { id: 'astroturf', name: 'Astroturf think tank', cost: 25_000, heat: 3, tension: 10, research: true },
-    { id: 'deepfake', name: 'Deepfake broadcast', cost: 45_000, heat: 8, tension: 20, research: true },
-    { id: 'shortage', name: 'Engineered shortage', cost: 70_000, heat: 10, tension: 28, research: true },
-    { id: 'blackout', name: 'Grid blackout', cost: 90_000, heat: 12, tension: 35, research: true },
+    { id: 'podcast', name: 'Fund doom podcast', cost: 375_000, heat: 4, tension: 7 },
+    { id: 'memo', name: 'Leak pandemic memo', cost: 750_000, heat: 14, tension: 18 },
+    { id: 'riots', name: 'Bankroll riots', cost: 1_500_000, heat: 22, tension: 26 },
+    { id: 'astroturf', name: 'Astroturf think tank', cost: 625_000, heat: 3, tension: 10, research: true },
+    { id: 'deepfake', name: 'Deepfake broadcast', cost: 1_125_000, heat: 8, tension: 20, research: true },
+    { id: 'shortage', name: 'Engineered shortage', cost: 1_750_000, heat: 10, tension: 28, research: true },
+    { id: 'blackout', name: 'Grid blackout', cost: 2_250_000, heat: 12, tension: 35, research: true },
   ],
   // Tension relief is pushback's own Fund disaster relief action (pb.fundRelief()).
   // Stand-in shelter packages (#2/#3 will replace these). Price scales with crisis.
   packages: {
-    luxury: { label: 'Luxury', base: 320_000, occupants: 8, rooms: ['gold_taps', 'cryo_pod', 'wine_cellar', 'air_vent', 'water_tank', 'pantry'] },
-    balanced: { label: 'Balanced', base: 220_000, occupants: 8, rooms: ['gold_taps', 'mil_scrubber', 'water_tank', 'water_tank', 'hydroponics'] },
-    survival: { label: 'Survival', base: 150_000, occupants: 8, rooms: ['mil_scrubber', 'water_recycler', 'hydroponics'] },
+    luxury: { label: 'Luxury', base: 8_000_000, occupants: 8, rooms: ['gold_taps', 'cryo_pod', 'wine_cellar', 'air_vent', 'water_tank', 'pantry'] },
+    balanced: { label: 'Balanced', base: 5_500_000, occupants: 8, rooms: ['gold_taps', 'mil_scrubber', 'water_tank', 'water_tank', 'hydroponics'] },
+    survival: { label: 'Survival', base: 3_750_000, occupants: 8, rooms: ['mil_scrubber', 'water_recycler', 'hydroponics'] },
   },
-  roomCost: { air_vent: 15_000, water_tank: 15_000, pantry: 12_000, mil_scrubber: 70_000, water_recycler: 45_000, hydroponics: 35_000, gold_taps: 40_000, cryo_pod: 120_000, wine_cellar: 90_000, bunk: 20_000, ai_butler: 200_000 },
+  roomCost: { air_vent: 375_000, water_tank: 375_000, pantry: 300_000, mil_scrubber: 1_750_000, water_recycler: 1_125_000, hydroponics: 875_000, gold_taps: 1_000_000, cryo_pod: 3_000_000, wine_cellar: 2_250_000, bunk: 500_000, ai_butler: 5_000_000 },
   buildCostShare: 0.45, // building a sold shelter costs 45% of its room list (bulk rates)
   priceCrisisFactor: 60, // price = base * (1 + crisis / 60)
   demandPerCrisis: 18, // buyers this quarter = 1 + floor(crisis / 18) (calm worlds don't buy bunkers)
@@ -80,7 +81,7 @@ export function createSimGame({ seed = 1, bot = 'edge' } = {}) {
       shelters.push({ id: `s${n}`, name: `${p.label} bunker #${n}`, owner: client, occupants: p.occupants, rooms: [...p.rooms], sold: true });
       game.soldThisQuarter++;
     },
-    build(room) { ledger.record('builds', `HQ: ${room}`, -Math.round((SIM.roomCost[room] ?? 20_000) * pb.board.buildCostMultiplier)); hq.rooms.push(room); },
+    build(room) { ledger.record('builds', `HQ: ${room}`, -Math.round((SIM.roomCost[room] ?? 500_000) * pb.board.buildCostMultiplier)); hq.rooms.push(room); },
   };
   return game;
 }
@@ -146,7 +147,7 @@ export function botQuarter(game, botName = game.bot) {
   // HQ: one room a quarter while affordable.
   const plan = HQ_PLANS[profile.hq];
   const room = plan[game.hq.rooms.length % plan.length];
-  if (ledger.cash > 250_000) game.build(room);
+  if (ledger.cash > 6_250_000) game.build(room);
 }
 
 /** Close the quarter: payroll, research over the quarter's real time, pushback, log. */

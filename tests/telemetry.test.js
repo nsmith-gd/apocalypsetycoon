@@ -11,7 +11,8 @@ import { SchemeBoard } from '../src/schemes/schemes.js';
 function world() {
   const ledger = new Ledger({ startingCash: 50_000_000 });
   const pb = new Pushback({ ledger, seed: 3 });
-  const crisis = new CrisisSystem({ seed: 4, pushback: pb, ledger });
+  // The generic demo tracks have no slots, so they are off the GDD domino map (#65): give them one link to test with.
+  const crisis = new CrisisSystem({ seed: 4, pushback: pb, ledger, links: [['war', 'markets', 'strong']] });
   const tree = new ResearchTree({ ledger });
   const market = new LeadMarket({ seed: 5 });
   const schemes = new SchemeBoard({ crisis, market, ledger, pushback: pb });

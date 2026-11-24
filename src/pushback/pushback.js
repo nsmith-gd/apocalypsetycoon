@@ -25,12 +25,13 @@
 //   pb.pending / pb.resolve(eventId, optionId) — choice events for the UI
 //   pb.on('event' | 'change' | 'resolved' | 'ousted' | 'runaway', fn)
 
-import { PUSHBACK_DEFAULTS } from '../config/tuning.js';
+import { PUSHBACK_DEFAULTS, MONEY } from '../config/tuning.js';
 import { seededRng } from '../campaign/rng.js';
 export { PUSHBACK_DEFAULTS }; // lives in the single tuning table (#77)
 
 const clamp = (v, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
 const round = (n, to = 1_000) => Math.round(n / to) * to;
+const PB = MONEY.fromStandIn.pushback; // #91: this module's stand-in money x PB = GDD dollars
 
 /** Small seeded RNG so playthroughs and tests are reproducible. */
 export function mulberry32(seed) { return seededRng(seed); } // saveable state (#80)
@@ -44,10 +45,10 @@ function deepMerge(base, over = {}) {
 }
 
 const DEMANDS = [
-  { want: 'a gold-plated panic room', cost: 40_000 },
-  { want: 'a private cryo pod for their yacht captain', cost: 60_000 },
-  { want: 'a wine cellar rated for nuclear winter', cost: 35_000 },
-  { want: 'a second helipad, "for the dog"', cost: 50_000 },
+  { want: 'a gold-plated panic room', cost: 40_000 * PB },
+  { want: 'a private cryo pod for their yacht captain', cost: 60_000 * PB },
+  { want: 'a wine cellar rated for nuclear winter', cost: 35_000 * PB },
+  { want: 'a second helipad, "for the dog"', cost: 50_000 * PB },
 ];
 const SECRETS = [
   'the leaked pandemic memo',
@@ -226,7 +227,7 @@ export class Pushback {
   }
 
   _investigation(source) {
-    const settle = Math.max(40_000, round(this.cash * 0.08));
+    const settle = Math.max(40_000 * PB, round(this.cash * 0.08));
     return {
       id: ++this._ids,
       type: 'investigation',
@@ -234,8 +235,8 @@ export class Pushback {
       title: 'Federal investigation opened',
       body: `Regulators traced "${source}" back to Last Resort Holdings. Heat is ${Math.round(this.heat)}.`,
       options: [
-        { id: 'settle', label: `Settle quietly (-$${(settle / 1000).toFixed(0)}K, heat -25)`, cost: settle, heat: -25 },
-        { id: 'lawyers', label: 'Lawyer up (-$20K, heat -8)', cost: 20_000, heat: -8 },
+        { id: 'settle', label: `Settle quietly (-${fmt(settle)}, heat -25)`, cost: settle, heat: -25 },
+        { id: 'lawyers', label: `Lawyer up (-${fmt(20_000 * PB)}, heat -8)`, cost: 20_000 * PB, heat: -8 },
         { id: 'stonewall', label: 'Stonewall (free, heat +12)', cost: 0, heat: 12 },
       ],
     };
@@ -251,7 +252,7 @@ export class Pushback {
       type: 'raid',
       icon: 'X',
       title: 'FEDERAL RAID',
-      body: `Agents seized the servers. You paid $${(fine / 1000).toFixed(0)}K in fines and bail. Heat drops to ${h.raidHeatAfter}.`,
+      body: `Agents seized the servers. You paid ${fmt(fine)} in fines and bail. Heat drops to ${h.raidHeatAfter}.`,
       fine,
       options: [{ id: 'ok', label: 'Lawyers are on it' }],
     };
@@ -272,7 +273,7 @@ export class Pushback {
       type: 'runaway',
       icon: '*',
       title: 'RUNAWAY CRISIS',
-      body: `"${source}" tipped the world over the edge. Riots hit your sites ($${(damage / 1000).toFixed(0)}K in damages), clients panic, and the doomsday clock jumps forward.`,
+      body: `"${source}" tipped the world over the edge. Riots hit your sites (${fmt(damage)} in damages), clients panic, and the doomsday clock jumps forward.`,
       damage,
       options: [{ id: 'ok', label: 'Board up the windows' }],
     };
@@ -315,7 +316,7 @@ export class Pushback {
 
   _blackmail(c) {
     const secret = SECRETS[Math.floor(this.rng() * SECRETS.length)];
-    const hush = Math.max(50_000, round(c.price * 0.4));
+    const hush = Math.max(50_000 * PB, round(c.price * 0.4));
     return {
       id: ++this._ids,
       type: 'blackmail',
@@ -447,9 +448,9 @@ export class Pushback {
     // record quarter can't set a bar that the rest of the campaign can never clear.
     if (met) {
       const base = target + Math.max(0, profit - target) * B.ratchet;
-      this.board.target = round(base * (1 + B.growth), 5_000);
+      this.board.target = round(base * (1 + B.growth), 5_000 * PB);
     } else {
-      this.board.target = round(Math.max(B.firstTarget, (target + Math.max(0, profit)) / 2), 5_000);
+      this.board.target = round(Math.max(B.firstTarget, (target + Math.max(0, profit)) / 2), 5_000 * PB);
     }
     return boardResult;
   }
@@ -504,7 +505,7 @@ export class Pushback {
     const fired = [];
     if (r.heat > 0) this.addHeat(r.heat, r.label, fired);
     else if (r.heat < 0) this.heat = clamp(this.heat + r.heat);
-    this._note('relief', `${r.label}: -$${Math.round(cost / 1000)}K`, { kind, cost });
+    this._note('relief', `${r.label}: -${fmt(cost)}`, { kind, cost });
     this._changed();
     return { kind, cost, heat: this.heat - before.heat, tension: this.tension - before.tension, fired, nextCost: this.reliefCost(kind) };
   }

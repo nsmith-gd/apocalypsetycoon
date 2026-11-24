@@ -27,36 +27,36 @@ import { ROOM_CATALOG } from './rooms.js';
 export const CLIENT_TYPES = Object.freeze({
   tech_founder: {
     wealthClass: 'C2', style: 'tech_minimal', // preferred style (design layer)
-    label: 'Tech founder', occupants: [3, 5], slots: 7, baseFee: 60_000,
-    wants: { cryo_pod: 140_000, ai_butler: 220_000, gold_taps: 30_000 }, wantCount: [1, 2],
+    label: 'Tech founder', occupants: [3, 5], slots: 7, baseFee: 2_400_000,
+    wants: { cryo_pod: 5_600_000, ai_butler: 8_800_000, gold_taps: 1_200_000 }, wantCount: [1, 2],
     names: ['Kai Brandt', 'Sasha Okonkwo-Reyes', 'Elon-Marie Voss', 'Dev Patel-Hart'],
     blurb: 'Wants to wake up in the future with a butler that knows his name.',
   },
   oil_heir: {
     wealthClass: 'C3', style: 'gilded', // preferred style (design layer)
-    label: 'Oil heir', occupants: [8, 12], slots: 9, baseFee: 80_000,
-    wants: { gold_taps: 70_000, wine_cellar: 120_000, cryo_pod: 90_000 }, wantCount: [2, 3],
+    label: 'Oil heir', occupants: [8, 12], slots: 9, baseFee: 3_200_000,
+    wants: { gold_taps: 2_800_000, wine_cellar: 4_800_000, cryo_pod: 3_600_000 }, wantCount: [2, 3],
     names: ['Chad Remington IV', 'Lady Graves', 'Count Velasquez', 'The Halvorsen Twins'],
     blurb: 'The whole family, the staff and the 1961 Pétrus. Gold everything.',
   },
   celebrity: {
     wealthClass: 'C4', style: 'kitsch', // preferred style (design layer)
-    label: 'Celebrity', occupants: [4, 6], slots: 7, baseFee: 50_000,
-    wants: { gold_taps: 90_000, cryo_pod: 110_000, wine_cellar: 60_000 }, wantCount: [1, 2],
+    label: 'Celebrity', occupants: [4, 6], slots: 7, baseFee: 2_000_000,
+    wants: { gold_taps: 3_600_000, cryo_pod: 4_400_000, wine_cellar: 2_400_000 }, wantCount: [1, 2],
     names: ['DJ Bunkr', 'Mrs. Abernathy-Lux', 'Rex Starling', 'Paloma'],
     blurb: 'Needs it to look incredible on the last livestream.',
   },
   politician: {
     wealthClass: 'C3', style: 'gilded', // preferred style (design layer)
-    label: 'Politician', occupants: [6, 10], slots: 8, baseFee: 70_000,
-    wants: { wine_cellar: 100_000, gold_taps: 50_000 }, wantCount: [1, 2],
+    label: 'Politician', occupants: [6, 10], slots: 8, baseFee: 2_800_000,
+    wants: { wine_cellar: 4_000_000, gold_taps: 2_000_000 }, wantCount: [1, 2],
     names: ['Senator Pike', 'Minister Hollis', 'Governor Banks', 'Mayor Duquesne'],
     blurb: 'Discreet. Off the books. A panic room for the panic.',
   },
   prepper: {
     wealthClass: 'C1', style: 'brutalist', // preferred style (design layer)
-    label: 'Billionaire prepper', occupants: [6, 8], slots: 8, baseFee: 90_000,
-    wants: { mil_scrubber: 60_000, water_recycler: 50_000, hydroponics: 40_000, gold_taps: 40_000 }, wantCount: [2, 3],
+    label: 'Billionaire prepper', occupants: [6, 8], slots: 8, baseFee: 3_600_000,
+    wants: { mil_scrubber: 2_400_000, water_recycler: 2_000_000, hydroponics: 1_600_000, gold_taps: 1_600_000 }, wantCount: [2, 3],
     names: ['The Kessler Trust', 'Ms. Tanaka-Ruiz', 'Bishop Oduya', 'Mr. Vance'],
     blurb: 'Has read every forum. Still wants one gold tap.',
   },
@@ -129,7 +129,7 @@ export class ClientBook {
     for (let i = 0; i < n; i++) {
       const id = remaining.splice(Math.floor(this.rng() * remaining.length), 1)[0];
       // big orders sometimes want two of the cheap stuff
-      const qty = t.wants[id] <= 70_000 && this.rng() < 0.35 ? 2 : 1;
+      const qty = t.wants[id] <= 2_800_000 && this.rng() < 0.35 ? 2 : 1;
       wants.push({ room: id, qty, pays: t.wants[id] });
     }
     const order = {

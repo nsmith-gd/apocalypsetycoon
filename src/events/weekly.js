@@ -14,7 +14,7 @@ import { seededRng } from '../campaign/rng.js';
 // Money is GDD dollars x CARD_PRICE_SCALE (0.02) so a card fits a $400K opening treasury: the GDD's $3M lobby
 // costs $60K here. One constant to change when the economy is rescaled.
 
-export const CARD_PRICE_SCALE = 0.02;
+export const CARD_PRICE_SCALE = 1; // #91: cards are in GDD dollars like the rest of the economy
 const M = (millions) => Math.round(millions * 1_000_000 * CARD_PRICE_SCALE);
 
 // Effects: tension: { track, n } | heat | cash | reputation | research. `later` = a GDD outcome whose

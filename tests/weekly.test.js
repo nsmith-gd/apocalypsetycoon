@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { WeeklyDeck, WEEKLY_CARDS, applyChoice, describeChoice } from '../src/events/weekly.js';
+import { WeeklyDeck, WEEKLY_CARDS, CARD_PRICE_SCALE, applyChoice, describeChoice } from '../src/events/weekly.js';
+
+// Card money is GDD dollars x CARD_PRICE_SCALE (1 since #91: cards are in GDD dollars).
+const M = (millions) => Math.round(millions * 1_000_000 * CARD_PRICE_SCALE);
 
 test('the L0 deck has 10 cards with 2-3 choices, including the GDD samples', () => {
   assert.equal(WEEKLY_CARDS.length, 10);
@@ -34,12 +37,12 @@ test('applying a choice nudges tension, heat, cash, reputation and research thro
   };
   const sourdough = WEEKLY_CARDS.find((c) => c.id === 'sourdough_glow');
   applyChoice(sourdough, 'study', hooks);
-  assert.deepEqual(log, [['cash', -20_000], ['tension', 'bloom', 2], ['rp', 20]]);
+  assert.deepEqual(log, [['cash', -M(1)], ['tension', 'bloom', 2], ['rp', 20]]);
   log.length = 0;
   const honey = WEEKLY_CARDS.find((c) => c.id === 'honeybee_funeral');
   const r = applyChoice(honey, 'futures', hooks);
-  assert.deepEqual(log, [['cash', 100_000], ['tension', 'hush', 5], ['heat', 4]]);
-  assert.deepEqual(r.applied, ['+$100K', 'hush +5', 'heat +4']);
+  assert.deepEqual(log, [['cash', M(5)], ['tension', 'hush', 5], ['heat', 4]]);
+  assert.deepEqual(r.applied, ['+$5.0M', 'hush +5', 'heat +4']);
   log.length = 0;
   applyChoice(WEEKLY_CARDS[0], 'lobby', hooks);
   assert.deepEqual(log.map((x) => x[0]), ['cash', 'heat', 'note']);
@@ -47,7 +50,9 @@ test('applying a choice nudges tension, heat, cash, reputation and research thro
 
 test('describeChoice names the track and the cost', () => {
   const senator = WEEKLY_CARDS[0];
-  assert.deepEqual(describeChoice(senator.choices[0]), ['-$60K', 'heat +2']);
+  assert.equal(CARD_PRICE_SCALE, 1);
+  assert.equal(senator.choices[0].cost, M(3)); // GDD: the $3M lobby
+  assert.deepEqual(describeChoice(senator.choices[0]), ['-$3.0M', 'heat +2']);
   assert.deepEqual(describeChoice(WEEKLY_CARDS[1].choices[1], () => 'The Bloom'), ['The Bloom +4']);
 });
 

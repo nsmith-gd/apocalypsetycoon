@@ -34,13 +34,14 @@ export const SCHEME_RULES = Object.freeze({
 });
 
 // Ids match the research tree's scheme unlocks. Numbers are provisional until the GDD tables are in the repo.
+// #91: GDD dollars (Fund doom podcast = a Leak, $0.5M ... Grid blackout ~ Sabotage).
 export const SCHEMES = Object.freeze([
-  { id: 'podcast', name: 'Fund doom podcast', track: 'unrest', cost: 15_000, tension: 7, heat: 4, leads: 0.5, blurb: 'Three hours a day of "they don\'t want you to know".' },
-  { id: 'memo', name: 'Leak pandemic memo', track: 'pandemic', cost: 30_000, tension: 14, heat: 12, leads: 1, blurb: 'A lab, a sneeze, a PDF.' },
-  { id: 'astroturf', name: 'Astroturf think tank', track: 'climate', cost: 25_000, tension: 10, heat: 5, leads: 1, research: true, blurb: 'Experts agree: things look bad.' },
-  { id: 'deepfake', name: 'Deepfake broadcast', track: 'war', cost: 60_000, tension: 20, heat: 18, leads: 1.5, research: true, blurb: 'A president says the quiet part loud.' },
-  { id: 'shortage', name: 'Engineered shortage', track: 'markets', cost: 90_000, tension: 26, heat: 20, leads: 2, research: true, blurb: 'Empty shelves sell full bunkers.' },
-  { id: 'blackout', name: 'Grid blackout', track: 'unrest', cost: 150_000, tension: 35, heat: 30, leads: 3, research: true, blurb: 'Lights out. Phones ring.' },
+  { id: 'podcast', name: 'Fund doom podcast', track: 'unrest', cost: 500_000, tension: 7, heat: 4, leads: 0.5, blurb: 'Three hours a day of "they don\'t want you to know".' },
+  { id: 'memo', name: 'Leak pandemic memo', track: 'pandemic', cost: 1_000_000, tension: 14, heat: 12, leads: 1, blurb: 'A lab, a sneeze, a PDF.' },
+  { id: 'astroturf', name: 'Astroturf think tank', track: 'climate', cost: 800_000, tension: 10, heat: 5, leads: 1, research: true, blurb: 'Experts agree: things look bad.' },
+  { id: 'deepfake', name: 'Deepfake broadcast', track: 'war', cost: 2_000_000, tension: 20, heat: 18, leads: 1.5, research: true, blurb: 'A president says the quiet part loud.' },
+  { id: 'shortage', name: 'Engineered shortage', track: 'markets', cost: 3_000_000, tension: 26, heat: 20, leads: 2, research: true, blurb: 'Empty shelves sell full bunkers.' },
+  { id: 'blackout', name: 'Grid blackout', track: 'unrest', cost: 5_000_000, tension: 35, heat: 30, leads: 3, research: true, blurb: 'Lights out. Phones ring.' },
 ]);
 
 const clamp = (v, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));

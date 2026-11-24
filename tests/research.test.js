@@ -1,9 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ResearchTree, researchRate, TIPPING_POINT, weeklyGrants, validateTree, RESEARCH_NODES, STARTER } from '../src/research/research.js';
+import { ResearchTree, researchRate, TIPPING_POINT, weeklyGrants, validateTree, RESEARCH_NODES, STARTER, FUNDING } from '../src/research/research.js';
 import { Ledger } from '../src/ledger/ledger.js';
 import { OBJECTS, STRATA } from '../src/shelter/bunker-catalog.js';
 import { SCHEMES } from '../src/schemes/schemes.js';
+
+const node = (id) => RESEARCH_NODES.find((nd) => nd.id === id);
 
 test('the tree data is valid and every effect points at something real', () => {
   assert.deepEqual(validateTree(), []);
@@ -43,36 +45,43 @@ test('a hotter world researches faster: weeks to finish Hydroponics', () => {
 });
 
 test('spending: tier 1 costs cash only and lands at once; higher tiers pay cash then RP', () => {
-  const ledger = new Ledger({ startingCash: 1_000_000 });
+  const clay = node('s1_clay');
+  const hydro = node('a_hydro');
+  assert.equal(clay.cash, 1_500_000, 'GDD scale: Clay digging costs $1.5M');
+  const start = 10_000_000;
+  const ledger = new Ledger({ startingCash: start });
   const t = new ResearchTree({ ledger });
   assert.equal(t.canDig('clay'), false);
   assert.equal(t.start('s1_clay'), true);
   assert.equal(t.done.has('s1_clay'), true);
-  assert.equal(ledger.cash, 850_000);
+  assert.equal(ledger.cash, start - clay.cash);
   assert.equal(ledger.entries[0].category, 'research');
   assert.equal(t.canDig('clay'), true);
   assert.equal(t.canBuild('sump'), true);
   // tier 2: cash now, RP later
   assert.equal(t.start('a_hydro'), true);
-  assert.equal(ledger.cash, 650_000);
+  assert.equal(ledger.cash, start - clay.cash - hydro.cash);
   assert.equal(t.status('a_hydro'), 'active');
   assert.match(t.blocker('l1_med'), /busy/);
-  t.fundFromIncome(300_000, 'sale'); // 60 RP
+  t.fundFromIncome((hydro.rp - 1) * FUNDING.dollarsPerRP, 'sale'); // one RP short
+  assert.equal(t.done.has('a_hydro'), false);
+  t.fundFromIncome(FUNDING.dollarsPerRP, 'sale'); // the last RP
   assert.equal(t.done.has('a_hydro'), true);
   assert.equal(t.canBuild('hydro'), true);
   assert.equal(t.isUnlocked('hydroponics'), true);
-  assert.equal(t.sources.income, 60);
+  assert.equal(t.sources.income, hydro.rp);
 });
 
 test('prerequisites and cash gate projects', () => {
-  const ledger = new Ledger({ startingCash: 120_000 });
+  const cash = node('s1_clay').cash - 1; // a dollar short of the cheapest tier-1 project tried below
+  const ledger = new Ledger({ startingCash: cash });
   const t = new ResearchTree({ ledger });
   assert.equal(t.status('a_water'), 'locked');
   assert.match(t.blocker('a_water'), /Needs HEPA Scrubber Bay/);
   assert.equal(t.start('a_water'), false);
   assert.match(t.blocker('s1_clay'), /cash/);
   assert.equal(t.start('s1_clay'), false);
-  assert.equal(ledger.cash, 120_000);
+  assert.equal(ledger.cash, cash);
 });
 
 test('unlocks apply to the shelter grid and the scheme systems', () => {
@@ -99,9 +108,9 @@ test('the older continuous trickle still climbs with crisis and drops past the t
 });
 
 test('save/load round-trips', () => {
-  const ledger = new Ledger({ startingCash: 1_000_000 });
+  const ledger = new Ledger({ startingCash: node('c_crew2').cash + node('a_hydro').cash });
   const t = new ResearchTree({ ledger });
-  t.start('c_crew2'); t.start('a_hydro'); t.fundFromIncome(50_000);
+  t.start('c_crew2'); t.start('a_hydro'); t.fundFromIncome(10 * FUNDING.dollarsPerRP);
   const u = new ResearchTree();
   u.load(JSON.parse(JSON.stringify(t)));
   assert.equal(u.crewCount, 2);
