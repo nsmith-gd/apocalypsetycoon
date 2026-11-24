@@ -28,3 +28,17 @@ reference a venue only by `id`, so the catalog stays the single source of venue 
 
 Venue leads are in addition to the GDD's weekly region demand (`src/demand`), not a replacement; #50 owns how a
 lead is stored in the pipeline.
+
+## Attending (`attend.js`, #52)
+
+`new EventCircuit({ catalog, ledger, seed, clock, addHeat, addReputation })` — pure game state, no UI yet.
+
+- `options(quarter)` lists this quarter's venues with `canAttend` and a plain `reason` when not
+  (not running, already attended, crowd not arrived, not enough agenda days, not enough cash, at an event already).
+- `attend(id, { quarter, from })` pays cash (ledger, "Event: <name>") and agenda days (6 per quarter, no carry-over),
+  applies heat/reputation, rolls the press, holds the clock (`'event'`) and returns the visit with its `guests`.
+- Guests come from the venue's fixed pool (stable per campaign seed), only classes that have arrived by that quarter
+  (GDD arrival times), never someone you already `meet()`-ed at that venue.
+- `leave()` closes the visit, releases the clock and returns `{ visit, returnTo: from }`.
+- `toJSON()/load()` for the save slot (an open visit is closed on load). Not wired into `main.js` yet; the
+  event screen ticket registers it as `slot.register('events', circuit)`.
