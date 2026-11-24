@@ -73,7 +73,18 @@ export function createContainmentUI({ root = document.body, crisis, onAdvanceWee
     const adv = el('button', 'br-advance', 'ADVANCE 1 WEEK');
     adv.onclick = () => { onAdvanceWeek?.(); render(); };
     foot.append(tip, adv);
-    card.append(head, weeks, weekText, barWrap, srcs, foot);
+    const sip = el('div', 'br-sip');
+    const tests = w.shelterTests ?? [];
+    sip.append(el('div', 'br-sip-head', `SHELTER-IN-PLACE · ${tests.length ? `${tests.filter((r) => r.pass).length} passed, ${tests.filter((r) => r.pass === false).length} failed` : 'no shelters in its hot regions'}`));
+    for (const r of tests) {
+      const row = el('div', 'br-sip-row');
+      row.dataset.pass = r.site ? 'delay' : String(r.pass);
+      row.textContent = r.site
+        ? `${r.name}: still under construction, crews sent home for a week`
+        : `${r.name}${r.owner ? ` (${r.owner})` : ''}: ${r.pass ? 'PASSED · reputation +2' : `FAILED · reputation -5, leverage +15${r.lost ? `, ${r.lost} lost` : ''}`}${r.why.length ? ` · ${r.why.join(', ')}` : ''}`;
+      sip.append(row);
+    }
+    card.append(head, weeks, weekText, barWrap, srcs, sip, foot);
   }
 
   const offs = ['breach', 'contribute', 'contained', 'collapse', 'week'].map((k) => crisis.on(k, () => render()));

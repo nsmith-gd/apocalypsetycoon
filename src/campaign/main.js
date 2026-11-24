@@ -164,7 +164,9 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   // closed until its opening time; Doom Clock fragility lowers that roll from day one, so a late track opens fragile.
   if (resume) roster = slot.peek()?.parts?.world?.roster ?? roster;
   const crisis = new CrisisSystem({
-    seed: worldSeed, pushback: pb, doomClock: doom, ledger, shelters: () => mapSales.sheltersForMidnight(),
+    seed: worldSeed, pushback: pb, doomClock: doom, ledger, shelters: () => mapSales.sold, // live records: breaches can cost occupants
+    // the HQ grid is the site under construction (in North America, where the HQ site is)
+    construction: () => (grid.jobs.length ? [{ id: 'hq', name: grid.name, region: 'nam', delay: (d) => grid.delay(d) }] : []),
     tracks: roster.map((id) => ({ id, name: TRACK_BY_ID[id].name, open: false })),
     links: rosterLinks(roster).map((l) => [l.from, l.to, l.strength]),
   });
@@ -468,7 +470,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     },
   };
   window.__game = session;
-  // Debug presets for a NEW campaign: ?preset=countdown | clockzero (add &qs=26 for 2-second weeks).
+  // Debug presets for a NEW campaign: ?preset=countdown | clockzero | breach (add &qs=26 for 2-second weeks).
   const preset = DEBUG_PRESETS[params.get('preset')];
   if (!resume && preset) preset(session);
 }
@@ -495,6 +497,19 @@ function collapseTrack(g, id) {
   for (let i = 0; i < 8 && g.crisis.tracks[id].state === 'breach'; i++) g.crisis.advanceWeek();
 }
 const DEBUG_PRESETS = {
+  // Shelter-in-place (#66): two shelters in the Middle East (Atomic Standoff's high-exposure region), one built
+  // for it and one that isn't, a third in Europe out of the blast zone; then Atomic Standoff breaches.
+  breach(g) {
+    for (const id of g.world.roster) { if (!g.world.opened.includes(id)) g.world.opened.push(id); g.crisis.openTrack(id, { tension: 30 }); }
+    const shelters = [
+      { region: 'mea', name: 'The Granite Keep', occupants: 8, rooms: ['bunk', 'bunk', 'air_vent', 'water_tank', 'pantry', 'mil_scrubber'], sealed: { daysSealed: 900, ratings: { seal: 4, blast: 4, security: 3, morale: 3 } } },
+      { region: 'mea', name: 'Marble Folly', occupants: 8, rooms: ['bunk', 'bunk', 'gold_taps', 'gold_taps', 'wine_cellar'], sealed: { daysSealed: 90, ratings: { seal: 1, blast: 1, security: 1, morale: 4 } } },
+      { region: 'eur', name: 'Alpine Retreat', occupants: 6, rooms: ['bunk', 'air_vent', 'water_tank', 'pantry'], sealed: { daysSealed: 200, ratings: { seal: 2, blast: 2, security: 2, morale: 2 } } },
+    ];
+    for (const sh of shelters) { const s = g.mapSales.addFinished(sh); g.market.addLeads(sh.region, 1); g.mapSales.sell(sh.region, s.id); }
+    g.mapScreen.refresh();
+    setTimeout(() => g.crisis.setTension('atomic', 100, 'debug preset'), 1500);
+  },
   // Two collapses: the Final Countdown starts, and Midnight comes 4 in-game weeks later.
   countdown(g) {
     presetWorld(g);
