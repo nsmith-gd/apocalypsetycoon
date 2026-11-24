@@ -27,3 +27,26 @@
 - UI: `pushback-ui.js` (choice cards, client leverage panel, ticker), `pressure-gauge.js` (the PRESSURE panel with all
   four bars, the next consequence for each and the relief buttons), styles in `pushback.css`.
 - Demos: `demo/pushback-demo.html` and `demo/midnight-demo.html`.
+
+## Press, reputation, the Inspector and sieges (#31)
+- `press.js`: `new Press({ pushback, crisis?, seed })`. Call `press.tickWeek()` once per in-game week.
+  - Journalists: Iris Kemp (speed 1, accurate, trust 0-5; each trust point slows her stories 10% and takes 2 off the
+    reputation hit) and Gil Marsh (speed 2.5, sloppy, his stories shove a random threat track +5 via
+    `crisis.addTension`, or world tension if no crisis system is attached). Weekly growth = (2% + 1% per 10 heat) x speed
+    (`storyGrowth`, `journalistGrowth`). At 100% the story runs: heat +25, reputation -15, every client +10 leverage.
+  - Counters (`press.counter(journalistId, kind)`): bury ($120K, -25%, +50% per repeat), discredit ($80K: -60% on Gil;
+    on Iris -10%, heat +10, trust -2), distraction ($50K, -20%, random track +8), kompromat (1 intel or $400K: kills the
+    story, 8 quiet weeks, 25% leak: heat +15, reputation -10), interview (free, once a week: Iris under heat 70 gives
+    trust +1, -15%, reputation +3; otherwise the story +15%).
+  - Reputation 0-100, starts at 40 (`addReputation`, `reputationZone`).
+  - Inspector: `press.inspect(siteId)`, $0.2M a walkthrough, once a quarter per site. Certifies (reputation +6) a site
+    with security 3+ and at most 2 visible features, or lists the fixes.
+  - Sieges: The Pitchforks opens when tension first reaches 60 (or `openPitchforks()`). Each week a siege happens with
+    chance tension%, on the most visible free site. `siegeStrength = tension / 20 + visible features` vs
+    `siteDefence = security (+2 with a Decoy Entrance)`. Stronger mob = occupied (reputation -5, that client +10
+    leverage, -1 reputation a week) until `retake(siteId)` ($300K, heat +5). `buildDecoy(siteId)` $150K.
+  - Sites: `press.addSite({ name, security, visible, clientId })` with ratings from `shelter/life.js` `simulate()`.
+- `press-ui.js` + `press.css`: reputation HUD chip, PRESS DESK (P), and the front page when a story runs.
+- Provisional (GDD body not readable here): speeds, start-heat thresholds, cooldowns, every counter's price and effect,
+  the Inspector pass rule, the Pitchforks trigger, siege chance, occupation, retake and decoy numbers. All in `PRESS`.
+- Demo: `demo/pushback-demo.html` (+1 WEEK / PLAY WEEKS, PRESS DESK).

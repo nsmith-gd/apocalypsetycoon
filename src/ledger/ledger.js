@@ -68,6 +68,27 @@ export class Ledger {
     return { quarter, opening, income, expenses, net: income + expenses, closing: opening + income + expenses, groups };
   }
 
+  /** Most recent entries, newest first (for the always-on ledger rail). */
+  recent(n = 8) {
+    return this.entries.slice(-n).reverse();
+  }
+
+  /** Category totals for one quarter: { builds: -120, sales: 900, ... } (only non-zero). */
+  totalsByCategory(quarter = this.quarter) {
+    const out = {};
+    for (const e of this.entries) if (e.quarter === quarter) out[e.category] = (out[e.category] ?? 0) + e.amount;
+    return out;
+  }
+
+  /** One row per quarter played so far: opening, income, expenses, net, closing. */
+  history() {
+    const qs = new Set([...this.openingCash.keys(), ...this.entries.map((e) => e.quarter), this.quarter]);
+    return [...qs].sort((a, b) => a - b).map((q) => {
+      const { quarter, opening, income, expenses, net, closing } = this.summary(q);
+      return { quarter, opening, income, expenses, net, closing };
+    });
+  }
+
   onChange(fn) {
     this.listeners.add(fn);
     return () => this.listeners.delete(fn);
