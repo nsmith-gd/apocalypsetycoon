@@ -229,30 +229,8 @@ export const NEED_IDS = Object.freeze(['energy', 'hunger', 'bladder', 'hygiene',
 // Fit-out time per object: 1 crew-day per 2 tiles of footprint (doors 0.5 day).
 export const fitDays = (o) => (o.door ? 0.5 : Math.max(0.5, (o.w * o.h) / 2));
 
-// Room types, recognised from contents (first match wins, in this order). minTiles from GDD room sizes.
-export const ROOM_TYPES = Object.freeze([
-  { id: 'master_suite', name: 'Master Suite', tier: 'comfort', has: (c) => c.king_bed >= 1, minW: 6 },
-  { id: 'bunk_room', name: 'Bunk Room', tier: 'survive', has: (c) => c.bunk >= 1, minW: 4 },
-  { id: 'guest_quarters', name: 'Guest Quarters', tier: 'comfort', has: (c) => c.bed >= 1, minW: 4 },
-  { id: 'cryo_bay', name: 'Cryo Pod Bay', tier: 'delusion', has: (c) => c.cryo_pod >= 1, minW: 6 },
-  { id: 'cinema', name: 'Home Cinema', tier: 'status', has: (c) => c.cinema_screen >= 1, minW: 6 },
-  { id: 'wine_cellar', name: 'Wine Cellar', tier: 'status', has: (c) => c.wine_rack >= 1, minW: 4 },
-  { id: 'chefs_kitchen', name: "Chef's Kitchen", tier: 'status', has: (c) => c.chef_range >= 1, minW: 6 },
-  { id: 'galley', name: 'Galley Kitchen', tier: 'comfort', has: (c) => c.stove >= 1, minW: 4 },
-  { id: 'med_bay', name: 'Med Bay', tier: 'survive', has: (c) => c.med_bed >= 1, minW: 4 },
-  { id: 'reactor_room', name: 'Reactor Hall', tier: 'survive', has: (c) => c.reactor >= 1 || c.geothermal >= 1, minW: 6 },
-  { id: 'generator_room', name: 'Generator Room', tier: 'survive', has: (c) => c.diesel >= 1, minW: 3 },
-  { id: 'scrubber_bay', name: 'Scrubber Bay', tier: 'survive', has: (c) => c.hepa >= 1 || c.crank_scrubber >= 1, minW: 2 },
-  { id: 'hydroponics', name: 'Hydroponics Bay', tier: 'survive', has: (c) => c.hydro >= 1 || c.vat >= 1, minW: 6 },
-  { id: 'water_room', name: 'Water Tank', tier: 'survive', has: (c) => c.tank >= 1 || c.recycler >= 1 || c.aquifer >= 1, minW: 3 },
-  { id: 'pantry', name: 'Pantry', tier: 'survive', has: (c) => c.shelf >= 1 || c.fridge >= 1, minW: 3 },
-  { id: 'armory', name: 'Armory', tier: 'survive', has: (c) => c.gun_locker >= 1, minW: 3 },
-  { id: 'bathroom', name: 'Bathroom', tier: 'comfort', has: (c) => c.toilet >= 1 || c.shower >= 1 || c.decon >= 1, minW: 2 },
-  { id: 'gym', name: 'Gym', tier: 'comfort', has: (c) => c.gym_rig >= 1, minW: 4 },
-  { id: 'lounge', name: 'Lounge', tier: 'comfort', has: (c) => c.sofa >= 1 || c.tv >= 1 || c.bookshelf >= 1, minW: 6 },
-  { id: 'battery_room', name: 'Battery Room', tier: 'survive', has: (c) => c.battery >= 1 || c.fuel >= 1, minW: 2 },
-  { id: 'storage', name: 'Storeroom', tier: 'survive', has: () => true, minW: 1 },
-]);
+// Room identity (what an enclosed space is, from what is inside it) lives in src/catalog/identify.js,
+// driven by the GDD room catalog's object requirements (src/catalog/rooms.js).
 
 // Needs-tier colours (GDD: Art > Tier colour language).
 export const TIER_COLORS = Object.freeze({ survive: '#f5c542', comfort: '#a0703a', status: '#3aa070', delusion: '#b07aff' });

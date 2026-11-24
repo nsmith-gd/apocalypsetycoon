@@ -4,7 +4,8 @@ import { GDD_ROOMS, GDD_ROOM_BY_ID, TIER_COST, EXACT_COST, roomsForRoster } from
 import { PRODUCT_LINES } from '../src/catalog/products.js';
 import { UNLOCK_SCHEDULE, ALTERNATE_FOLLOW_UPS, NODES_OUTSIDE_SCHEDULE, nodeTargets, rowFor, lockedShelf } from '../src/catalog/unlocks.js';
 import { COUNTER_ROOMS, CLASSIC_ROSTER, TRACK_BY_ID } from '../src/world/tracks.js';
-import { OBJECTS, ROOM_TYPES, STRATA } from '../src/shelter/bunker-catalog.js';
+import { OBJECTS, STRATA } from '../src/shelter/bunker-catalog.js';
+import { ROOM_TYPES } from '../src/catalog/identify.js';
 import { ROOM_CATALOG } from '../src/clients/rooms.js';
 import { TREE_NODES } from '../src/research/tree-data.js';
 import { GDD_UNLOCK_TARGETS, runHarness } from '../src/debug/sim.js';
@@ -43,10 +44,8 @@ test('alternate rooms match the threat roster’s counter rooms (ids, tracks, un
 });
 
 test('links to the live tables point at real bunker objects, room types and client-package rooms', () => {
-  const types = new Set(ROOM_TYPES.map((t) => t.id));
   for (const r of GDD_ROOMS) {
     for (const o of r.objects) assert.ok(OBJECTS[o], `${r.id}: object ${o}`);
-    if (r.roomType) assert.ok(types.has(r.roomType), `${r.id}: room type ${r.roomType}`);
     if (r.amenity) assert.ok(ROOM_CATALOG[r.amenity], `${r.id}: amenity ${r.amenity}`);
   }
   // every client-package room maps to a GDD room except the AI Butler, which the GDD does not have
