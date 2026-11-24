@@ -26,7 +26,7 @@ import { CrisisSystem } from '../crisis/breach.js';
 import { CrisisConsequences } from '../crisis/consequences.js';
 import { createContainmentUI } from '../crisis/breach-ui.js';
 import { LeadMarket, attachCrisis } from '../demand/demand.js';
-import { SchemeBoard } from '../schemes/schemes.js';
+import { SchemeBoard, researchCrisis } from '../schemes/schemes.js';
 import { MapSales } from '../worldmap/sales.js';
 import { createWorldMapScreen } from '../worldmap/worldmap-ui.js';
 import { TRACK_BY_ID, CLASSIC_ROSTER, rosterLinks, rosterPicksFromParams, slotOf, resolveTrack } from '../world/tracks.js';
@@ -49,6 +49,8 @@ import { showWeeklyCard } from '../events/weekly-ui.js';
 import { SocialSession } from '../social/viewmodel.js';
 import { worldState } from '../dialogue/world-state.js';
 import { createSocialScreens } from '../social/text-screens.js';
+import { settings, keyHint } from '../settings/settings.js';
+import { createSettingsPanel } from '../settings/settings-ui.js';
 
 export const STARTING_CASH = 400_000;
 // A threat opens already simmering (GDD bands: Calm 0-19, Simmer 20-44). Provisional.
@@ -109,7 +111,7 @@ function showMainMenu() {
   sound.title = 'Mute or unmute the game [M]';
   sound.onclick = () => { menuAudio.setMuted(!menuAudio.muted); renderSound(); };
   renderSound();
-  const onKey = (e) => { if ((e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey) sound.click(); };
+  const onKey = (e) => { if (settings.matches(e, 'mute')) sound.click(); };
   addEventListener('keydown', onKey);
   const leave = () => { removeEventListener('keydown', onKey); menuKeyOff = null; };
   menuKeyOff = leave;
@@ -218,7 +220,8 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
       zone: { bullish: 'content', steady: 'content', scrutiny: 'displeased', probation: 'last-chance', ousted: 'ousted' }[board.state.id],
       label: `Revenue quota · confidence ${Math.round(board.average)} ${board.state.label}` }),
     onRelief: (r) => r && pbui.tick(`${r.kind === 'layLow' ? 'Laid low' : 'Funded relief'}: -$${Math.round(r.cost / 1000)}K`, 'ok') });
-  const research = createResearchPanel({ root, tree, getCrisis: () => pb.tension, mode: 'weekly' });
+  // Research reads the crisis tracks (#90): each track rescaled so it peaks just below its own tipping point.
+  const research = createResearchPanel({ root, tree, getCrisis: () => (pb.crisis ? researchCrisis(pb.crisis) : 0), mode: 'weekly' });
   root.querySelector('.hud')?.insertBefore(research.chip, root.querySelector('.view-toggle'));
   const audio = createAudio();
   wireAudio(audio, { ledger, pushback: pb });
@@ -261,6 +264,9 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     spendRp: (rp) => (tree.pool >= rp ? ((tree.pool -= rp), true) : false), // ...and costs 40 RP a breach week
     config: diff.crisis, // tipping-point range and Brink drift by difficulty (#92)
   });
+  // One tension model (#90): pushback's world meter is retired; its tension is the hottest crisis track, its
+  // runaways are collapsed tracks, and the HUD, audio, quarter report and Midnight all read that.
+  pb.useCrisis(crisis);
   crisis.on('week', () => pb.weekTick()); // heat cools weekly by difficulty (#92)
   const tensions = () => Object.fromEntries(Object.values(crisis.tracks).map((t) => [t.id, t.tension]));
   const market = new LeadMarket({ seed: worldSeed + 1, reputation: () => crisis.reputation });
@@ -366,10 +372,11 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   const endBtn = el('button', null, 'END QUARTER');
   endBtn.title = 'Close the books now (N)';
   endBtn.onclick = () => clock.skipQuarter();
-  const threatsBtn = el('button', null, 'THREATS [T]');
+  const settingsPanel = createSettingsPanel({ root: document.body }); // #94 accessibility + key bindings
+  const threatsBtn = keyHint(el('button'), 'THREATS', 'threats');
   threatsBtn.title = 'The six threat tracks in this world, when they open, and every scheme';
   threatsBtn.onclick = () => threats.toggle();
-  bar.append(label, time, track, speeds, threatsBtn, endBtn, telemetryBtn, menuBtn);
+  bar.append(label, time, track, speeds, settingsPanel.button, threatsBtn, endBtn, telemetryBtn, menuBtn);
   root.append(bar);
 
   function renderBar() {
@@ -551,11 +558,12 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   // ---------- keys ----------
   const onKey = (e) => {
     if (e.target?.tagName === 'INPUT' || e.target?.tagName === 'TEXTAREA') return;
-    if (e.code === 'Space') { e.preventDefault(); clock.togglePause(); }
-    else if (e.key === '.' || e.key === '>') clock.setSpeed(SPEEDS[Math.min(SPEEDS.length - 1, SPEEDS.indexOf(clock.speed) + 1)] ?? 1);
-    else if (e.key === ',' || e.key === '<') clock.setSpeed(SPEEDS[Math.max(0, SPEEDS.indexOf(clock.speed) - 1)] ?? 1);
-    else if (e.key === 'n' || e.key === 'N') { if (!modalOpen()) clock.skipQuarter(); }
-    else if ((e.key === 'e' || e.key === 'E') && social.screens && !modalOpen()) social.screens.toggle();
+    // keys come from the rebinding table (#94, Settings)
+    if (settings.matches(e, 'pause')) { e.preventDefault(); clock.togglePause(); }
+    else if (settings.matches(e, 'speedUp')) clock.setSpeed(SPEEDS[Math.min(SPEEDS.length - 1, SPEEDS.indexOf(clock.speed) + 1)] ?? 1);
+    else if (settings.matches(e, 'speedDown')) clock.setSpeed(SPEEDS[Math.max(0, SPEEDS.indexOf(clock.speed) - 1)] ?? 1);
+    else if (settings.matches(e, 'endQuarter')) { if (!modalOpen()) clock.skipQuarter(); }
+    else if (settings.matches(e, 'events') && social.screens && !modalOpen()) social.screens.toggle();
   };
   addEventListener('keydown', onKey);
 
@@ -621,6 +629,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
       gridUI.destroy();
       ui.destroy();
       threats.destroy();
+      settingsPanel.destroy();
       app.replaceChildren();
       session = null;
     },
