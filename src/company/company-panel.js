@@ -41,7 +41,7 @@ export function createCompanyPanel({ root, company, getWorkingCrews = () => comp
     x.type = 'button';
     x.onclick = () => toggle(false);
     head.append(x);
-    box.append(head, el('p', 'cp-sub', `Sites ${v.sites} · crews ${getWorkingCrews()} of ${v.crews} · department level cap ${v.cap} · crew speed x${v.crewSpeed.toFixed(2)}`));
+    box.append(head, el('p', 'cp-sub', `Sites ${v.sites} · crews ${getWorkingCrews()} of ${v.crews} · department level cap ${v.cap} · crew speed x${v.crewSpeed.toFixed(2)}${v.extraCrews ? ` · Engineering +${v.extraCrews} crew${v.extraCrews > 1 ? 's' : ''}` : ''}${v.rpPerWeek ? ` · R&D +${v.rpPerWeek} RP/week` : ''}`));
     const t = el('table', 'cp-t');
     const hr = el('tr');
     for (const h of ['Department', 'Head', 'Level', 'Each level adds', '']) hr.append(el('th', null, h));

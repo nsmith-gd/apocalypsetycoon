@@ -242,7 +242,10 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     return runScheme(...args);
   };
   // The crisis dividend (#16): every week each track pays research grants by its band (Simmer/Boil/Brink).
-  crisis.on('week', () => tree.fundWeek(Object.values(crisis.tracks)));
+  crisis.on('week', () => {
+    tree.fundWeek(Object.values(crisis.tracks));
+    if (company.rpPerWeek) tree._deposit(company.rpPerWeek, 'grants', { label: 'R&D department', rp: company.rpPerWeek, lines: [] }); // #72
+  });
   const mapSales = new MapSales({ market, ledger, pushback: pb, getTensions: tensions, getBreachMultiplier: () => crisis.panicMultiplier,
     getEdgeBonus: (id) => schemes.edgeBonus(id), getQuarter: () => clock.quarter });
   // Your leads: people met at events (director note D2). Redeemed on the world map for better sales (#58).
