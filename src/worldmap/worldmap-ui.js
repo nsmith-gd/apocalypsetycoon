@@ -9,6 +9,7 @@
 // Draws on the shared art renderer (src/art/worldmap.js) and splits its placeholder "Asia" into
 // Middle East / South Asia / East Asia, so all eight demand regions are clickable.
 
+import { quoteLead, redeemLead } from '../leads/redeem.js';
 import { drawWorldMap, regionAt as artRegionAt, crisisOverlay, MAP_W, MAP_H, MAP_COLS, MAP_ROWS, CELL } from '../art/worldmap.js';
 import { MAP_MARKERS, CRISIS_OVERLAYS } from '../art/sprites-map.js';
 import { drawSprite } from '../art/render.js';
@@ -59,7 +60,7 @@ const el = (tag, cls, text) => {
   return n;
 };
 
-export function createWorldMapScreen({ root, sales, schemes = null, onSold, onScheme, initial = null }) {
+export function createWorldMapScreen({ root, sales, schemes = null, leads = null, onSold, onScheme, initial = null }) {
   root.classList.add('wm');
   const mapWrap = el('div', 'wm-map');
   const canvas = el('canvas');
@@ -213,6 +214,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, onSold, onSc
     if (!v.buyerList.length) buyers.append(el('li', 'wm-dim', "Nobody here is scared enough to buy. Calm worlds don't buy bunkers."));
     panel.append(buyers);
     if (schemes) panel.append(schemesBlock(v));
+    if (leads) panel.append(leadsBlock(v));
     panel.append(stockBlock(v));
   }
 
@@ -308,6 +310,59 @@ export function createWorldMapScreen({ root, sales, schemes = null, onSold, onSc
     return wrap;
   }
 
+  // #58: your own leads (people met at events) in this region, redeemable for a better sale.
+  function leadsBlock(v) {
+    const wrap = el('div', 'wm-leads');
+    const mine = leads.open({ salesRegion: v.id });
+    wrap.append(el('h3', 'wm-h3', `YOUR LEADS HERE · ${mine.length}`));
+    if (!mine.length) {
+      wrap.append(el('p', 'wm-dim', 'Nobody you have met lives here. Go to events to meet buyers.'));
+      return wrap;
+    }
+    const q = leads.getQuarter();
+    for (const l of mine) {
+      const card = el('div', 'wm-lead');
+      card.dataset.tier = l.tier;
+      const left = l.expiresQuarter - q;
+      const expiry = left <= 0 ? 'goes cold after this quarter' : `good until end of Q${l.expiresQuarter}`;
+      card.innerHTML = `<div class="wm-card-name">${l.guest.name} <em class="wm-tier" data-tier="${l.tier}">${l.tier.toUpperCase()}</em> <em class="wm-w-${l.salesWealth}">${l.salesWealth}</em></div>
+        <div class="wm-dim">${l.wealthClass} · met at ${venueName(l.source?.venueId)} · ${expiry}${l.fears.length ? ` · fears ${l.fears.join(', ')}` : ''}</div>`;
+      for (const s of sales.stock) {
+        const qt = quoteLead(sales, leads, l.id, s.id);
+        if (qt.error) continue;
+        const btn = el('button', 'wm-sell wm-sell-lead');
+        btn.type = 'button';
+        btn.dataset.lead = l.id;
+        btn.dataset.shelter = s.id;
+        const vs = qt.walkIn ? `${qt.price >= qt.walkIn.price ? '+' : ''}${formatMoney(qt.price - qt.walkIn.price)} vs walk-in` : 'only buyer here';
+        btn.innerHTML = `SELL ${s.name} <b>${formatMoney(qt.price)}</b> <small>${vs}</small>`;
+        btn.title = [...qt.bonus.lines.map((x) => `${x.label} +${Math.round(x.bonus * 100)}%`), qt.tierUp ? `${qt.tierUp} wealth tier${qt.tierUp > 1 ? 's' : ''} above walk-ins` : null, qt.referrals ? `brings ${qt.referrals === 1 ? 'a referral' : 'half a referral'}` : null].filter(Boolean).join(' · ') || 'normal price';
+        btn.onclick = () => redeem(l.id, s.id);
+        card.append(btn);
+      }
+      if (!sales.stock.length) card.append(el('div', 'wm-dim', 'Finish a shelter to sell to them.'));
+      wrap.append(card);
+    }
+    return wrap;
+  }
+
+  const venueName = (id) => (id ? id.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'an event');
+
+  function redeem(leadId, shelterId) {
+    try {
+      const { record, quote, referrals } = redeemLead(sales, leads, leadId, shelterId);
+      const p = MAP_PLACES[selected];
+      floaters.push({ text: formatMoney(record.price), x: p.at[0] * CELL, y: p.at[1] * CELL - 10, color: HEX.L, t: 0 });
+      if (referrals) floaters.push({ text: `+${referrals}`, x: p.at[0] * CELL + 10, y: p.at[1] * CELL + 10, color: HEX.G, t: 0 });
+      const extra = quote.walkIn ? `, ${formatMoney(record.price - quote.walkIn.price)} more than a walk-in` : '';
+      flash = { kind: 'ok', msg: `Sold ${record.name} to ${record.owner}, your lead, for ${formatMoney(record.price)}${extra}.${referrals ? ` They told a friend: +${referrals} buyer here.` : ''}` };
+      onSold?.(record);
+    } catch (err) {
+      flash = { kind: 'err', msg: err.message };
+    }
+    refresh();
+  }
+
   function summarizeRooms(ids) {
     const counts = {};
     for (const id of ids) counts[id] = (counts[id] ?? 0) + 1;
@@ -348,6 +403,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, onSold, onSc
   }
 
   const off = sales.onChange((e) => { if (e.type !== 'sale') refresh(); });
+  const offLeads = leads?.onChange?.(() => refresh());
   const offMarket = sales.market.on('week', () => { flash = null; refresh(); });
   const offSchemes = schemes?.onChange((e) => { if (e.type !== 'run') refresh(); });
   refresh();
@@ -358,6 +414,6 @@ export function createWorldMapScreen({ root, sales, schemes = null, onSold, onSc
     select,
     get selected() { return selected; },
     canvas,
-    destroy() { cancelAnimationFrame(raf); off(); offMarket(); offSchemes?.(); root.replaceChildren(); },
+    destroy() { cancelAnimationFrame(raf); off(); offLeads?.(); offMarket(); offSchemes?.(); root.replaceChildren(); },
   };
 }

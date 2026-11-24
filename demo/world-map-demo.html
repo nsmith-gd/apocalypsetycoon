@@ -40,6 +40,7 @@ import { createAudio, wireAudio, startOnFirstGesture } from '../src/audio/audio.
 import { SchemeBoard, researchCrisis } from '../src/schemes/schemes.js';
 import { createContainmentUI } from '../src/crisis/breach-ui.js';
 import { researchRate } from '../src/research/research.js';
+import { LeadInventory } from '../src/leads/leads.js';
 
 const params = new URLSearchParams(location.search);
 const ledger = new Ledger({ startingCash: 2_000_000 });
@@ -76,7 +77,14 @@ let nextDesign = 0;
 const finish = () => sales.addFinished(DESIGNS[nextDesign++ % DESIGNS.length]);
 for (let i = 0; i < 3; i++) finish();
 
-const screen = createWorldMapScreen({ root: mapView, sales, schemes, initial: params.get('region'), onScheme: () => hud() });
+// Leads you met at events (#58). Until the event and dialogue screens are in, a few are seeded here.
+const leads = new LeadInventory({ getQuarter: () => 1 + Math.floor(market.weekNo / 13) });
+if (params.get('leads') !== '0') {
+  leads.create({ guest: { id: 'okafor', name: 'Lady Okafor' }, region: 'frontier', wealthClass: 'C4', quality: 88, fears: ['bloom'], source: { type: 'event', venueId: 'embassy_ball', quarter: 1 } });
+  leads.create({ guest: { id: 'park', name: 'Dr. Min-jun Park' }, region: 'tech', wealthClass: 'C2', quality: 55, fears: ['optimizer'], source: { type: 'event', venueId: 'founder_summit', quarter: 1 } });
+  leads.create({ guest: { id: 'harlan', name: 'Harlan Price' }, region: 'heartland', wealthClass: 'C1', quality: 20, fears: ['pitchforks'], source: { type: 'event', venueId: 'county_fair', quarter: 1 } });
+}
+const screen = createWorldMapScreen({ root: mapView, sales, schemes, leads, initial: params.get('region'), onScheme: () => hud() });
 createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => advanceWeek() });
 crisis.on('week', () => screen.refresh());
 
@@ -99,7 +107,7 @@ for (const t of Object.values(crisis.tracks)) {
 }
 ledger.onChange(hud);
 hud();
-window.__demo = { crisis, market, sales, schemes, screen, ledger, pb, advanceWeek, finish };
+window.__demo = { crisis, market, sales, schemes, screen, ledger, pb, advanceWeek, finish, leads };
 </script>
 </body>
 </html>

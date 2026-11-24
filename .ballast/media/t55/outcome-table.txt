@@ -1,0 +1,30 @@
+Dialogue outcomes (#55): what each ending produces for one guest
+Vera Holt (C2, fears The Bloom, vain)
+
+== played well (2 fear hits, 1 trait hit)
+  Sold the fear   lead  81 | leverage  0 | if risks land: heat +0, rep 0, slips 0 (chance 0%) | if not: heat +0, rep 0
+  Sold the dream  lead  66 | leverage  0 | if risks land: heat +0, rep 0, slips 0 (chance 0%) | if not: heat +0, rep 0
+  Hard close      lead  68 | leverage  8 | if risks land: heat +0, rep -4, slips 0 (chance 0%) | if not: heat +0, rep 0
+  Insider tip     lead  88 | leverage  0 | if risks land: heat +9, rep 0, slips 1 (chance 14%) | if not: heat +3, rep 0
+  Polite exit     lead   - | leverage  0 | if risks land: heat +0, rep 0, slips 0 (chance 0%) | if not: heat +0, rep 0
+  Rebuffed        lead   - | leverage  0 | if risks land: heat +0, rep 0, slips 0 (chance 0%) | if not: heat +0, rep 0
+  Backfire        lead   - | leverage  0 | if risks land: heat +11, rep -6, slips 1 (chance 14%) | if not: heat +5, rep -6
+
+== played badly (wrong fear, wrong trait)
+  Sold the fear   lead  34 | leverage  0 | if risks land: heat +0, rep 0, slips 0 (chance 0%) | if not: heat +0, rep 0
+  Sold the dream  lead  29 | leverage  0 | if risks land: heat +0, rep 0, slips 0 (chance 0%) | if not: heat +0, rep 0
+  Hard close      lead  45 | leverage  8 | if risks land: heat +0, rep -4, slips 0 (chance 0%) | if not: heat +0, rep 0
+  Insider tip     lead  61 | leverage  0 | if risks land: heat +9, rep 0, slips 1 (chance 23%) | if not: heat +3, rep 0
+  Polite exit     lead   - | leverage  0 | if risks land: heat +0, rep 0, slips 0 (chance 0%) | if not: heat +0, rep 0
+  Rebuffed        lead   - | leverage  0 | if risks land: heat +0, rep 0, slips 0 (chance 0%) | if not: heat +0, rep 0
+  Backfire        lead   - | leverage  0 | if risks land: heat +11, rep -6, slips 1 (chance 23%) | if not: heat +5, rep -6
+
+== pushy (2 aggressive lines, 1 slip)
+  Sold the fear   lead  37 | leverage  6 | if risks land: heat +6, rep 0, slips 1 (chance 31%) | if not: heat +0, rep 0
+  Sold the dream  lead  32 | leverage  6 | if risks land: heat +6, rep 0, slips 1 (chance 31%) | if not: heat +0, rep 0
+  Hard close      lead  46 | leverage 14 | if risks land: heat +6, rep -4, slips 1 (chance 31%) | if not: heat +0, rep 0
+  Insider tip     lead  63 | leverage  6 | if risks land: heat +15, rep 0, slips 2 (chance 31%) | if not: heat +3, rep 0
+  Polite exit     lead   - | leverage  0 | if risks land: heat +6, rep 0, slips 1 (chance 31%) | if not: heat +0, rep 0
+  Rebuffed        lead   - | leverage  0 | if risks land: heat +6, rep -2, slips 1 (chance 31%) | if not: heat +0, rep -2
+  Backfire        lead   - | leverage  0 | if risks land: heat +17, rep -6, slips 2 (chance 31%) | if not: heat +5, rep -6
+

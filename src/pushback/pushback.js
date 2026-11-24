@@ -186,13 +186,13 @@ export class Pushback {
   }
 
   /** Call whenever a shelter is sold. Every buyer becomes a client with leverage over you. */
-  onSale({ client, price = 0, region = '' } = {}) {
+  onSale({ client, price = 0, region = '', leverage = 0 } = {}) {
     const c = {
       id: ++this._ids,
       name: client ?? `Client #${this.clients.length + 1}`,
       region,
       price,
-      leverage: this.cfg.leverage.perSale,
+      leverage: this.cfg.leverage.perSale + Math.max(0, leverage), // + leverage earned in conversation (#55)
       appeased: 0,
     };
     this.clients.push(c);
