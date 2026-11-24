@@ -31,6 +31,7 @@ import { TRACK_BY_ID, CLASSIC_ROSTER, rosterLinks } from '../world/tracks.js';
 import { showWorldSetup, createThreatsPanel } from '../world/world-ui.js';
 import { CampaignClock, SPEEDS, formatClock, QUARTER_SECONDS } from './clock.js';
 import { createSaveSlot, ledgerSaveable, pushbackSaveable, doomClockSaveable } from './save.js';
+import { finaleArgs } from '../midnight/finale.js';
 import { LeadInventory } from '../leads/leads.js';
 import { loadVenueCatalog } from '../events/venues.js';
 import { EventCircuit } from '../events/attend.js';
@@ -342,7 +343,10 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
       await showClockStrike({ root: document.body, tolls: tolls.map((s) => s + 0.05), duration: boom + 0.05 });
       if (run.seal.length) await showSealOrder({ root: document.body, results: run.seal });
     } else {
-      result = computeMidnight({ shelters: shelters(), world, cash: ledger.cash });
+      // #17: quarter 12 ran out. The apocalypse is the one the world was heading for (collapsed > breached >
+      // Brink > hottest), and control counts the crisis tracks' real breaches and collapses.
+      const fin = finaleArgs({ crisis, pushback: pb, shelters: shelters(), cash: ledger.cash });
+      result = computeMidnight({ ...fin, world: { ...fin.world, collapses: Math.max(fin.world.collapses, world.collapses) } });
       audio.midnight(result.type);
       await showClockStrike({ root: document.body, tolls: tolls.map((s) => s + 0.05), duration: boom + 0.05 });
     }
