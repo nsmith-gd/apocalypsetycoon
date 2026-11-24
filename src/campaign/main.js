@@ -35,6 +35,7 @@ import { LeadInventory } from '../leads/leads.js';
 import { loadVenueCatalog } from '../events/venues.js';
 import { EventCircuit } from '../events/attend.js';
 import { WeeklyDeck, applyChoice } from '../events/weekly.js';
+import { FirstBreachNudge } from '../crisis/first-breach.js';
 import { showWeeklyCard } from '../events/weekly-ui.js';
 import { SocialSession } from '../social/viewmodel.js';
 import { worldState } from '../dialogue/world-state.js';
@@ -361,6 +362,10 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   // ---------- weekly headline card (#74, L0): one card every in-game week; the clock holds while it's open ----------
   const deck = new WeeklyDeck({ seed: worldSeed + 7 });
   slot.register('weekly', deck);
+  // First-breach nudge (#68): no breach by 2:30, and a wildcard pushes a Brink track over.
+  const firstBreach = new FirstBreachNudge({ crisis, minutes: () => campaignMinutes() });
+  slot.register('firstBreach', firstBreach);
+  if (resume) { const saved = slot.peek(); if (saved?.parts?.firstBreach) firstBreach.load(saved.parts.firstBreach); }
   const cardQueue = [];
   let cardOpen = false;
   const campaignWeek = () => (clock.quarter - 1) * 13 + Math.floor(clock.elapsed / WEEK_SECONDS);
@@ -379,9 +384,9 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   async function pumpCards() {
     if (cardOpen || !cardQueue.length || modalOpen() || midnightStarted) return;
     cardOpen = true;
-    const { card, week } = cardQueue.shift();
+    const { card, week, special } = cardQueue.shift();
     const pick = await showWeeklyCard({ root: document.body, card, week, trackName, canAfford: (cost) => ledger.cash >= cost });
-    deck.chose(week, pick);
+    if (!special) deck.chose(week, pick);
     const r = applyChoice(card, pick, cardHooks, trackName);
     pb._changed?.();
     ui.update(hudState());
@@ -424,6 +429,8 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
       while (weekAcc >= WEEK_SECONDS) { weekAcc -= WEEK_SECONDS; crisis.advanceWeek(); }
       syncDoomWeeks();
       drawWeeklyCard();
+      const wild = firstBreach.check();
+      if (wild) cardQueue.unshift({ card: wild, week: campaignWeek(), special: true });
     }
     clock.tick(dt);
     pumpCards();
@@ -456,7 +463,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   }
 
   session = {
-    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, market, schemes, mapSales, mapScreen, slot, leads, social,
+    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, market, schemes, mapSales, mapScreen, slot, leads, social, firstBreach,
     destroy() {
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);
