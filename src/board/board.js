@@ -133,6 +133,21 @@ export class Board {
     return true;
   }
 
+  /**
+   * A member reacts to something mid-quarter (e.g. a contained breach, #67): their confidence moves now and the
+   * reason is listed at the next quarterly review. Returns the applied amount (0 for the silent proxy seat).
+   */
+  react(id, amount, why) {
+    if (!MEMBERS.some((m) => m.id === id) || !amount) return 0;
+    const before = this.confidence[id];
+    const noted = [];
+    this._shift(id, amount, noted, why);
+    if (!noted.length) return 0;
+    (this.interim ??= []).push(...noted);
+    this._emit();
+    return this.confidence[id] - before;
+  }
+
   _shift(id, amount, reasons, why) {
     if (!amount) return;
     if (id === 'gray' && !this.grayInSeat()) return; // the silent proxy has no confidence of its own yet
@@ -191,7 +206,8 @@ export class Board {
     const C = this.cfg;
     const f = { breaches: 0, calmingSchemes: 0, ...facts, quota: this.quota };
     if (f.revenue == null) f.revenue = this.ledger ? quarterRevenue(this.ledger, q) : 0;
-    const reasons = [];
+    const reasons = [...(this.interim ?? [])]; // mid-quarter reactions (react(), #67)
+    this.interim = [];
 
     // 1-2. Quota
     const met = f.revenue >= this.quota;
@@ -252,12 +268,12 @@ export class Board {
 
   toJSON() {
     return { confidence: this.confidence, favours: this.favours, quarter: this.quarter, quota: this.quota, directives: this.directives,
-      history: this.history, ousted: this.ousted, minderVetoUsed: this.minderVetoUsed };
+      history: this.history, ousted: this.ousted, minderVetoUsed: this.minderVetoUsed, interim: this.interim ?? [] };
   }
   load(d = {}) {
     Object.assign(this.confidence, d.confidence ?? {});
     Object.assign(this.favours, d.favours ?? {});
-    for (const k of ['quarter', 'quota', 'directives', 'history', 'ousted', 'minderVetoUsed']) if (d[k] != null) this[k] = d[k];
+    for (const k of ['quarter', 'quota', 'directives', 'history', 'ousted', 'minderVetoUsed', 'interim']) if (d[k] != null) this[k] = d[k];
     this._emit();
   }
 }
