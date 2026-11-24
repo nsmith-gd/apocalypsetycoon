@@ -31,6 +31,8 @@ import { createSaveSlot, ledgerSaveable, pushbackSaveable, doomClockSaveable } f
 import { LeadInventory } from '../leads/leads.js';
 import { loadVenueCatalog } from '../events/venues.js';
 import { EventCircuit } from '../events/attend.js';
+import { WeeklyDeck, applyChoice } from '../events/weekly.js';
+import { showWeeklyCard } from '../events/weekly-ui.js';
 import { SocialSession } from '../social/viewmodel.js';
 import { createSocialScreens } from '../social/text-screens.js';
 
@@ -333,6 +335,43 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   ledger.onChange(() => { ui.update(hudState()); gauge.render(); });
 
   // Modals hold the clock: quarter report and choice cards pause time.
+  // ---------- weekly headline card (#74, L0): one card every in-game week; the clock holds while it's open ----------
+  const deck = new WeeklyDeck({ seed: worldSeed + 7 });
+  slot.register('weekly', deck);
+  const cardQueue = [];
+  let cardOpen = false;
+  const campaignWeek = () => (clock.quarter - 1) * 13 + Math.floor(clock.elapsed / WEEK_SECONDS);
+  const trackName = (id) => TRACK_BY_ID[id]?.name ?? id;
+  const cardHooks = {
+    addTension: (track, n, why) => {
+      if (track && crisis.tracks[track]?.open) crisis.addTension(track, n, why);
+      else pb.addTension(n, why); // general cards, or a track not in play: the world's tension takes it
+    },
+    addHeat: (n, why) => pb.addHeat(n, why),
+    addCash: (label, n) => ledger.record('other', label, n),
+    addReputation: (n) => { crisis.reputation = Math.max(0, Math.min(100, crisis.reputation + n)); },
+    addResearch: (n) => { tree.pool += n; },
+    note: (text) => toast(text),
+  };
+  async function pumpCards() {
+    if (cardOpen || !cardQueue.length || modalOpen() || midnightStarted) return;
+    cardOpen = true;
+    const { card, week } = cardQueue.shift();
+    const pick = await showWeeklyCard({ root: document.body, card, week, trackName, canAfford: (cost) => ledger.cash >= cost });
+    deck.chose(week, pick);
+    const r = applyChoice(card, pick, cardHooks, trackName);
+    pb._changed?.();
+    ui.update(hudState());
+    toast(`${card.title}: ${r.choice.label}${r.applied.length ? ` (${r.applied.join(', ')})` : ''}`);
+    cardOpen = false;
+  }
+  function drawWeeklyCard() {
+    const week = campaignWeek();
+    if (week < 1) return;
+    const card = deck.draw(week);
+    if (card) cardQueue.push({ card, week });
+  }
+
   const modalOpen = () => !!document.querySelector('.report-overlay:not([hidden]), .br-overlay:not([hidden]), .pb-overlay, .mn-overlay, .mn-strike, .soc-overlay:not([hidden])');
 
   // ---------- keys ----------
@@ -362,8 +401,10 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
       weekAcc += g;
       while (weekAcc >= WEEK_SECONDS) { weekAcc -= WEEK_SECONDS; crisis.advanceWeek(); }
       syncDoomWeeks();
+      drawWeeklyCard();
     }
     clock.tick(dt);
+    pumpCards();
     acc += dt;
     if (acc > 0.25) { acc = 0; frame++; drawViews(); }
     renderBar();

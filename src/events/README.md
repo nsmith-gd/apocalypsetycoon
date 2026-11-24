@@ -42,3 +42,13 @@ lead is stored in the pipeline.
 - `leave()` closes the visit, releases the clock and returns `{ visit, returnTo: from }`.
 - `toJSON()/load()` for the save slot (an open visit is closed on load). Not wired into `main.js` yet; the
   event screen ticket registers it as `slot.register('events', circuit)`.
+
+## Weekly event deck (#74, L0 greybox)
+- `weekly.js`: `WEEKLY_CARDS` (10: the GDD's six sample cards plus four general ones), `WeeklyDeck({ seed })` with
+  `draw(week)` (exactly one card per week, never one of the last 3), `chose(week, id)`, save/load, and
+  `applyChoice(card, id, hooks, trackName)` (tension on a track or the world, heat, cash, reputation, research). GDD outcomes
+  whose systems aren't in the campaign yet (demand boosts, rival moves, board members' confidence, Iris's story) are
+  shown on the card as "later" and toasted, not applied. Money = GDD $ x `CARD_PRICE_SCALE` (0.02).
+- `weekly-ui.js` + `weekly.css`: the greybox paper card (keys 1-3 pick). The campaign draws one at every in-game week
+  (13 a quarter) and holds the clock while it's open; cards queue behind other windows.
+- Not yet: drawing by open track and band, the 220-card deck, card-type shares, rivals.
