@@ -22,6 +22,7 @@
 import { mulberry32 } from '../pushback/pushback.js';
 import { GDD_REGIONS, TRACKS, CLASSIC_ROSTER, resolveTracks } from '../world/tracks.js';
 import { PACING } from '../debug/pacing.js';
+import { rollGuest } from '../guests/guests.js';
 
 export const AGENDA = Object.freeze({ daysPerQuarter: 6 });
 
@@ -57,7 +58,7 @@ const hotTracksIn = (regionId, roster) => TRACKS.filter((t) => t.exposure[region
 
 export class EventCircuit {
   constructor({ catalog, ledger = null, seed = 1, clock = null, addHeat = null, addReputation = null,
-    daysPerQuarter = AGENDA.daysPerQuarter, quarterMinutes = PACING.quarterMinutes, roster = CLASSIC_ROSTER } = {}) {
+    daysPerQuarter = AGENDA.daysPerQuarter, quarterMinutes = PACING.quarterMinutes, roster = CLASSIC_ROSTER, guestRoster = null } = {}) {
     if (!catalog) throw new Error('EventCircuit needs a venue catalog');
     this.catalog = catalog;
     this.getRoster = typeof roster === 'function' ? roster : () => roster; // #75: guest fears follow slots
@@ -68,6 +69,7 @@ export class EventCircuit {
     this.addReputation = addReputation;
     this.daysPerQuarter = daysPerQuarter;
     this.quarterMinutes = quarterMinutes;
+    this.guestRoster = guestRoster; // #53: when given, guests are rolled from its archetypes (traits, budget, fears)
     this.daysUsed = {};        // quarter -> agenda days spent
     this.attended = {};        // quarter -> [venueId]
     this.met = {};             // venueId -> [guestId]
@@ -116,6 +118,11 @@ export class EventCircuit {
     const local = hotTracksIn(venue.region, roster);
     const themes = resolveTracks(roster, venue.themes); // venue themes name Classic tracks: read them by slot
     return Array.from({ length: venue.guestPool.size }, (_, i) => {
+      if (this.guestRoster) {
+        const wealthClass = pickWeighted(rng, venue.guestPool.classes);
+        const g = rollGuest(this.guestRoster, rng, { wealthClass, region: venue.region, themes, world: roster, id: `${venue.id}#${i + 1}` });
+        return { ...g, regionName, venueId: venue.id };
+      }
       const fearsFrom = themes.length ? themes : local;
       const fears = fearsFrom.length ? [fearsFrom[Math.floor(rng() * fearsFrom.length)]] : [];
       return {

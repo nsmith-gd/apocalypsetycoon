@@ -1,0 +1,680 @@
+{
+  "version": 1,
+  "notes": "Guest archetypes for social events (director note D2) and the traits guests carry. classes/regions/fears/traits are relative weights. fears use threat track ids from src/world/tracks.js (Classic or alternate); a fear whose track is not in this campaign's world falls to the track running in the same slot. Personality traits shape dialogue (likes/dislikes are conversation approaches); client traits come from the GDD Clients section and matter once a guest becomes a client. hidden traits are only revealed in conversation.",
+  "approaches": [
+    "flattery",
+    "facts",
+    "fear",
+    "exclusivity",
+    "discount",
+    "charity",
+    "gossip",
+    "legacy"
+  ],
+  "traits": [
+    {
+      "id": "vain",
+      "name": "Vain",
+      "kind": "personality",
+      "likes": [
+        "flattery",
+        "exclusivity"
+      ],
+      "dislikes": [
+        "discount"
+      ],
+      "blurb": "Wants to be told the bunker will be the envy of everyone they know."
+    },
+    {
+      "id": "paranoid",
+      "name": "Paranoid",
+      "kind": "both",
+      "likes": [
+        "fear",
+        "facts"
+      ],
+      "dislikes": [
+        "gossip"
+      ],
+      "blurb": "Already knows the end is coming and wants proof you do too. As a client: inspects the Survive tier, demands more Days Sealed, signs off slowly."
+    },
+    {
+      "id": "skeptical",
+      "name": "Skeptical",
+      "kind": "personality",
+      "likes": [
+        "facts"
+      ],
+      "dislikes": [
+        "fear",
+        "flattery"
+      ],
+      "blurb": "Has heard every pitch. Rolls their eyes at doom."
+    },
+    {
+      "id": "generous",
+      "name": "Generous",
+      "kind": "personality",
+      "likes": [
+        "charity",
+        "legacy"
+      ],
+      "dislikes": [
+        "discount"
+      ],
+      "blurb": "Wants a bunker with room for the people they love, and a plaque saying so."
+    },
+    {
+      "id": "gossipy",
+      "name": "Gossipy",
+      "kind": "personality",
+      "likes": [
+        "gossip",
+        "exclusivity"
+      ],
+      "dislikes": [
+        "facts"
+      ],
+      "blurb": "Will tell the whole room what you said, for better or worse."
+    },
+    {
+      "id": "impatient",
+      "name": "Impatient",
+      "kind": "personality",
+      "likes": [
+        "exclusivity",
+        "fear"
+      ],
+      "dislikes": [
+        "facts",
+        "legacy"
+      ],
+      "blurb": "Gives you about ninety seconds."
+    },
+    {
+      "id": "competitive",
+      "name": "Competitive",
+      "kind": "personality",
+      "likes": [
+        "exclusivity",
+        "gossip"
+      ],
+      "dislikes": [
+        "charity"
+      ],
+      "blurb": "Only wants it if a rival already has one."
+    },
+    {
+      "id": "sentimental",
+      "name": "Sentimental",
+      "kind": "personality",
+      "likes": [
+        "legacy",
+        "charity"
+      ],
+      "dislikes": [
+        "fear"
+      ],
+      "blurb": "Thinks about the grandchildren, and the family silver."
+    },
+    {
+      "id": "engineer",
+      "name": "Engineer",
+      "kind": "client",
+      "likes": [
+        "facts"
+      ],
+      "dislikes": [
+        "flattery"
+      ],
+      "blurb": "Inspects everything and tells peers about flaws."
+    },
+    {
+      "id": "germaphobe",
+      "name": "Germaphobe",
+      "kind": "client",
+      "likes": [
+        "fear"
+      ],
+      "dislikes": [],
+      "fearBoost": {
+        "bloom": 2
+      },
+      "blurb": "Needs Decon and a Med Bay; fears The Bloom twice as much."
+    },
+    {
+      "id": "gourmand",
+      "name": "Gourmand",
+      "kind": "client",
+      "likes": [
+        "exclusivity"
+      ],
+      "dislikes": [],
+      "blurb": "Wants a Chef's Kitchen and Wine Cellar; eats 1.5x the food."
+    },
+    {
+      "id": "pet_parent",
+      "name": "Pet Parent",
+      "kind": "client",
+      "likes": [
+        "legacy"
+      ],
+      "dislikes": [],
+      "blurb": "Pet decor, later a Pet Clone Lab. Animals count as extra mouths."
+    },
+    {
+      "id": "influencer",
+      "name": "Influencer",
+      "kind": "client",
+      "likes": [
+        "gossip",
+        "exclusivity"
+      ],
+      "dislikes": [],
+      "blurb": "Wants a Broadcast Studio; doubles referral leads. Leaks unless under NDA."
+    },
+    {
+      "id": "collector",
+      "name": "Collector",
+      "kind": "client",
+      "likes": [
+        "exclusivity",
+        "legacy"
+      ],
+      "dislikes": [
+        "discount"
+      ],
+      "blurb": "Wants an Art Vault and a Museum of Me."
+    },
+    {
+      "id": "dynast",
+      "name": "Dynast",
+      "kind": "client",
+      "likes": [
+        "legacy"
+      ],
+      "dislikes": [],
+      "blurb": "Wants an Heir Nursery; +2 occupants per generation."
+    },
+    {
+      "id": "health_optimizer",
+      "name": "Health Optimizer",
+      "kind": "client",
+      "likes": [
+        "facts",
+        "exclusivity"
+      ],
+      "dislikes": [],
+      "blurb": "Biohacking Lab, then Cryo Pods. Always wants the newest unlock."
+    },
+    {
+      "id": "control_freak",
+      "name": "Control Freak",
+      "kind": "client",
+      "likes": [
+        "facts"
+      ],
+      "dislikes": [
+        "flattery"
+      ],
+      "hidden": true,
+      "blurb": "Demands override codes to every system. Leverage +10 at handover."
+    },
+    {
+      "id": "penny_pincher",
+      "name": "Penny-Pincher",
+      "kind": "client",
+      "likes": [
+        "discount"
+      ],
+      "dislikes": [
+        "exclusivity"
+      ],
+      "blurb": "Haggles 15% off. Pays late."
+    },
+    {
+      "id": "secretly_broke",
+      "name": "Secretly Broke",
+      "kind": "client",
+      "likes": [
+        "discount",
+        "flattery"
+      ],
+      "dislikes": [],
+      "hidden": true,
+      "blurb": "May default on retainers. You hold leverage over them, for once."
+    },
+    {
+      "id": "knows_too_much",
+      "name": "Knows Too Much",
+      "kind": "client",
+      "likes": [
+        "gossip"
+      ],
+      "dislikes": [
+        "fear"
+      ],
+      "hidden": true,
+      "blurb": "Starts with 30 leverage over you. Blackmail arrives early."
+    }
+  ],
+  "archetypes": [
+    {
+      "id": "prepping_dentist",
+      "title": "The Prepping Dentist",
+      "classes": {
+        "C1": 1
+      },
+      "regions": {
+        "heartland": 3,
+        "frontier": 2
+      },
+      "fears": {
+        "hush": 3,
+        "pitchforks": 2,
+        "atomic": 1
+      },
+      "traits": {
+        "paranoid": 3,
+        "penny_pincher": 2,
+        "skeptical": 1,
+        "engineer": 1
+      },
+      "traitCount": [
+        2,
+        3
+      ],
+      "blurb": "Twelve years of canned peaches in the garage. Now wants a real hole in the ground."
+    },
+    {
+      "id": "lottery_winner",
+      "title": "The Lottery Winner",
+      "classes": {
+        "C1": 1
+      },
+      "regions": {
+        "heartland": 3,
+        "frontier": 1
+      },
+      "fears": {
+        "pitchforks": 3,
+        "atomic": 2,
+        "superstorm": 1
+      },
+      "traits": {
+        "generous": 3,
+        "sentimental": 2,
+        "gossipy": 2,
+        "secretly_broke": 1
+      },
+      "traitCount": [
+        2,
+        3
+      ],
+      "blurb": "Won big, told everyone, and now everyone knows where they live."
+    },
+    {
+      "id": "celebrity_chef",
+      "title": "The Celebrity Chef",
+      "classes": {
+        "C1": 2,
+        "C2": 1
+      },
+      "regions": {
+        "coastal": 3,
+        "capitals": 1
+      },
+      "fears": {
+        "hush": 3,
+        "bloom": 2,
+        "cloudstrike": 2
+      },
+      "traits": {
+        "gourmand": 3,
+        "gossipy": 2,
+        "generous": 1,
+        "pet_parent": 1,
+        "vain": 1
+      },
+      "traitCount": [
+        2,
+        3
+      ],
+      "blurb": "Will not survive the end of the world without a proper walk-in fridge."
+    },
+    {
+      "id": "wellness_influencer",
+      "title": "The Wellness Influencer",
+      "classes": {
+        "C1": 1,
+        "C2": 2
+      },
+      "regions": {
+        "coastal": 2,
+        "islands": 1
+      },
+      "fears": {
+        "bloom": 3,
+        "greygoo": 2,
+        "hush": 1
+      },
+      "traits": {
+        "influencer": 3,
+        "germaphobe": 2,
+        "vain": 2,
+        "health_optimizer": 1
+      },
+      "traitCount": [
+        2,
+        3
+      ],
+      "blurb": "Two million followers and a cold-plunge sponsorship. Wants a bunker that photographs well."
+    },
+    {
+      "id": "crypto_founder",
+      "title": "The Crypto Founder",
+      "classes": {
+        "C2": 1
+      },
+      "regions": {
+        "tech": 3,
+        "coastal": 1,
+        "islands": 1
+      },
+      "fears": {
+        "optimizer": 3,
+        "kessler": 2,
+        "greygoo": 1
+      },
+      "traits": {
+        "vain": 2,
+        "impatient": 3,
+        "health_optimizer": 1,
+        "influencer": 1,
+        "secretly_broke": 1
+      },
+      "traitCount": [
+        2,
+        3
+      ],
+      "blurb": "Paper billionaire, real anxieties. Asks whether you take tokens."
+    },
+    {
+      "id": "reformed_ai_engineer",
+      "title": "The Reformed AI Engineer",
+      "classes": {
+        "C2": 1
+      },
+      "regions": {
+        "tech": 4
+      },
+      "fears": {
+        "optimizer": 4,
+        "kessler": 1,
+        "greygoo": 1
+      },
+      "traits": {
+        "engineer": 3,
+        "paranoid": 2,
+        "skeptical": 2,
+        "knows_too_much": 1
+      },
+      "traitCount": [
+        2,
+        3
+      ],
+      "blurb": "Helped build the thing they now lie awake about. Wants everything wired, nothing smart."
+    },
+    {
+      "id": "hedge_fund_doomer",
+      "title": "The Hedge Fund Doomer",
+      "classes": {
+        "C2": 2,
+        "C3": 1
+      },
+      "regions": {
+        "capitals": 2,
+        "coastal": 2
+      },
+      "fears": {
+        "pitchforks": 2,
+        "atomic": 2,
+        "superstorm": 1,
+        "optimizer": 1
+      },
+      "traits": {
+        "paranoid": 2,
+        "impatient": 2,
+        "competitive": 3,
+        "penny_pincher": 1
+      },
+      "traitCount": [
+        2,
+        3
+      ],
+      "blurb": "Shorted everything except the apocalypse. Now long on concrete."
+    },
+    {
+      "id": "agribusiness_baron",
+      "title": "The Agribusiness Baron",
+      "classes": {
+        "C2": 1,
+        "C3": 1
+      },
+      "regions": {
+        "heartland": 3,
+        "equator": 2
+      },
+      "fears": {
+        "hush": 3,
+        "cloudstrike": 3,
+        "bloom": 1
+      },
+      "traits": {
+        "penny_pincher": 2,
+        "skeptical": 2,
+        "pet_parent": 1,
+        "sentimental": 1
+      },
+      "traitCount": [
+        2,
+        3
+      ],
+      "blurb": "Owns more land than some countries and is quietly worried about the bees."
+    },
+    {
+      "id": "defence_contractor",
+      "title": "The Defence Contractor",
+      "classes": {
+        "C2": 1,
+        "C3": 2
+      },
+      "regions": {
+        "capitals": 3,
+        "north": 1
+      },
+      "fears": {
+        "atomic": 4,
+        "kessler": 2
+      },
+      "traits": {
+        "paranoid": 2,
+        "control_freak": 2,
+        "knows_too_much": 2,
+        "competitive": 1
+      },
+      "traitCount": [
+        2,
+        3
+      ],
+      "blurb": "Sells to both sides of the border, and has a professional opinion on blast doors."
+    },
+    {
+      "id": "old_money_dowager",
+      "title": "The Old-Money Dowager",
+      "classes": {
+        "C3": 1
+      },
+      "regions": {
+        "capitals": 2,
+        "north": 2
+      },
+      "fears": {
+        "pitchforks": 3,
+        "atomic": 1,
+        "longshade": 1
+      },
+      "traits": {
+        "collector": 3,
+        "dynast": 2,
+        "skeptical": 2,
+        "sentimental": 2
+      },
+      "traitCount": [
+        2,
+        3
+      ],
+      "blurb": "The family survived three revolutions by being somewhere else. Intends to keep the tradition."
+    },
+    {
+      "id": "shipping_heir",
+      "title": "The Shipping Heir",
+      "classes": {
+        "C3": 2,
+        "C4": 1
+      },
+      "regions": {
+        "coastal": 2,
+        "islands": 2
+      },
+      "fears": {
+        "superstorm": 3,
+        "longshade": 2,
+        "cloudstrike": 1
+      },
+      "traits": {
+        "gourmand": 2,
+        "vain": 2,
+        "generous": 1,
+        "dynast": 2
+      },
+      "traitCount": [
+        2,
+        3
+      ],
+      "blurb": "Grew up on yachts and has never been further than a helicopter from a cocktail."
+    },
+    {
+      "id": "media_mogul",
+      "title": "The Media Mogul",
+      "classes": {
+        "C4": 1
+      },
+      "regions": {
+        "capitals": 2,
+        "coastal": 2
+      },
+      "fears": {
+        "pitchforks": 3,
+        "optimizer": 2
+      },
+      "traits": {
+        "vain": 2,
+        "gossipy": 3,
+        "control_freak": 2,
+        "influencer": 1
+      },
+      "traitCount": [
+        2,
+        3
+      ],
+      "blurb": "Sells the headlines that sell your bunkers. Expects a friends-and-family rate."
+    },
+    {
+      "id": "energy_magnate",
+      "title": "The Energy Magnate",
+      "classes": {
+        "C3": 1,
+        "C4": 2
+      },
+      "regions": {
+        "frontier": 2,
+        "north": 2,
+        "equator": 1
+      },
+      "fears": {
+        "longshade": 2,
+        "superstorm": 2,
+        "atomic": 1
+      },
+      "traits": {
+        "competitive": 3,
+        "gourmand": 1,
+        "collector": 2,
+        "generous": 1
+      },
+      "traitCount": [
+        2,
+        3
+      ],
+      "blurb": "Made a fortune heating the planet and wants a fortress that stays cool."
+    },
+    {
+      "id": "orbital_tourist",
+      "title": "The Orbital Tourist",
+      "classes": {
+        "C4": 2,
+        "C5": 1
+      },
+      "regions": {
+        "islands": 3,
+        "equator": 1
+      },
+      "fears": {
+        "kessler": 3,
+        "longshade": 2,
+        "atomic": 1
+      },
+      "traits": {
+        "vain": 3,
+        "health_optimizer": 2,
+        "impatient": 2
+      },
+      "traitCount": [
+        2,
+        3
+      ],
+      "blurb": "Has seen the planet from above and found it a bit much. Wants a bunker with a view anyway."
+    },
+    {
+      "id": "table_envoy",
+      "title": "The Table Envoy",
+      "classes": {
+        "C5": 1
+      },
+      "regions": {
+        "islands": 2,
+        "capitals": 1
+      },
+      "fears": {
+        "atomic": 1,
+        "bloom": 1,
+        "superstorm": 1,
+        "optimizer": 1,
+        "hush": 1,
+        "pitchforks": 1
+      },
+      "traits": {
+        "skeptical": 3,
+        "control_freak": 2,
+        "knows_too_much": 2,
+        "collector": 1
+      },
+      "traitCount": [
+        2,
+        3
+      ],
+      "blurb": "Speaks for people who do not attend parties. Asks very few questions, all of them uncomfortable."
+    }
+  ]
+}
