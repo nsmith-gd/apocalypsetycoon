@@ -37,7 +37,7 @@ import { createGameUI } from '../src/ui/hud.js';
 import { Pushback } from '../src/pushback/pushback.js';
 import { createPushbackUI } from '../src/pushback/pushback-ui.js';
 import { createPressureGauge } from '../src/pushback/pressure-gauge.js';
-import { DoomClock, attachPushback } from '../src/doomclock/doomclock.js';
+import { DoomClock } from '../src/doomclock/doomclock.js';
 import { createDoomClockHud } from '../src/doomclock/doomclock-hud.js';
 import { createAudio, wireAudio, createSoundToggle, startOnFirstGesture, midnightTimes } from '../src/audio/audio.js';
 import { computeMidnight, gradeShelter } from '../src/midnight/midnight.js';
@@ -59,7 +59,7 @@ const pbui = createPushbackUI({ root, pushback: pb });
 // All four pressures with what happens next, plus the paid relief buttons.
 // The Doom Clock: world tension and runaways move it; chapters start at Q4, Q7 and Q10.
 const doom = new DoomClock();
-attachPushback(doom, pb);
+// #90: the clock only hears crisis tracks; this demo has none, so it moves with chapters only.
 createDoomClockHud({ clock: doom, hud: root.querySelector('.hud') });
 let midnightStarted = false;
 doom.on('midnight', (e) => { if (!midnightStarted) midnight(e.reason === 'clock' ? 'The Doom Clock struck zero before you were ready.' : 'Two collapses started a Final Countdown you could not stop.'); });
