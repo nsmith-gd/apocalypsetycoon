@@ -31,3 +31,19 @@
 /* In the campaign the Pressure panel (left) and Clients panel (right) float over the stage: keep clear. */
 .gs .bk { margin: 0 270px; grid-template-columns: 180px auto 240px; }
 @media (max-width: 1300px) { .gs .bk { margin: 0; } }
+/* #84 interior: swatches, residents */
+.bk-sw { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 10px; min-height: 24px; }
+.bk-sw:empty { display: none; }
+.bk-sw .lbl { color: var(--at-dim); letter-spacing: 1px; margin-right: 2px; }
+.bk-sw button { font-family: var(--at-font); font-size: 10px; display: flex; gap: 4px; align-items: center; padding: 3px 6px; color: var(--at-ink); background: var(--at-panel-2); border: 2px solid var(--at-border); cursor: pointer; }
+.bk-sw button.on { border-color: var(--at-gold); color: var(--at-gold); }
+.bk-sw button i { width: 14px; height: 12px; display: inline-block; border: 1px solid #0a0807; }
+.bk-res .who { display: grid; grid-template-columns: 1fr auto; cursor: pointer; padding: 1px 0; }
+.bk-res .who:hover, .bk-res .who.on { color: var(--at-gold); }
+.bk-res .who small { color: var(--at-dim); grid-column: span 2; font-size: 9px; }
+.bk-need { display: grid; grid-template-columns: 54px 1fr; gap: 4px; align-items: center; font-size: 9px; margin: 1px 0; }
+.bk-need div { height: 6px; background: #0a0807; }
+.bk-need div i { display: block; height: 100%; }
+.bk-res .th { font-size: 10px; margin: 1px 0; }
+.bk-res .th.good { color: var(--at-green, #7ed957); }
+.bk-res .th.bad { color: var(--at-red); }
