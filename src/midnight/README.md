@@ -30,3 +30,14 @@
 - `engineered-ui.js`: planner, LAST CALL / SEAL ORDER banner, Seal Order board, Overtime offer.
 - In `demo/midnight-demo.html`: ENGINEER MIDNIGHT (unlocks at Q10 / Q11, or `?unlock`), +1 WEEK, and the Overtime offer
   at the end of Q12.
+
+## The uncontrolled road (#70)
+- `uncontrolled.js`: when the Doom Clock strikes zero or the Final Countdown runs out, the campaign takes the uncontrolled
+  road instead of grading straight away. `uncontrolledRoad({ reason, crisis, doom })` picks the apocalypse that arrived
+  (countdown: the two collapsed tracks as a combined apocalypse; clock: the hottest open track), `sealOrderClients`
+  turns every sold shelter into a Seal Order pickup (distance from HQ, sieges where a high-exposure track is at 90+,
+  client leverage), and `resolveUncontrolled` runs the Seal Order and `computeMidnight` with that apocalypse, the
+  pickups and `forceType: 'failed'`: graded one step down, ending OFF THE RAILS.
+- Campaign: clock strike -> Seal Order board -> ending screen. The end of Q12 still grades straight away.
+- Debug presets on a new campaign: `index.html?preset=countdown&qs=26` (two collapses, Midnight 4 weeks later) and
+  `?preset=clockzero` (the floor falls to zero 3 seconds in).
