@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { EngineeredMidnight, PROJECTS, APOCALYPSES, combinedRequirement, gradeFor, GRADES, boardVote, runSealOrder, Overtime, ENGINEERED } from '../src/midnight/engineered.js';
+import { EngineeredMidnight, PROJECTS, APOCALYPSES, combinedRequirement, requirementFor, gradeFor, GRADES, boardVote, runSealOrder, Overtime, ENGINEERED } from '../src/midnight/engineered.js';
 import { computeMidnight } from '../src/midnight/midnight.js';
 import { Pushback } from '../src/pushback/pushback.js';
 
@@ -11,15 +11,20 @@ test('the two projects sit at 4:50 and 5:30 on the timeline; the Final Product n
   const em = new EngineeredMidnight();
   assert.equal(em.available('lights_out', { hours: 4.5 }), false);
   assert.equal(em.available('lights_out', { hours: 4.9 }), true);
-  assert.equal(em.available('final_product', { researched: new Set([46]) }), true);
+  assert.equal(em.available('final_product', { researched: new Set([45]) }), true); // research 45 (GDD)
 });
 
-test('ten apocalypses each with required Days Sealed and critical ratings, plus a combined rule', () => {
+test('the GDD table: ten apocalypses with required Days Sealed; a pair takes the longer + 180 and both sets', () => {
   assert.equal(Object.keys(APOCALYPSES).length, 10);
-  for (const a of Object.values(APOCALYPSES)) assert.ok(a.days > 0 && Object.keys(a.critical).length);
-  const c = combinedRequirement('pandemic', 'war');
-  assert.equal(c.days, Math.round(365 * 1.25));
-  assert.deepEqual(c.critical, { seal: 5, morale: 3, blast: 5 });
+  assert.equal(APOCALYPSES.atomic.days, 730);
+  assert.deepEqual(APOCALYPSES.atomic.critical, { blast: 4, seal: 3 });
+  assert.equal(APOCALYPSES.hush.days, 1460);
+  assert.equal(APOCALYPSES.pitchforks.critical.security, 4);
+  const c = combinedRequirement('war', 'pandemic'); // Atomic Standoff + The Bloom
+  assert.equal(c.days, 730 + 180);
+  assert.deepEqual(c.critical, { blast: 4, seal: 4 });
+  assert.deepEqual(c.needs, ['decon', 'HEPA']);
+  assert.equal(requirementFor('war').name, 'Atomic Standoff');
 });
 
 test('the date must be 4 to 12 weeks out; a pair pays more', () => {
@@ -79,12 +84,17 @@ test('Seal Order: distance, sieges and high-leverage clients make pickups late o
   assert.ok(many({ distance: 3, siege: true }) > many({ distance: 1 }) * 2);
 });
 
-test('grades from Platinum to The Gerald, one grade lower when uncontrolled', () => {
-  assert.equal(GRADES[0].name, 'Platinum');
-  assert.equal(GRADES.at(-1).name, 'The Gerald');
-  assert.equal(gradeFor(0.97).id, 'platinum');
-  assert.equal(gradeFor(0.97, { uncontrolled: true }).id, 'gold');
+test('grades from Platinum to The Gerald; Platinum needs engineered, no collapses, heat under 75; uncontrolled drops one', () => {
+  assert.deepEqual(GRADES.map((g) => g.name), ['Platinum', 'Gold', 'Silver', 'Bronze', 'The Gerald']);
+  assert.equal(gradeFor(0.92).id, 'platinum');
+  assert.equal(gradeFor(0.92, { heat: 80 }).id, 'gold');
+  assert.equal(gradeFor(0.92, { collapses: 1 }).id, 'gold');
+  assert.equal(gradeFor(0.8).id, 'gold');
+  assert.equal(gradeFor(0.6).id, 'silver');
+  assert.equal(gradeFor(0.3).id, 'bronze');
   assert.equal(gradeFor(0.1).id, 'gerald');
+  assert.equal(gradeFor(0.92, { uncontrolled: true }).id, 'silver'); // capped at Gold (not engineered), then -1
+  assert.equal(gradeFor(0.6, { uncontrolled: true }).id, 'bronze');
   assert.equal(gradeFor(0.1, { uncontrolled: true }).id, 'gerald');
 });
 
@@ -97,17 +107,18 @@ test('Midnight applies Seal Order outcomes and the apocalypse requirements, and 
   const r = computeMidnight({ shelters, world: calm, pickups: { Okoro: 'lost', Pike: 'late' } });
   assert.equal(r.shelters[1].survivors, 0);
   assert.equal(r.shelters[2].survivors, 6);
-  assert.equal(r.grade.id, 'bronze'); // 14 / 24 = 58%
+  assert.equal(r.grade.id, 'silver'); // 14 / 24 = 58%
   // A life-systems shelter is held to the apocalypse's Days Sealed and critical ratings.
   const life = { id: 'hq', name: 'HQ', owner: 'board', occupants: 4, rooms: [{ type: 'bunk', floor: 1, col: 1 }, { type: 'oxygen_store', floor: 1, col: 2 }, { type: 'water_tank', floor: 1, col: 3 }, { type: 'pantry', floor: 1, col: 4 }, { type: 'battery', floor: 1, col: 5 }] };
-  const w = computeMidnight({ shelters: [life], world: calm, apocalypse: APOCALYPSES.war });
-  assert.ok(w.shelters[0].life.p < 0.2); // 100 days of 365, no blast, poor seal
+  const w = computeMidnight({ shelters: [life], world: calm, apocalypse: APOCALYPSES.atomic });
+  assert.ok(w.shelters[0].life.p < 0.2); // 100 days of 730, no blast, poor seal
   assert.equal(w.grade.id, 'gerald');
 });
 
 test('Overtime: quota grows 30% a quarter and the 4 unused tracks open one per quarter', () => {
   const o = new Overtime({ baseQuota: 1_000_000 });
   assert.equal(o.pending.length, 4);
+  for (const t of o.pending) assert.ok(APOCALYPSES[t] && !['atomic', 'bloom', 'superstorm', 'pitchforks', 'hush'].includes(t));
   const q13 = o.nextQuarter();
   assert.deepEqual([q13.quarter, q13.quota], [13, 1_300_000]);
   assert.ok(q13.opened);

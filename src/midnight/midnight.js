@@ -209,7 +209,7 @@ export function computeMidnight({ shelters = [], world = {}, cash = 0, cfg = MID
     cash,
     cause, // e.g. 'The Doom Clock struck zero.' when Midnight came uncontrolled
     apocalypse,
-    grade: gradeFor(survivalRate, { uncontrolled: type === 'failed' }),
+    grade: gradeFor(survivalRate, { uncontrolled: type === 'failed', collapses: world.collapses ?? 0, heat: world.heat ?? 0 }),
     ending: { ...ending, type },
   };
 }

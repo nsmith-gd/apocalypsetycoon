@@ -1,7 +1,7 @@
 // UI for Engineered Midnight: the planner, the LAST CALL banner, the Seal Order board and the
 // Overtime offer. Plain DOM over the HUD.
 
-import { PROJECTS, APOCALYPSES, requirementFor, ENGINEERED } from './engineered.js';
+import { PROJECTS, APOCALYPSES, TRACK_APOCALYPSE, requirementFor, ENGINEERED } from './engineered.js';
 import { dockBelowHud } from '../pushback/pushback-ui.js';
 
 const el = (tag, cls, text) => {
@@ -11,7 +11,7 @@ const el = (tag, cls, text) => {
   return n;
 };
 const money = (n) => `$${n >= 1e6 ? `${Math.round(n / 1e6)}M` : `${Math.round(n / 1e3)}K`}`;
-const reqText = (r) => `${r.days} days sealed · ${Object.entries(r.critical).map(([k, v]) => `${k} ${v}`).join(', ')}`;
+const reqText = (r) => `${r.days} days sealed${Object.keys(r.critical).length ? ` · ${Object.entries(r.critical).map(([k, v]) => `${k} ${v}`).join(', ')}` : ''}${r.needs?.length ? ` · plus ${r.needs.join(', ')}` : ''}`;
 
 function modal(root, cls = '') {
   const overlay = el('div', `em-overlay ${cls}`);
@@ -22,7 +22,7 @@ function modal(root, cls = '') {
 }
 
 /** Planner: resolves with the start() result, or null if cancelled. */
-export function openPlanner({ root = document.body, em, availability = () => true, tracks = Object.keys(APOCALYPSES).filter((k) => APOCALYPSES[k].campaign) }) {
+export function openPlanner({ root = document.body, em, availability = () => true, tracks = Object.keys(TRACK_APOCALYPSE) }) {
   return new Promise((resolve) => {
     const { card, close } = modal(root);
     let project = 'lights_out';
@@ -39,9 +39,9 @@ export function openPlanner({ root = document.body, em, availability = () => tru
         <div class="em-title">Pick your apocalypse</div>
         <div class="em-row">${Object.values(PROJECTS).map((p) => `<button class="em-opt ${p.id === project ? 'on' : ''}" data-project="${p.id}" ${availability(p.id) ? '' : 'disabled'}>${p.name}<small>${p.timeline}${p.boardVote ? ` · board vote ${p.boardVote.need} of ${p.boardVote.of}` : ''}</small></button>`).join('')}</div>
         <div class="em-label">TRACK</div>
-        <div class="em-row">${tracks.map((t) => `<button class="em-opt ${t === first ? 'on' : ''}" data-first="${t}">${APOCALYPSES[t].name}</button>`).join('')}</div>
+        <div class="em-row">${tracks.map((t) => `<button class="em-opt ${t === first ? 'on' : ''}" data-first="${t}">${APOCALYPSES[TRACK_APOCALYPSE[t]].name}</button>`).join('')}</div>
         <div class="em-label">LINK A SECOND TRACK (harsher requirements, bigger payout)</div>
-        <div class="em-row"><button class="em-opt ${!second ? 'on' : ''}" data-second="">None</button>${tracks.filter((t) => t !== first).map((t) => `<button class="em-opt ${t === second ? 'on' : ''}" data-second="${t}">${APOCALYPSES[t].name}</button>`).join('')}</div>
+        <div class="em-row"><button class="em-opt ${!second ? 'on' : ''}" data-second="">None</button>${tracks.filter((t) => t !== first).map((t) => `<button class="em-opt ${t === second ? 'on' : ''}" data-second="${t}">${APOCALYPSES[TRACK_APOCALYPSE[t]].name}</button>`).join('')}</div>
         <div class="em-label">DATE · MIDNIGHT IN <b>${weeks}</b> WEEKS</div>
         <input class="em-range" type="range" min="${ENGINEERED.minWeeks}" max="${ENGINEERED.maxWeeks}" value="${weeks}">
         <div class="em-req"><b>${req.name}</b><br>Shelters will need ${reqText(req)}.<br>Payout ${money(second ? P.pairPayout : P.payout)} x grade.<br>Until then: LAST CALL. Sales at triple premium, heat +3 a week. You can call it off once (board confidence -20).</div>
