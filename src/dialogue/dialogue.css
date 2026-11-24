@@ -1,0 +1,21 @@
+/* Conversation panel (#56). Uses the --at-* tokens from src/ui/ui.css. */
+.dlg { display: flex; flex-direction: column; gap: 8px; font-family: var(--at-font); color: var(--at-ink); }
+.dlg-head { border-bottom: 2px solid var(--at-border); padding-bottom: 6px; }
+.dlg-name { font-size: 16px; font-weight: 900; color: var(--at-gold); letter-spacing: 1px; }
+.dlg-sub { font-size: 11px; color: var(--at-dim); }
+.dlg-log { max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
+.dlg-line { margin: 0; font-size: 13px; line-height: 1.45; padding: 6px 8px; border: 2px solid var(--at-border); background: var(--at-panel-2); }
+.dlg-line b { font-size: 10px; letter-spacing: 1px; color: var(--at-dim); margin-right: 4px; }
+.dlg-guest { box-shadow: inset 3px 0 0 var(--at-gold); }
+.dlg-you { margin-left: 28px; background: #2a3324; box-shadow: inset -3px 0 0 var(--at-green); }
+.dlg-narrator { font-style: italic; color: var(--at-dim); background: transparent; border-style: dashed; }
+.dlg-choices { display: flex; flex-direction: column; gap: 4px; }
+.dlg-choice { text-align: left; font: 700 12px var(--at-font); padding: 8px 10px; color: var(--at-ink); background: var(--at-panel-2); border: 2px solid var(--at-border); box-shadow: inset 2px 2px 0 var(--at-hi); cursor: pointer; }
+.dlg-choice:hover { background: var(--at-hi); }
+.dlg-choice::before { content: '> '; color: var(--at-gold); }
+.dlg-result { padding: 10px; border: 3px solid var(--at-border); }
+.dlg-win { background: #2f5a24; }
+.dlg-lose { background: #4a2420; }
+.dlg-ending { font-weight: 900; letter-spacing: 2px; font-size: 14px; margin-bottom: 4px; }
+.dlg-out { font-size: 12px; line-height: 1.5; }
+.dlg-done { margin-top: 8px; font: 900 12px var(--at-font); padding: 6px 10px; background: var(--at-gold); color: var(--at-paper-ink); border: 2px solid var(--at-border); cursor: pointer; }
