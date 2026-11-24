@@ -20,6 +20,9 @@
   .cell { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
   .cell small { color: var(--dim); font-size: 11px; }
   .scroll { overflow-x: auto; }
+  .style-table { border-collapse: collapse; }
+  .style-table th { color: var(--dim); font-size: 11px; text-align: left; padding: 2px 8px 2px 0; font-weight: 700; }
+  .style-table td { padding: 2px 6px 2px 0; }
 </style>
 </head>
 <body>
@@ -35,6 +38,15 @@
   <div class="row" id="shelter"></div>
   <h2>SHELTER CROSS-SECTION (3X)</h2>
   <div class="scroll"><canvas id="shelter-view" width="160" height="96"></canvas></div>
+
+  <h2 id="styles">ROOM STYLES: BRUTALIST &amp; GILDED (PALETTE SWAPS, 4X)</h2>
+  <p>Placeholder styles for the design layer. Each is a palette swap of one shared room template and the existing amenity sprites: Brutalist is raw concrete, form-tie holes, a stencilled plaque and sodium-amber light; Gilded is velvet wallpaper with gold seams, a framed portrait, chandelier glint and marble. The ceiling band is the needs-tier trim and never changes with style: hazard stripes (Survive), walnut (Comfort), gold and emerald (Status), shimmering violet (Delusion).</p>
+  <div class="scroll"><table class="style-table" id="style-table"></table></div>
+  <h2>STYLED CROSS-SECTIONS (3X)</h2>
+  <div class="row">
+    <div class="cell"><canvas id="style-brutalist" width="160" height="64"></canvas><small>Brutalist</small></div>
+    <div class="cell"><canvas id="style-gilded" width="160" height="64"></canvas><small>Gilded</small></div>
+  </div>
 
   <h2>WORLD MAP (8PX TERRAIN)</h2>
   <p>A retro war-room map. Terrain is low-contrast so crisis marks read on top. Each region's crisis level shows as a dither overlay: none when calm, sparse gold when uneasy, orange at the edge, shimmering red at the tipping point.</p>
@@ -56,6 +68,9 @@ import { UI_FRAMES, UI_ICONS, UI_CURSOR, LOGO } from '../src/art/sprites-ui.js';
 import { drawShelter } from '../src/art/shelterView.js';
 import { drawWorldMap } from '../src/art/worldmap.js';
 import { drawText } from '../src/art/font.js';
+import { drawStyledRoom } from '../src/art/styleArt.js';
+import { drawStyledShelter } from '../src/art/styleView.js';
+import { ROOM_TIERS } from '../src/shelter/styles.js';
 
 const sw = document.getElementById('swatches');
 for (const [key, { hex, name }] of Object.entries(PALETTE)) {
@@ -88,6 +103,34 @@ spriteCells(document.getElementById('map-sprites'), CRISIS_OVERLAYS, 5);
 spriteCells(document.getElementById('ui-icons'), UI_ICONS, 4);
 spriteCells(document.getElementById('ui-icons'), UI_CURSOR, 4);
 spriteCells(document.getElementById('ui-icons'), { LOGO }, 4);
+
+// ---- room styles (palette swaps) ----
+const styleTable = document.getElementById('style-table');
+const STYLE_COLS = ['neutral', 'brutalist', 'gilded'];
+styleTable.innerHTML = `<tr><th>ROOM · TIER</th>${STYLE_COLS.map((s) => `<th>${s.toUpperCase()}</th>`).join('')}</tr>`;
+const styleDraws = [];
+for (const amenity of [null, ...Object.keys(AMENITIES)]) {
+  const tier = amenity ? ROOM_TIERS[amenity] ?? 'survive' : 'survive';
+  const tr = document.createElement('tr');
+  const th = document.createElement('th'); th.textContent = `${amenity ?? 'empty room'} · ${tier}`; tr.append(th);
+  for (const style of STYLE_COLS) {
+    const td = document.createElement('td');
+    const cv = document.createElement('canvas'); cv.width = 16; cv.height = 16; cv.style.width = '64px'; cv.style.height = '64px';
+    cv.dataset.style = style;
+    const ctx = cv.getContext('2d');
+    const draw = (f) => { ctx.clearRect(0, 0, 16, 16); drawStyledRoom(ctx, { x: 0, y: 0, amenity, style, tier, frame: f }); };
+    draw(0); styleDraws.push(draw);
+    td.append(cv); tr.append(td);
+  }
+  styleTable.append(tr);
+}
+const styledRooms = (style) => ['bunk', 'pantry', 'gold_taps', 'wine_cellar', 'cryo_pod', 'ai_butler', 'air_vent', 'hydroponics', 'water_tank', 'gold_taps', 'mil_scrubber', 'water_recycler', null, 'wine_cellar']
+  .map((amenity, i) => ({ col: 1 + (i % 7), row: 1 + Math.floor(i / 7), amenity, style }));
+const styleCvs = ['brutalist', 'gilded'].map((style) => { const cv = document.getElementById(`style-${style}`); cv.style.width = `${160 * 3}px`; return [cv, style]; });
+function drawStyleViews(f) {
+  styleDraws.forEach((d) => d(f));
+  for (const [cv, style] of styleCvs) drawStyledShelter(cv.getContext('2d'), { cols: 10, rows: 4, rooms: styledRooms(style), frame: f });
+}
 
 const shelterCv = document.getElementById('shelter-view');
 shelterCv.style.width = `${160 * 3}px`;
@@ -129,6 +172,7 @@ function tick() {
     frame, selected: 'eu', bunkers: [[9, 4], [20, 4], [36, 17]],
   });
   animated.forEach((d) => d(frame));
+  drawStyleViews(frame);
   frame++;
 }
 drawUI();

@@ -46,3 +46,14 @@
 - `bunker-ui.js` + `bunker.css`: the editor (drag tools, palette, ghosts with reasons, overlays, crews, room inspector).
 - `computeMidnight` grades tile-built shelters from their simulated Days Sealed and ratings (`shelter.sealed`).
 - Demo: `demo/bunker-demo.html?starter`. The old cell grid (`grid.js`) is no longer used by the campaign.
+
+## Design layer: room styles (#62, L0 greybox)
+- `styles.js`: six `STYLES` (only Brutalist and Gilded offered at L0: `PLACEHOLDER_STYLES`), `styleMultiplier(roomStyle,
+  clientStyle)` = 1.25 match / 1.0 neutral / 0.8 clash (`CLASHES` pairs are provisional), `WTP_WEIGHTS` by wealth class (GDD),
+  `satisfaction(client, rooms, { met })` = s x sum(w_k x met_k), capped at 100, where s averages the multiplier over the rooms
+  the client looks at (Survive only for Paranoid / Engineer / Inspector). `styledPrestige`, `roomStyle`, `setRoomStyle(site, room, style)`.
+- Cell-grid rooms: `grid.place(col, row, id, { style })` (default Brutalist) and `grid.setStyle(col, row, style)`; saved with the cell.
+- Bunker rooms: the majority `style` of their objects (objects keep the field through save/load); `setRoomStyle` re-skins a room.
+- Clients: every client type has a `wealthClass` and preferred `style`, copied onto each order.
+- Placeholder until the needs-ladder work lands: `met_k` from room counts per tier (`TIER_TARGETS`).
+- Demo: `demo/styles-demo.html`.
