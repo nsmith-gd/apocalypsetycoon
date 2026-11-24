@@ -1,0 +1,20 @@
+bot        seed  first breach  track        how       wildcard pushed
+cautious      1          2:32  atomic       wildcard  49 -> 90
+cautious      2          2:32  atomic       wildcard  46 -> 91
+cautious      3          2:32  atomic       wildcard  55 -> 91
+cautious      4          2:32  atomic       wildcard  43 -> 94
+cautious      5          2:32  atomic       wildcard  44 -> 90
+edge          1          2:32  atomic       wildcard  75 -> 90
+edge          2          2:32  atomic       wildcard  78 -> 91
+edge          3          2:32  atomic       wildcard  73 -> 91
+edge          4          2:32  atomic       wildcard  77 -> 94
+edge          5          1:04  atomic       natural   -
+luxury        1          2:32  atomic       wildcard  73 -> 90
+luxury        2          2:32  atomic       wildcard  83 -> 91
+luxury        3          2:32  atomic       wildcard  73 -> 91
+luxury        4          2:32  atomic       wildcard  75 -> 94
+luxury        5          2:32  atomic       wildcard  71 -> 90
+
+Checks: {"everyRunBreachesByDeadline":true,"latestFirstBreach":152,"naturalShare":0.07}
+
+PASS
