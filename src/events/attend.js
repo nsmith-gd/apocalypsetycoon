@@ -20,7 +20,7 @@
 // - Exposure applies on arrival: heat and reputation change, and a journalist is present with chance `press`.
 
 import { mulberry32 } from '../pushback/pushback.js';
-import { GDD_REGIONS, TRACKS } from '../world/tracks.js';
+import { GDD_REGIONS, TRACKS, CLASSIC_ROSTER, resolveTracks } from '../world/tracks.js';
 import { PACING } from '../debug/pacing.js';
 
 export const AGENDA = Object.freeze({ daysPerQuarter: 6 });
@@ -53,13 +53,14 @@ function pickWeighted(rng, weights) {
 }
 
 /** Tracks that are hot (high or medium) in a region. */
-const hotTracksIn = (regionId) => TRACKS.filter((t) => t.exposure[regionId]).map((t) => t.id);
+const hotTracksIn = (regionId, roster) => TRACKS.filter((t) => t.exposure[regionId] && roster.includes(t.id)).map((t) => t.id);
 
 export class EventCircuit {
   constructor({ catalog, ledger = null, seed = 1, clock = null, addHeat = null, addReputation = null,
-    daysPerQuarter = AGENDA.daysPerQuarter, quarterMinutes = PACING.quarterMinutes } = {}) {
+    daysPerQuarter = AGENDA.daysPerQuarter, quarterMinutes = PACING.quarterMinutes, roster = CLASSIC_ROSTER } = {}) {
     if (!catalog) throw new Error('EventCircuit needs a venue catalog');
     this.catalog = catalog;
+    this.getRoster = typeof roster === 'function' ? roster : () => roster; // #75: guest fears follow slots
     this.ledger = ledger;
     this.seed = seed;
     this.clock = clock;
@@ -111,9 +112,11 @@ export class EventCircuit {
   pool(venue) {
     const rng = mulberry32(hashString(`${this.seed}:${venue.id}`));
     const regionName = GDD_REGIONS.find((r) => r.id === venue.region)?.name ?? venue.region;
-    const local = hotTracksIn(venue.region);
+    const roster = this.getRoster();
+    const local = hotTracksIn(venue.region, roster);
+    const themes = resolveTracks(roster, venue.themes); // venue themes name Classic tracks: read them by slot
     return Array.from({ length: venue.guestPool.size }, (_, i) => {
-      const fearsFrom = venue.themes.length ? venue.themes : local;
+      const fearsFrom = themes.length ? themes : local;
       const fears = fearsFrom.length ? [fearsFrom[Math.floor(rng() * fearsFrom.length)]] : [];
       return {
         id: `${venue.id}#${i + 1}`,

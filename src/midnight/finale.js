@@ -16,6 +16,9 @@
 
 import { APOCALYPSES, TRACK_APOCALYPSE } from './engineered.js';
 
+// Alternate track ids (src/world/tracks.js) -> keys of the GDD apocalypse table (engineered.js).
+export const ALT_APOCALYPSE = Object.freeze({ greygoo: 'goo', longshade: 'long_shade', kessler: 'kessler', cloudstrike: 'cloud' });
+
 const RANK = { collapsed: 4, breach: 3, locked: 3, brink: 2, calm: 1 };
 
 /** The apocalypse the world is heading for, from the crisis tracks ({ id, name, open, tension, state }). */
@@ -24,7 +27,7 @@ export function arrivingApocalypse(tracks = []) {
   const pool = live.length ? live : tracks;
   if (!pool.length) return null;
   const pick = [...pool].sort((a, b) => (RANK[b.state] ?? 1) - (RANK[a.state] ?? 1) || (b.tension ?? 0) - (a.tension ?? 0))[0];
-  const id = APOCALYPSES[pick.id] ? pick.id : TRACK_APOCALYPSE[pick.id];
+  const id = APOCALYPSES[pick.id] ? pick.id : TRACK_APOCALYPSE[pick.id] ?? ALT_APOCALYPSE[pick.id];
   if (!APOCALYPSES[id]) return null;
   const reason = pick.state === 'collapsed' ? 'it had already collapsed'
     : pick.state === 'breach' || pick.state === 'locked' ? 'it had already breached'
