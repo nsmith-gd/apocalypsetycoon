@@ -1,0 +1,84 @@
+{
+ "label": "reverify",
+ "viewports": [
+  {
+   "scale": 2,
+   "shownW": 640,
+   "shownH": 384,
+   "aspectOk": true,
+   "rendering": "pixelated",
+   "hits": {
+    "nam": "nam",
+    "eur": "eur",
+    "eas": "eas",
+    "mea": "mea",
+    "afr": "afr",
+    "sas": "sas",
+    "lat": "lat",
+    "oce": "oce"
+   },
+   "layoutMovedOnSelect": false,
+   "integerScale": true,
+   "hitAreasOk": true,
+   "viewport": "1440x900",
+   "errs": [],
+   "columnWidths": [
+    2
+   ],
+   "seamFree": true
+  },
+  {
+   "scale": 3,
+   "shownW": 960,
+   "shownH": 576,
+   "aspectOk": true,
+   "rendering": "pixelated",
+   "hits": {
+    "nam": "nam",
+    "eur": "eur",
+    "eas": "eas",
+    "mea": "mea",
+    "afr": "afr",
+    "sas": "sas",
+    "lat": "lat",
+    "oce": "oce"
+   },
+   "layoutMovedOnSelect": false,
+   "integerScale": true,
+   "hitAreasOk": true,
+   "viewport": "1920x1080",
+   "errs": [],
+   "columnWidths": [
+    3
+   ],
+   "seamFree": true
+  },
+  {
+   "scale": 1,
+   "shownW": 320,
+   "shownH": 192,
+   "aspectOk": true,
+   "rendering": "pixelated",
+   "hits": {
+    "nam": "nam",
+    "eur": "eur",
+    "eas": "eas",
+    "mea": "mea",
+    "afr": "afr",
+    "sas": "sas",
+    "lat": "lat",
+    "oce": "oce"
+   },
+   "layoutMovedOnSelect": false,
+   "integerScale": true,
+   "hitAreasOk": true,
+   "viewport": "1280x720",
+   "errs": [],
+   "columnWidths": [
+    1
+   ],
+   "seamFree": true
+  }
+ ],
+ "pass": true
+}
