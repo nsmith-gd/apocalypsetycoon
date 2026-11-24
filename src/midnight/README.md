@@ -13,3 +13,20 @@
 - `midnight-ui.js` + `midnight.css`: `await showMidnight({ root, result, onRestart })`, the ending screen.
 - Campaign clock: after the Q12 quarter report, call `computeMidnight(...)` then `showMidnight(...)`.
 - Demo: serve the repo root and open `demo/midnight-demo.html` (`?preset=architect|gilded|ark|nobody` jumps to Q12 with a set-up world).
+
+## Engineered Midnight, Seal Order and Overtime (#29)
+- `engineered.js` (numbers from the GDD's Midnight and Research tabs): `PROJECTS` (Project Lights Out, research 41 at
+  4:50; The Final Product, research 45 at 5:30 with a 3-of-5 `boardVote`), research 46 = Seal Order helicopters,
+  48 = Overtime (`RESEARCH_UNLOCKS`). `APOCALYPSES`: the GDD's ten (Atomic Standoff ... The Cloud Strike) with required
+  Days Sealed, numeric critical ratings and the named rooms they also need; `TRACK_APOCALYPSE` maps the game's five track
+  ids onto them. `combinedRequirement`: the longer duration + 180 days, both sets. `EngineeredMidnight`: `start({ project, target, weeks 4-12 })`,
+  `salesMultiplier` (x3 during LAST CALL), `advanceWeek()` (heat +3/week, then a 2-week Seal Order, then `midnight`),
+  `callOff()` (once, -20 board confidence). `runSealOrder(clients)` (distance, sieges, high leverage -> late/lost;
+  helicopters cut distance risk). `GRADES` / `gradeFor` (Platinum 90%+ which also needs an engineered Midnight, no collapses and heat under 75; Gold
+  75%; Silver 50%; Bronze 25%; The Gerald; -1 if uncontrolled). `Overtime`
+  (quota +30% a quarter, the 4 unused tracks open one per quarter).
+- `computeMidnight({ ..., apocalypse, pickups })` applies Seal Order outcomes (lost = nobody arrives, late = 75% get in)
+  and, for life-systems shelters (rooms with floors), the apocalypse's Days Sealed and critical ratings; it returns `grade`.
+- `engineered-ui.js`: planner, LAST CALL / SEAL ORDER banner, Seal Order board, Overtime offer.
+- In `demo/midnight-demo.html`: ENGINEER MIDNIGHT (unlocks at Q10 / Q11, or `?unlock`), +1 WEEK, and the Overtime offer
+  at the end of Q12.
