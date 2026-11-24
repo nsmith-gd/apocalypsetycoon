@@ -57,3 +57,5 @@
 
 
 @media (max-width: 600px) { .sg-depth { display: none; } }
+.sg-handover { margin-top: 4px; font: 900 11px var(--at-font); padding: 5px; color: var(--at-paper-ink); background: var(--at-green); border: 2px solid var(--at-border); cursor: pointer; }
+.sg-handover:disabled { background: var(--at-panel-2); color: var(--at-dim); cursor: default; }

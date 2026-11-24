@@ -37,7 +37,7 @@ function roomTag(id, def) {
   return { text: `${best.toUpperCase()} +${s[best] ?? 0}`, cls: best };
 }
 
-export function createGridUI({ mount, grid, getFrame = () => 0, onToast = null }) {
+export function createGridUI({ mount, grid, getFrame = () => 0, onToast = null, onHandOver = null }) {
   const wrap = el('div', 'sg');
 
   // ---------- palette ----------
@@ -217,6 +217,15 @@ export function createGridUI({ mount, grid, getFrame = () => 0, onToast = null }
 
   // ---------- stat sheet ----------
   const sheet = el('aside', 'sg-sheet');
+  const handBtn = el('button', 'sg-handover', 'HAND OVER FOR SALE');
+  handBtn.type = 'button';
+  handBtn.onclick = () => {
+    const r = grid.handOver(`Shelter #${(grid.handedOver ?? 0) + 1}`);
+    if (!r.ok) return say(r.reason);
+    onHandOver?.(r.shelter);
+    say(`${r.shelter.name} is ready to sell on the WORLD MAP.`);
+    render();
+  };
   function renderSheet() {
     const s = grid.stats();
     const bar = (label, key, icon) => {
@@ -248,8 +257,11 @@ export function createGridUI({ mount, grid, getFrame = () => 0, onToast = null }
       col(prestige, el('div', 'sg-line', `Rooms ${s.rooms} · lux ${s.luxury} · survival ${s.survival}`), el('div', 'sg-line', `Invested ${k(s.invested)}`)),
       col(el('div', 'sg-crew', `${s.crews} SHOVEL CREW${s.crews === 1 ? '' : 'S'}`),
         el('div', 'sg-line', job ? `Building ${jobName} ${Math.round((job.progress / job.need) * 100)}%` : 'Idle. Order a room.'),
-        el('div', 'sg-line', `${s.underConstruction} job${s.underConstruction === 1 ? '' : 's'} queued`)),
+        el('div', 'sg-line', `${s.underConstruction} job${s.underConstruction === 1 ? '' : 's'} queued`),
+        ...(onHandOver ? [handBtn] : [])),
     );
+    handBtn.disabled = !s.rooms || s.underConstruction > 0;
+    handBtn.title = handBtn.disabled ? 'Finish building first' : 'Put this shelter up for sale on the WORLD MAP and start a new site';
   }
 
   wrap.append(pal, centre, sheet);

@@ -18,7 +18,12 @@ import { computeMidnight } from '../midnight/midnight.js';
 import { showMidnight, showClockStrike } from '../midnight/midnight-ui.js';
 import { ShelterGrid } from '../shelter/grid.js';
 import { createGridUI } from '../shelter/grid-ui.js';
-import { drawWorldMap, MAP_REGIONS, MAP_W, MAP_H } from '../art/worldmap.js';
+import { CrisisSystem } from '../crisis/breach.js';
+import { createContainmentUI } from '../crisis/breach-ui.js';
+import { LeadMarket, attachCrisis } from '../demand/demand.js';
+import { SchemeBoard } from '../schemes/schemes.js';
+import { MapSales } from '../worldmap/sales.js';
+import { createWorldMapScreen } from '../worldmap/worldmap-ui.js';
 import { CampaignClock, SPEEDS, formatClock, QUARTER_SECONDS } from './clock.js';
 import { createSaveSlot, ledgerSaveable, pushbackSaveable, doomClockSaveable } from './save.js';
 
@@ -89,9 +94,7 @@ function startCampaign({ resume }) {
   app.replaceChildren();
   const root = el('div', 'gs');
   const gridView = el('main', 'stage');
-  const mapView = el('main', 'stage');
-  const mapCanvas = el('canvas'); mapCanvas.width = MAP_W; mapCanvas.height = MAP_H;
-  mapView.append(mapCanvas, el('div', 'cap', 'WORLD MAP · where crises sell bunkers'));
+  const mapView = el('main', 'stage-map');
   root.append(gridView, mapView);
   app.append(root);
 
@@ -122,15 +125,35 @@ function startCampaign({ resume }) {
   // The shelter grid: your HQ shelter. Board budget freezes raise build costs; research adds crews and rooms.
   let frame = 0;
   const grid = new ShelterGrid({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: () => tree.crewCount, isUnlocked: (id) => tree.isUnlocked(id) });
-  const gridUI = createGridUI({ mount: gridView, grid, getFrame: () => frame });
+  const gridUI = createGridUI({ mount: gridView, grid, getFrame: () => frame, onHandOver: (sh) => { mapSales.addFinished(sh); mapScreen.refresh(); } });
   slot.register('grid', grid);
-  tree.onUnlock?.(() => gridUI.refresh());
+
+  // ---------- the world: crisis tracks, weekly leads, schemes and map sales ----------
+  const worldSeed = Number(params.get('seed') ?? 11);
+  const crisis = new CrisisSystem({ seed: worldSeed, pushback: pb, doomClock: doom, ledger, shelters: () => mapSales.sheltersForMidnight() });
+  const START_TENSION = { pandemic: 30, climate: 22, unrest: 18, markets: 26, war: 10 };
+  for (const [id, v] of Object.entries(START_TENSION)) crisis.setTension(id, v);
+  const tensions = () => Object.fromEntries(Object.values(crisis.tracks).map((t) => [t.id, t.tension]));
+  const market = new LeadMarket({ seed: worldSeed + 1, reputation: () => crisis.reputation });
+  market.ownSite('nam'); // HQ
+  market.week({ tensions: Object.fromEntries(Object.entries(START_TENSION).map(([k, v]) => [k, Math.round(v / 2)])) });
+  market.week({ tensions: tensions() });
+  attachCrisis(market, crisis); // a market week runs after every crisis week
+  const schemes = new SchemeBoard({ crisis, market, ledger, pushback: pb, isUnlocked: (id) => tree.isUnlocked(id) });
+  const mapSales = new MapSales({ market, ledger, pushback: pb, getTensions: tensions, getBreachMultiplier: () => crisis.panicMultiplier,
+    getEdgeBonus: (id) => schemes.edgeBonus(id), getQuarter: () => clock.quarter });
+  const mapScreen = createWorldMapScreen({ root: mapView, sales: mapSales, schemes, initial: 'nam', onScheme: () => ui.update(hudState()), onSold: () => ui.update(hudState()) });
+  createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => crisis.advanceWeek() });
+  crisis.on('week', () => mapScreen.refresh());
+  slot.register('sales', mapSales);
+  const WEEK_SECONDS = clock.quarterSeconds / 13; // 13 in-game weeks a quarter
+  let weekAcc = 0;
+  tree.onUnlock?.(() => { gridUI.refresh(); mapScreen.refresh(); });
   if (resume) slot.load(); else slot.clear();
   ledger.setQuarter(clock.quarter);
 
   // Midnight grades the HQ grid alongside every shelter sold (sold ones join this list from the map/clients).
-  const soldShelters = [];
-  const shelters = () => [grid.toShelter(), ...soldShelters];
+  const shelters = () => [...(grid.built.length ? [grid.toShelter()] : []), ...mapSales.sheltersForMidnight()];
 
   const hudState = () => ({ quarter: clock.quarter, totalQuarters: clock.totalQuarters, heat: pb.heat, tension: pb.tension,
     boardTarget: pb.board.target, boardProgress: ledger.summary(clock.quarter).net, boardStrikes: pb.board.strikes });
@@ -174,16 +197,12 @@ function startCampaign({ resume }) {
   // ---------- views (placeholders) ----------
   function drawViews() {
     if (!gridView.hidden) gridUI.render();
-    const crisis = Object.fromEntries(MAP_REGIONS.map((r, i) => [r.id, Math.max(0, Math.min(100, pb.tension + (i - 2) * 8))]));
-    drawWorldMap(mapCanvas.getContext('2d'), { crisis, frame });
   }
   const fit = () => {
     const hudH = root.querySelector('.hud')?.offsetHeight ?? 150;
     const sideW = innerWidth >= 1100 ? 540 : 40; // the pressure and client panels sit on both sides
     // On narrow screens the page scrolls, so size the grid by width only.
     gridUI.fit(innerWidth < 600 ? innerWidth - 40 : Math.min(innerWidth - sideW, 740) - 60, innerWidth < 700 ? Infinity : innerHeight - hudH - gridUI.chromeHeight() - (root.querySelector('.cb')?.offsetHeight ?? 44) - 20);
-    const scale = Math.max(1, Math.floor(Math.min((innerWidth - sideW) / mapCanvas.width, (innerHeight - hudH - 90) / mapCanvas.height)));
-    mapCanvas.style.width = `${mapCanvas.width * scale}px`;
   };
   fit();
   requestAnimationFrame(fit);
@@ -229,7 +248,7 @@ function startCampaign({ resume }) {
   ledger.onChange(() => { ui.update(hudState()); gauge.render(); });
 
   // Modals hold the clock: quarter report and choice cards pause time.
-  const modalOpen = () => !!document.querySelector('.report-overlay:not([hidden]), .pb-overlay, .mn-overlay, .mn-strike');
+  const modalOpen = () => !!document.querySelector('.report-overlay:not([hidden]), .br-overlay:not([hidden]), .pb-overlay, .mn-overlay, .mn-strike');
 
   // ---------- keys ----------
   const onKey = (e) => {
@@ -249,7 +268,13 @@ function startCampaign({ resume }) {
     const dt = Math.min(0.25, (now - last) / 1000);
     last = now;
     if (modalOpen()) clock.hold('modal'); else clock.release('modal');
-    if (clock.running) { tree.tick(dt * clock.speed, pb.tension); grid.tick(dt * clock.speed); }
+    if (clock.running) {
+      const g = dt * clock.speed;
+      tree.tick(g, pb.tension);
+      grid.tick(g);
+      weekAcc += g;
+      while (weekAcc >= WEEK_SECONDS) { weekAcc -= WEEK_SECONDS; crisis.advanceWeek(); }
+    }
     clock.tick(dt);
     acc += dt;
     if (acc > 0.25) { acc = 0; frame++; drawViews(); }
@@ -280,7 +305,7 @@ function startCampaign({ resume }) {
   }
 
   session = {
-    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, soldShelters, slot,
+    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, crisis, market, schemes, mapSales, mapScreen, slot,
     destroy() {
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);

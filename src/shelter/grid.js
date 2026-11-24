@@ -149,6 +149,21 @@ export class ShelterGrid {
     return done;
   }
 
+  /**
+   * Hand the finished shelter over for sale: returns { name, rooms, occupants } and clears the
+   * site for the next build. Refused while the crew is still working or nothing is built.
+   */
+  handOver(name = 'Shelter') {
+    if (this.queue.length) return { ok: false, reason: 'The crew is still working' };
+    if (!this.built.length) return { ok: false, reason: 'Build some rooms first' };
+    const shelter = { name, rooms: this.built.map((r) => r.id), occupants: this.occupants };
+    this.cells.clear();
+    this.dug.clear();
+    this.handedOver = (this.handedOver ?? 0) + 1;
+    this.emit({ type: 'handover', shelter });
+    return { ok: true, shelter };
+  }
+
   // ---------- results ----------
   get occupants() {
     return this.cfg.baseOccupants + this.built.filter((r) => r.id === 'bunk').length * this.cfg.bedsPerBunk;
@@ -193,12 +208,13 @@ export class ShelterGrid {
   emit(e) { for (const fn of this.listeners) fn(e, this); }
 
   toJSON() {
-    return { v: 1, cells: this.rooms.map((c) => ({ ...c })), dug: [...this.dug], order: this._order ?? 0 };
+    return { v: 1, cells: this.rooms.map((c) => ({ ...c })), dug: [...this.dug], order: this._order ?? 0, handedOver: this.handedOver ?? 0 };
   }
   load(d) {
     this.cells = new Map((d.cells ?? []).map((c) => [this.key(c.col, c.row), { ...c }]));
     this.dug = new Set(d.dug ?? []);
     this._order = d.order ?? this.cells.size;
+    this.handedOver = d.handedOver ?? 0;
     this.emit({ type: 'load' });
   }
 }
