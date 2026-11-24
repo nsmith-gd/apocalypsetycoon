@@ -28,8 +28,14 @@
 //   rebuffed      the guest says no                            small reputation loss if you were pushy
 //   backfire      the guest sees through you                   no lead, reputation and heat, slips land
 //
-//   const result = resolveOutcome({ ending, guest, effects, context: { journalistPresent }, rng });
+// THE WORLD (#57)  context.world = worldState({ crisis, schemes }) (src/dialogue/world-state.js)
+//   A guest whose fear is boiling over starts with more trust and gives a better lead; if the player's
+//   schemes fed that fear just before, suspicion costs trust and makes every slip likelier.
+//
+//   const result = resolveOutcome({ ending, guest, effects, context: { journalistPresent, world }, rng });
 //   const { lead } = applyOutcome(result, { leads, pushback, press, guest, venueId });
+
+import { crisisPitch } from './world-state.js';
 
 export const OUTCOME_RULES = Object.freeze({
   startTrust: 30, // a stranger at a party
@@ -134,16 +140,18 @@ export function slipChance(score, { journalistPresent = false } = {}, rules = OU
 export function resolveOutcome({ ending, guest = {}, effects = [], score = null, context = {}, rng = Math.random, rules = OUTCOME_RULES } = {}) {
   const E = ENDINGS[ending];
   if (!E) throw new Error(`Unknown dialogue ending "${ending}"`);
-  const s = score ?? scoreConversation(guest, effects, rules);
+  const pitch = context.world ? crisisPitch(guest, context.world) : null;
+  const startTrust = (guest.trust ?? rules.startTrust) + (pitch ? pitch.trustBonus - pitch.trustPenalty : 0);
+  const s = score ?? scoreConversation({ ...guest, trust: startTrust }, effects, rules);
   const present = !!context.journalistPresent;
   const out = {
     ending, label: E.label, win: E.win, guest: { id: guest.id ?? null, name: guest.name ?? 'A guest' },
-    score: s, lead: null, heat: 0, reputation: 0, leverage: 0, slips: [], complained: false, lines: [],
+    score: s, crisis: pitch, lead: null, heat: 0, reputation: 0, leverage: 0, slips: [], complained: false, lines: [],
   };
 
   if (E.win) {
     const L = E.lead;
-    const interest = clamp(Math.round(L.base + L.trust * s.trust + L.fear * s.fearPlay + L.trait * s.traitPlay), 1, 100);
+    const interest = clamp(Math.round(L.base + L.trust * s.trust + L.fear * s.fearPlay + L.trait * s.traitPlay + (pitch?.interestBonus ?? 0)), 1, 100);
     out.leverage = (E.leverage ?? 0) + rules.aggressionLeverage * s.aggression + rules.promiseLeverage * s.promises.length;
     out.lead = { interest, traits: [...s.learned], note: E.label, leverage: out.leverage, promises: [...s.promises] };
     out.lines.push(`${E.label}: ${out.guest.name} is ${interest >= 75 ? 'hot' : interest >= 40 ? 'warm' : 'lukewarm'} (interest ${interest}).`);
@@ -160,9 +168,10 @@ export function resolveOutcome({ ending, guest = {}, effects = [], score = null,
     if (rng() < chance) { out.complained = true; out.reputation += E.complain.reputation; out.lines.push(`${out.guest.name} complains to the room about the hard sell.`); }
   }
 
+  if (pitch) out.lines.push(...pitch.lines);
   // Slips: each one rolls; forced endings add one that always rolls.
   const slipRolls = s.slips + (E.forceSlip ? 1 : 0);
-  const chance = slipChance(s, context, rules);
+  const chance = Math.min(rules.slip.max, slipChance(s, context, rules) + (pitch?.slipBonus ?? 0));
   for (let i = 0; i < slipRolls; i++) {
     if (rng() >= chance) continue;
     const S = rules.slip;
