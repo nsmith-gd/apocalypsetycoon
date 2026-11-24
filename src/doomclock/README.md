@@ -10,8 +10,10 @@
   - `snapshot()`, `toJSON()` / `DoomClock.fromJSON()`.
   - `attachPushback(clock, pushback)`: until #4's tracks land, pushback's world tension is one track and each runaway
     counts as a Brink plus a contained breach (replaces pushback's old `doomsdayShift` counter).
-- `doomclock-hud.js` + `doomclock.css`: the DOOM CLOCK box on the HUD (pixel face, red wedge for time lost to the
-  floor, minutes and floor, FINAL COUNTDOWN in weeks).
+- `doomclock-hud.js` + `doomclock.css`: the DOOM CLOCK in the centre of the top bar (#71): a crown strip at the top of the
+  HUD holds the pixel face (red wedge = time lost to the floor), time, minutes and floor, a 15-to-0 minutes track with the
+  floor wedge and a pin for now, and a FINAL COUNTDOWN box in weeks. `center: false` gives the old inline chip.
+  The campaign advances the clock one week at a time from the campaign clock (13 a quarter), so the countdown ticks weekly.
 - Uncontrolled Midnight: pass `forceType: 'failed', cause` to `computeMidnight` (src/midnight).
 - Demos: `demo/doom-clock-demo.html` (five stand-in tracks, AUTO-PLAY watches it tick to Midnight) and the
   Midnight demo's campaign (chapters at Q4, Q7, Q10; 13 weeks per quarter).
