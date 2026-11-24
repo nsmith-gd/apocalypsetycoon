@@ -26,7 +26,7 @@ import { CrisisSystem } from '../crisis/breach.js';
 import { CrisisConsequences } from '../crisis/consequences.js';
 import { createContainmentUI } from '../crisis/breach-ui.js';
 import { LeadMarket, attachCrisis } from '../demand/demand.js';
-import { SchemeBoard } from '../schemes/schemes.js';
+import { SchemeBoard, researchCrisis } from '../schemes/schemes.js';
 import { MapSales } from '../worldmap/sales.js';
 import { createWorldMapScreen } from '../worldmap/worldmap-ui.js';
 import { TRACK_BY_ID, CLASSIC_ROSTER, rosterLinks, rosterPicksFromParams, slotOf, resolveTrack } from '../world/tracks.js';
@@ -220,7 +220,8 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
       zone: { bullish: 'content', steady: 'content', scrutiny: 'displeased', probation: 'last-chance', ousted: 'ousted' }[board.state.id],
       label: `Revenue quota · confidence ${Math.round(board.average)} ${board.state.label}` }),
     onRelief: (r) => r && pbui.tick(`${r.kind === 'layLow' ? 'Laid low' : 'Funded relief'}: -$${Math.round(r.cost / 1000)}K`, 'ok') });
-  const research = createResearchPanel({ root, tree, getCrisis: () => pb.tension, mode: 'weekly' });
+  // Research reads the crisis tracks (#90): each track rescaled so it peaks just below its own tipping point.
+  const research = createResearchPanel({ root, tree, getCrisis: () => (pb.crisis ? researchCrisis(pb.crisis) : 0), mode: 'weekly' });
   root.querySelector('.hud')?.insertBefore(research.chip, root.querySelector('.view-toggle'));
   const audio = createAudio();
   wireAudio(audio, { ledger, pushback: pb });
@@ -263,6 +264,9 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     spendRp: (rp) => (tree.pool >= rp ? ((tree.pool -= rp), true) : false), // ...and costs 40 RP a breach week
     config: diff.crisis, // tipping-point range and Brink drift by difficulty (#92)
   });
+  // One tension model (#90): pushback's world meter is retired; its tension is the hottest crisis track, its
+  // runaways are collapsed tracks, and the HUD, audio, quarter report and Midnight all read that.
+  pb.useCrisis(crisis);
   crisis.on('week', () => pb.weekTick()); // heat cools weekly by difficulty (#92)
   const tensions = () => Object.fromEntries(Object.values(crisis.tracks).map((t) => [t.id, t.tension]));
   const market = new LeadMarket({ seed: worldSeed + 1, reputation: () => crisis.reputation });
