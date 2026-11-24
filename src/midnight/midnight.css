@@ -70,3 +70,42 @@ tr[data-outcome='lost'] .mn-name { text-decoration: line-through; opacity: 0.7; 
 .mn-strike-tolls { font-size: 28px; font-weight: 900; color: var(--at-gold); letter-spacing: 8px; min-height: 40px; }
 .mn-strike-final .mn-strike-time { color: #fff; animation: mn-flash 0.6s steps(3) forwards; }
 @keyframes mn-flash { 50% { transform: scale(1.15); color: var(--at-red); } }
+
+/* ---------- Engineered Midnight ---------- */
+.em-overlay { position: fixed; inset: 0; z-index: 160; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(12, 8, 24, 0.8); }
+.em-card { width: min(620px, 100%); max-height: calc(100vh - 32px); overflow: auto; font-family: var(--at-font); color: var(--at-ink); background: var(--at-panel); border: 4px solid #c8a8ff; box-shadow: inset 3px 3px 0 var(--at-hi), 8px 8px 0 rgba(0,0,0,.5); padding: 14px; animation: at-slide .25s steps(5); }
+.em-kicker { font-size: 10px; letter-spacing: 3px; color: #c8a8ff; text-align: center; }
+.em-title { font-size: 20px; font-weight: 900; letter-spacing: 2px; color: var(--at-gold); text-align: center; margin-bottom: 8px; }
+.em-label { font-size: 10px; letter-spacing: 2px; color: var(--at-dim); margin: 10px 0 4px; }
+.em-label b { color: var(--at-gold); font-size: 13px; }
+.em-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.em-opt { font-family: var(--at-font); font-size: 11px; font-weight: 700; padding: 6px 8px; color: var(--at-ink); background: var(--at-panel-2); border: 2px solid var(--at-border); cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; }
+.em-opt small { font-size: 9px; color: var(--at-dim); font-weight: 400; }
+.em-opt.on { border-color: #c8a8ff; color: #c8a8ff; }
+.em-opt:disabled { opacity: .35; cursor: default; }
+.em-range { width: 100%; accent-color: #c8a8ff; }
+.em-req { font-size: 11px; line-height: 1.6; background: var(--at-border); padding: 8px; margin-top: 10px; color: var(--at-dim); }
+.em-req b { color: var(--at-ink); }
+.em-err { color: var(--at-red); font-size: 11px; min-height: 14px; margin-top: 6px; }
+.em-actions { justify-content: flex-end; margin-top: 10px; }
+.em-go, .em-cancel, .em-calloff { font-family: var(--at-font); font-weight: 900; font-size: 12px; padding: 9px 12px; cursor: pointer; border: 3px solid var(--at-border); }
+.em-go { background: #c8a8ff; color: var(--at-paper-ink); }
+.em-cancel { background: var(--at-panel-2); color: var(--at-ink); }
+.em-banner { position: fixed; left: 50%; transform: translateX(-50%); top: 6px; z-index: 70; font-family: var(--at-font); font-size: 12px; color: var(--at-ink); background: #2a1440; border: 3px solid #c8a8ff; padding: 6px 10px; display: flex; gap: 8px; align-items: center; white-space: nowrap; box-shadow: 4px 4px 0 rgba(0,0,0,.5); }
+.em-banner[hidden] { display: none; }
+.em-banner b { color: #c8a8ff; }
+.em-banner[data-phase='seal_order'] { background: #401410; border-color: var(--at-red); }
+.em-banner[data-phase='seal_order'] b { color: var(--at-red); }
+.em-calloff { font-size: 10px; padding: 4px 6px; background: var(--at-panel-2); color: var(--at-amber); }
+.em-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.em-table th { font-size: 10px; color: var(--at-dim); text-align: left; padding: 4px; border-bottom: 2px solid var(--at-border); }
+.em-table td { padding: 4px; border-bottom: 1px solid var(--at-panel-2); }
+.em-table tr { animation: at-slide .3s steps(4) both; }
+.em-table small { color: var(--at-dim); }
+.em-table tr[data-o='on_time'] .em-out { color: var(--at-green); font-weight: 900; }
+.em-table tr[data-o='late'] .em-out { color: var(--at-amber); font-weight: 900; }
+.em-table tr[data-o='lost'] .em-out { color: var(--at-red); font-weight: 900; }
+.mn-grade { display: inline-block; margin: 2px auto 10px; padding: 4px 14px; font-size: 16px; font-weight: 900; letter-spacing: 3px; border: 3px solid currentColor; transform: rotate(-2deg); }
+.mn-grade[data-grade='platinum'] { color: #e8f4ff; } .mn-grade[data-grade='gold'] { color: var(--at-gold); }
+.mn-grade[data-grade='silver'] { color: #c8c8d8; } .mn-grade[data-grade='bronze'] { color: #d8904a; }
+.mn-grade[data-grade='tin'] { color: #8a8a8a; } .mn-grade[data-grade='gerald'] { color: var(--at-red); }

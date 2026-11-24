@@ -109,6 +109,8 @@ export function showMidnight({ root = document.body, result, onRestart } = {}) {
   );
   const title = el('h1', 'mn-title', result.ending.title);
   const line = el('p', 'mn-line', result.ending.line);
+  const gradeEl = result.grade ? el('div', 'mn-grade', `GRADE: ${result.grade.name.toUpperCase()}${result.type === 'failed' ? ' (UNCONTROLLED, -1)' : ''}`) : null;
+  if (gradeEl) gradeEl.dataset.grade = result.grade.id;
 
   // grade tiles
   const tiles = el('div', 'mn-tiles');
@@ -160,6 +162,10 @@ export function showMidnight({ root = document.body, result, onRestart } = {}) {
   fact(`Shelters: ${result.outcomes.survived} held, ${result.outcomes.rationing} rationing, ${result.outcomes.lost} lost.`);
   if (result.wasted) fact(`${result.wasted} shelter${result.wasted === 1 ? '' : 's'} full of luxury still fell short. Midnight does not grade gold taps.`);
   fact(`World at Midnight: tension ${Math.round(result.world.tension)}, heat ${Math.round(result.world.heat)}.`);
+  if (result.apocalypse) fact(`The apocalypse: ${result.apocalypse.name}. Shelters needed ${result.apocalypse.days} days sealed.`);
+  const pickups = result.shelters.filter((s) => s.pickup && s.pickup !== 'on_time');
+  if (pickups.length) fact(`Seal Order: ${pickups.filter((s) => s.pickup === 'late').length} client parties arrived late, ${pickups.filter((s) => s.pickup === 'lost').length} never arrived.`);
+  if (result.payout) fact(`Engineering fee: ${money(result.payout)} (${result.grade.name} grade).`);
   fact(`Last Resort Holdings closes the books on ${money(result.cash)}.`);
 
   const actions = el('div', 'mn-actions');
@@ -167,7 +173,7 @@ export function showMidnight({ root = document.body, result, onRestart } = {}) {
   again.type = 'button';
   actions.append(again);
 
-  screen.append(clock, canvas, kind, kindWhy, title, line, tiles, tableWrap, facts, actions);
+  screen.append(clock, canvas, kind, kindWhy, title, ...(gradeEl ? [gradeEl] : []), line, tiles, tableWrap, facts, actions);
   overlay.append(screen);
   root.append(overlay);
 

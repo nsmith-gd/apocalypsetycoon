@@ -16,6 +16,9 @@
 //   const result = computeMidnight({ shelters, world: { tension, heat, runaways }, cash });
 //   result.ending  -> { id, title, line }
 
+import { simulate as simulateLife, survival as lifeSurvival } from '../shelter/life.js';
+import { gradeFor } from './engineered.js';
+
 /** What each room contributes at Midnight. Supplies are in "occupants kept alive". */
 export const ROOM_STATS = Object.freeze({
   bunk: { air: 0, water: 0, food: 0, prestige: 0 },
@@ -140,12 +143,29 @@ const ENDINGS = {
  * @param world     { tension, heat, runaways } at Midnight (Pushback has all three)
  * @param cash      final cash, shown in the breakdown
  */
-export function computeMidnight({ shelters = [], world = {}, cash = 0, cfg = MIDNIGHT_CONFIG, roomStats = ROOM_STATS, forceType = null, cause = null } = {}) {
+export function computeMidnight({ shelters = [], world = {}, cash = 0, cfg = MIDNIGHT_CONFIG, roomStats = ROOM_STATS, forceType = null, cause = null, apocalypse = null, pickups = null } = {}) {
   const control = controlScore(world, cfg);
   // forceType: 'failed' when the Doom Clock hit zero or the Final Countdown ran out (uncontrolled Midnight).
   const type = forceType ?? (control >= cfg.engineeredAt ? 'engineered' : 'failed');
   const needMultiplier = type === 'failed' ? cfg.failedNeedMultiplier : 1;
-  const graded = shelters.map((s) => gradeShelter(s, { needMultiplier, roomStats }));
+  const graded = shelters.map((s) => {
+    const g = gradeShelter(s, { needMultiplier, roomStats });
+    // Shelters built on the life-systems grid (rooms with floors) are judged against the apocalypse's
+    // required Days Sealed and critical ratings: survivors = occupants x P(survive).
+    if (apocalypse && s.rooms?.length && s.rooms[0].floor != null) {
+      const sim = simulateLife(s);
+      const sv = lifeSurvival(sim, { days: Math.round(apocalypse.days * needMultiplier), ...apocalypse.critical });
+      g.survivors = Math.round(g.occupants * sv.p);
+      g.outcome = g.survivors === g.occupants ? 'survived' : g.survivors === 0 ? 'lost' : 'rationing';
+      g.life = { daysSealed: sim.daysSealed, ratings: sim.ratings, p: sv.p };
+    }
+    // Seal Order: clients who never arrived, or arrived late.
+    const pick = pickups?.[s.id] ?? (s.owner ? pickups?.[s.owner] : null);
+    if (pick === 'lost') { g.survivors = 0; g.outcome = 'lost'; g.pickup = 'lost'; }
+    else if (pick === 'late') { g.survivors = Math.round(g.survivors * 0.75); g.outcome = g.survivors === g.occupants ? 'survived' : g.survivors ? 'rationing' : 'lost'; g.pickup = 'late'; }
+    else if (pick) g.pickup = pick;
+    return g;
+  });
 
   const totals = { occupants: 0, survivors: 0, prestige: 0, supply: { air: 0, water: 0, food: 0 }, need: 0 };
   for (const g of graded) {
@@ -188,6 +208,8 @@ export function computeMidnight({ shelters = [], world = {}, cash = 0, cfg = MID
     wasted,
     cash,
     cause, // e.g. 'The Doom Clock struck zero.' when Midnight came uncontrolled
+    apocalypse,
+    grade: gradeFor(survivalRate, { uncontrolled: type === 'failed' }),
     ending: { ...ending, type },
   };
 }
