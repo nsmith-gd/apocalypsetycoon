@@ -52,22 +52,27 @@ export function createContainmentUI({ root = document.body, crisis, onAdvanceWee
     fill.style.width = `${w.bar}%`;
     barWrap.append(fill, el('span', 'br-bartext', `CONTAINMENT ${w.bar} / 100`));
     const srcs = el('div', 'br-sources');
+    const pending = [...(w.pending ?? []).map((p) => `${p.label}: +${p.points} lands in ${p.weeksLeft} week${p.weeksLeft === 1 ? '' : 's'}`),
+      ...(w.research ? [`Crash research: +${w.research.points} every breach week${w.research.rp ? ` (${w.research.rp} RP a week)` : ''}`] : [])];
     for (const key of Object.keys(crisis.cfg.sources)) {
       const offer = crisis.sourceOffer(t.id, key);
-      const s = crisis.cfg.sources[key];
+      if (!offer) continue;
       const b = el('button', 'br-src');
       b.dataset.source = key;
       const cost = [];
-      if (offer?.cash) cost.push(money(offer.cash));
-      if (s.heat) cost.push(`heat +${s.heat}`);
-      if (s.boardConfidence) cost.push(`board ${s.boardConfidence}`);
-      if (s.blocksResearch) cost.push('research paused');
-      if (key === 'calming') cost.push('relief scheme');
-      b.innerHTML = `<b>${s.label}</b><span>+${s.points}${offer && offer.usesLeft > 1 ? ` · ${offer.usesLeft} left` : ''}</span><small>${offer ? cost.join(' · ') || 'free' : 'used'}</small>`;
-      b.disabled = !offer;
+      if (offer.cash) cost.push(money(offer.cash));
+      if (offer.rpPerWeek) cost.push(`${offer.rpPerWeek} RP/week`);
+      if (offer.heat) cost.push(`heat ${offer.heat > 0 ? '+' : ''}${offer.heat}`);
+      if (offer.boardConfidence) cost.push(`board ${offer.boardConfidence}`);
+      if (offer.blocksResearch) cost.push('research paused');
+      const pts = offer.weeks ? `+${offer.points} in ${offer.weeks} weeks` : offer.perWeek ? `+${offer.points} a week` : `+${offer.points}`;
+      const left = Number.isFinite(offer.usesLeft) && offer.usesLeft > 1 ? ` · ${offer.usesLeft} left` : '';
+      b.innerHTML = `<b>${offer.label}</b><span>${pts}${left}</span><small>${offer.available ? cost.join(' · ') || 'free' : offer.reason}</small>`;
+      b.disabled = !offer.available;
       b.onclick = () => { crisis.contribute(t.id, key); render(); };
       srcs.append(b);
     }
+    if (pending.length) srcs.append(el('div', 'br-weektext', `Under way: ${pending.join(' · ')}`));
     const foot = el('div', 'br-foot');
     const tip = el('div', 'br-stakes', 'Contain it: tension drops to 60 for 3 weeks, the tipping point is revealed (and scarred 3 lower). Fail: the track collapses at 100 and shoves every linked crisis.');
     const adv = el('button', 'br-advance', 'ADVANCE 1 WEEK');

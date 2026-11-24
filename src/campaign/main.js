@@ -228,6 +228,8 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     construction: () => (grid.jobs.length ? [{ id: 'hq', name: grid.name, region: 'nam', delay: (d) => grid.delay(d) }] : []),
     tracks: roster.map((id) => ({ id, name: TRACK_BY_ID[id].name, open: false })),
     links: rosterLinks(roster).map((l) => [l.from, l.to, l.strength]),
+    rdLevel: () => company.level('rnd'), // crash research needs R&D level 2 (#64)
+    spendRp: (rp) => (tree.pool >= rp ? ((tree.pool -= rp), true) : false), // ...and costs 40 RP a breach week
   });
   const tensions = () => Object.fromEntries(Object.values(crisis.tracks).map((t) => [t.id, t.tension]));
   const market = new LeadMarket({ seed: worldSeed + 1, reputation: () => crisis.reputation });

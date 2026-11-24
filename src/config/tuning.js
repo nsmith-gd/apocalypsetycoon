@@ -93,13 +93,18 @@ export const BREACH = {
   recovery: { tension: 60, lockWeeks: 3 }, // (stand-in)
   collapseTension: 100,
   brinkMargin: 10, // (stand-in)
-  // The five containment sources (stand-ins; #64 brings the GDD values).
+  // The five containment sources (GDD: Crises and tipping points > Breach and containment).
   sources: {
-    op: { label: 'Containment op', points: 40, costPerBreach: 10_000_000, uses: 1 },
-    research: { label: 'Crash research program', points: 25, uses: 1, blocksResearch: true },
-    calming: { label: 'Calming scheme', points: 10, uses: 3 },
-    government: { label: 'Government partnership', points: 30, uses: 1, heat: 10 },
-    heroics: { label: 'Executive heroics', points: 15, uses: 1, boardConfidence: -5 },
+    // +40 when the op completes, 2 weeks after launch; $10M x the breach count; one per track at a time.
+    op: { label: 'Containment op', points: 40, weeks: 2, costPerBreach: 10_000_000, uses: Infinity },
+    // +15 every breach week while it runs, 40 RP a week; needs R&D level 2; pauses normal research.
+    research: { label: 'Crash research program', points: 15, perWeek: true, rpPerWeek: 40, requiresRD: 2, uses: 1, blocksResearch: true },
+    // Half the calming scheme's momentum (Everything Is Fine: momentum 8 -> +4), at the scheme's own cost and heat.
+    calming: { label: 'Calming scheme', momentumShare: 0.5, scheme: 'everythingfine', uses: 3 },
+    // +25 once per breach; needs reputation 50 or more; heat -5.
+    government: { label: 'Government partnership', points: 25, uses: 1, minReputation: 50, heat: -5 },
+    // +20 once per executive per campaign (Ruth, June or Theo; Theo's dirty fix also costs heat +10).
+    heroics: { label: 'Executive heroics', points: 20, perExecutive: true, uses: Infinity, boardConfidence: -5 },
   },
 };
 
