@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map Crisis Check</title>
+<link rel="stylesheet" href="../src/ui/ui.css">
+<link rel="stylesheet" href="../src/worldmap/worldmap.css">
+<style>
+  html, body { margin: 0; background: #14110f; color: #f2e6c9; font-family: 'Courier New', monospace; }
+  #stage { width: 1280px; }
+  #out { padding: 12px 16px; font-size: 12px; }
+  #out table { border-collapse: collapse; }
+  #out td, #out th { border: 1px solid #4a3f33; padding: 3px 6px; text-align: left; }
+  #out td[data-ok='false'] { background: #6b1f1a; }
+  #out td[data-ok='true'] { background: #2f5a24; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="out">Running the crisis-state composition check...</div>
+<script type="module">
+// Crisis-state composition check (#104). Renders the real world-map screen with each region forced into each
+// crisis state (calm / uneasy / edge / tipping, plus selected) on a frozen animation frame, and measures how the
+// state art composes over the map layers. Re-run it when the redone map (base, borders, markers, heat) lands:
+//   demo/map-crisis-check.html            -> table here; window.__check holds the numbers
+//   node tools/map-crisis-check.cjs       -> screenshots + JSON into .ballast/media/t104/
+import { createWorldMapScreen, MAP_PLACES, regionAtCell } from '../src/worldmap/worldmap-ui.js';
+import { MAP_W, MAP_H, MAP_COLS, MAP_ROWS, CELL } from '../src/art/worldmap.js';
+import { REGIONS } from '../src/demand/demand.js';
+import { textWidth } from '../src/art/font.js';
+
+// Freeze time: the screen's draw loop only runs when we call it, so ocean and blink frames are fixed.
+let pending = null;
+window.requestAnimationFrame = (fn) => { pending = fn; return 1; };
+window.cancelAnimationFrame = () => { pending = null; };
+
+export const STATES = [
+  { id: 'calm', crisis: 10 },
+  { id: 'uneasy', crisis: 50 },
+  { id: 'edge', crisis: 80 },
+  { id: 'tipping', crisis: 95 },
+];
+
+function fakeSales(levels) {
+  const rows = REGIONS.map((r) => ({ id: r.id, name: r.name, crisis: levels[r.id] ?? 10, buyers: 2, leadsPerWeek: 1, panicPremium: 1, premium: 1, edgeBonus: 0, siteOwned: false, open: 2 }));
+  const noop = () => () => {};
+  return {
+    sold: [], stock: [], market: { on: noop, cfg: { rivalAfterWeeks: 4 }, weekNo: 0 },
+    overview: () => rows, region: (id) => REGIONS.find((r) => r.id === id),
+    regionView: (id) => ({ ...rows.find((r) => r.id === id), buyerList: [], best: null, quotes: [] }),
+    onChange: noop,
+  };
+}
+
+/** Render the map with these region crisis levels; returns ImageData of the 320x192 canvas. */
+function render(levels, { selected = null, frames = 1 } = {}) {
+  const root = document.getElementById('stage');
+  root.replaceChildren();
+  const screen = createWorldMapScreen({ root, sales: fakeSales(levels), initial: selected });
+  for (let i = 0; i < frames; i++) pending?.();
+  const img = screen.canvas.getContext('2d').getImageData(0, 0, MAP_W, MAP_H);
+  return { img, screen, canvas: screen.canvas };
+}
+
+const allAt = (crisis) => Object.fromEntries(REGIONS.map((r) => [r.id, crisis]));
+const px = (img, x, y) => { const i = (y * MAP_W + x) * 4; return [img.data[i], img.data[i + 1], img.data[i + 2]]; };
+const same = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+
+function labelBox(id) {
+  const p = MAP_PLACES[id];
+  const x = p.at[0] * CELL, y = p.at[1] * CELL;
+  // name + crisis number line above, buyer icon + count below (plus the 1px font outline)
+  return { x0: x - 2, y0: y - 9, x1: x + textWidth(p.short) + 4 + textWidth('100') + 2, y1: y + 10 };
+}
+const inBox = (b, x, y) => x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1;
+
+function checkState(id, state, base) {
+  const levels = { ...allAt(10), [id]: state.crisis };
+  const { img } = render(levels);
+  const box = labelBox(id);
+  let bleed = 0, inside = 0, changed = 0;
+  const cells = new Set();
+  const cellsHit = new Set();
+  for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
+    const c = Math.floor(x / CELL), r = Math.floor(y / CELL);
+    const mine = regionAtCell(c, r) === id;
+    if (mine) { inside++; if (!inBox(box, x, y)) cells.add(`${c},${r}`); } // cells hidden under the label/marker can't show it
+    if (same(px(img, x, y), px(base, x, y))) continue;
+    if (mine) { changed++; cellsHit.add(`${c},${r}`); }
+    else if (!inBox(box, x, y)) bleed++;
+  }
+  // label legibility: the crisis number sits over whatever is under the label line; sample that background
+  const ly = box.y0 + 3;
+  const bg = [];
+  for (let x = box.x0; x <= box.x1; x++) bg.push(px(base, Math.max(0, Math.min(MAP_W - 1, x)), Math.max(0, ly)));
+  const avg = [0, 1, 2].map((k) => Math.round(bg.reduce((s, p) => s + p[k], 0) / bg.length));
+  return { region: id, state: state.id, changedPct: Math.round((changed / inside) * 1000) / 10, bleedPx: bleed, cellsCovered: cellsHit.size, cells: cells.size, img, labelBg: avg };
+}
+
+const results = [];
+const base = render(allAt(10)).img;
+const sheets = {};
+for (const s of STATES) sheets[s.id] = render(allAt(s.crisis)).canvas.toDataURL();
+sheets.tipping_blink = render(allAt(95), { frames: 21 }).canvas.toDataURL(); // the tipping overlay's second frame
+// neighbours in different states, one selected: how the state edges meet each other and the outline
+sheets.mixed = render({ nam: 10, lat: 50, eur: 95, afr: 10, mea: 80, sas: 50, eas: 95, oce: 80 }, { selected: 'mea' }).canvas.toDataURL();
+for (const r of REGIONS) {
+  let prev = 0;
+  for (const s of STATES.slice(1)) {
+    const c = checkState(r.id, s, base);
+    const fails = [];
+    if (c.bleedPx > 0) fails.push(`${c.bleedPx}px drawn outside the region`);
+    if (c.cellsCovered < c.cells) fails.push(`${c.cells - c.cellsCovered} of ${c.cells} cells untouched`);
+    if (c.changedPct <= prev) fails.push(`not stronger than the state below (${c.changedPct}% vs ${prev}%)`);
+    if (c.changedPct < 2) fails.push(`barely visible (${c.changedPct}%)`);
+    prev = c.changedPct;
+    results.push({ region: r.id, name: r.name, state: s.id, pass: !fails.length, fails, changedPct: c.changedPct, bleedPx: c.bleedPx, cells: `${c.cellsCovered}/${c.cells}`, labelBg: c.labelBg });
+  }
+  // selected outline: drawn only on region edges and inside the region
+  const sel = render(allAt(10), { selected: r.id }).img;
+  let bleed = 0;
+  const box = labelBox(r.id);
+  for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
+    if (same(px(sel, x, y), px(base, x, y))) continue;
+    if (regionAtCell(Math.floor(x / CELL), Math.floor(y / CELL)) !== r.id && !inBox(box, x, y)) bleed++;
+  }
+  results.push({ region: r.id, name: r.name, state: 'selected', pass: bleed === 0, fails: bleed ? [`${bleed}px outside the region`] : [], bleedPx: bleed });
+}
+render(allAt(10)); // leave the screen on calm
+const passed = results.filter((x) => x.pass).length;
+document.getElementById('out').innerHTML = `<p>${passed} of ${results.length} checks pass.</p><table><tr><th>REGION</th><th>STATE</th><th>RESULT</th><th>FILLED</th><th>BLEED</th><th>WHY</th></tr>${results.map((x) => `<tr><td>${x.name}</td><td>${x.state}</td><td data-ok="${x.pass}">${x.pass ? 'PASS' : 'FAIL'}</td><td>${x.changedPct ?? ''}${x.changedPct != null ? '%' : ''}</td><td>${x.bleedPx}</td><td>${x.fails.join('; ')}</td></tr>`).join('')}</table>`;
+window.__check = { results, sheets, passed, total: results.length };
+</script>
+</body>
+</html>
