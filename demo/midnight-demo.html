@@ -46,6 +46,8 @@ import { ResearchTree } from '../src/research/research.js';
 import { PacingLog, PACING } from '../src/debug/pacing.js';
 import { SIM } from '../src/debug/sim.js';
 import { createDebugPanel } from '../src/debug/debug-panel.js';
+import { EngineeredMidnight, Overtime, PROJECTS, APOCALYPSES, runSealOrder } from '../src/midnight/engineered.js';
+import { openPlanner, createBanner, showSealOrder, offerOvertime } from '../src/midnight/engineered-ui.js';
 
 // Stand-in campaign so Midnight can be reached before the real grid, map and clock are wired in.
 const params = new URLSearchParams(location.search);
@@ -67,7 +69,11 @@ const audio = createAudio();
 wireAudio(audio, { ledger, pushback: pb });
 startOnFirstGesture(audio);
 root.querySelector('.view-toggle').append(createSoundToggle(audio));
-const state = { quarter: 1, totalQuarters: 12 };
+const state = { quarter: 1, totalQuarters: 12, week: 0 };
+// Engineered Midnight: the board's confidence (0-100) for the Final Product vote and the call-off.
+const board = { confidence: 60 };
+const em = new EngineeredMidnight({ pushback: pb, board, seed: Number(params.get('seed') ?? 7) });
+let overtime = null;
 
 // Your own HQ shelter (the grid you build) plus every shelter you sell.
 const hq = { id: 'hq', name: 'Last Resort HQ', owner: 'your board', occupants: 6, rooms: [], sold: false };
@@ -102,10 +108,10 @@ function build(id) {
 function sell(kind) {
   const p = PACKAGES[kind];
   const client = CLIENTS[(shelters.length - 1) % CLIENTS.length];
-  const price = Math.round(p.base * (1 + pb.tension / 60));
+  const price = Math.round(p.base * (1 + pb.tension / 60) * em.salesMultiplier); // LAST CALL: triple premium
   const s = { id: `s${shelters.length}`, name: `${p.label.split(' ')[0]} bunker #${shelters.length}`, owner: client, occupants: p.occupants, rooms: [...p.rooms], sold: true };
   shelters.push(s);
-  ledger.record('sales', `${p.label} sold to ${client}`, price);
+  ledger.record('sales', `${em.phase === 'last_call' ? 'LAST CALL: ' : ''}${p.label} sold to ${client}`, price);
   pb.onSale({ client, price });
 }
 function scheme(name, cost, heat, tension) {
@@ -139,10 +145,21 @@ pb.on('change', redraw);
 ledger.onChange(() => { ui.update(hudState()); gauge.render(); });
 
 // ---- Midnight ----
+let pickups = null;
 async function midnight(cause = null) {
   if (midnightStarted) return;
   midnightStarted = true;
-  const result = computeMidnight({ shelters, world: { tension: pb.tension, heat: pb.heat, runaways: pb.runaways }, cash: ledger.cash, ...(cause ? { forceType: 'failed', cause } : {}) });
+  const engineered = em.phase === 'midnight' && !cause;
+  const apocalypse = em.plan?.requirement ?? null;
+  const result = computeMidnight({
+    shelters, world: { tension: pb.tension, heat: pb.heat, runaways: pb.runaways }, cash: ledger.cash, apocalypse, pickups,
+    ...(cause ? { forceType: 'failed', cause } : engineered ? { forceType: 'engineered', cause: `${em.plan.projectName}: ${apocalypse.name}, on the date you chose.` } : {}),
+  });
+  if (engineered) {
+    result.payout = Math.round(em.plan.payout * result.grade.payout);
+    if (result.payout) ledger.record('other', `${em.plan.projectName} fee (${result.grade.name})`, result.payout);
+    result.cash = ledger.cash;
+  }
   window.__demo.result = result;
   // The stinger's clock ticks and twelve tolls play over a black clock face; the ending lands on the boom.
   const { tolls, boom } = midnightTimes();
@@ -150,6 +167,29 @@ async function midnight(cause = null) {
   await showClockStrike({ root: document.body, tolls: tolls.map((s) => s + 0.05), duration: boom + 0.05 });
   await showMidnight({ root: document.body, result, onRestart: () => location.reload() });
 }
+
+// One in-game week: the engineered countdown, the Seal Order, the Doom Clock.
+const DIST = [0, 1, 2, 3, 1, 2, 0, 3, 2, 1, 3, 2];
+async function advanceWeek() {
+  if (midnightStarted) return;
+  state.week += 1;
+  doom.advanceWeeks(1);
+  const phase = em.advanceWeek();
+  if (phase === 'seal_order' && !pickups) {
+    const clients = shelters.filter((x) => x.sold).map((x, i) => {
+      const c = pb.clients.find((k) => k.name === x.owner);
+      const distance = DIST[i % DIST.length];
+      return { id: x.id, name: x.owner, distance, siege: pb.tension >= 85 && distance >= 2, leverage: c?.leverage ?? 0 };
+    });
+    const res = runSealOrder(clients, { seed: Number(params.get('seed') ?? 7), helicopters: params.has('heli') });
+    pickups = Object.fromEntries(res.map((r) => [r.id, r.outcome]));
+    window.__demo.sealOrder = res;
+    await showSealOrder({ root: document.body, results: res });
+  }
+  if (phase === 'midnight') return midnight();
+  redraw();
+}
+const engineerAvailable = (id) => params.has('unlock') || state.quarter >= (id === 'lights_out' ? 10 : 11); // 4:50 and 5:30 on the pacing timeline
 
 // Research and the pacing log (the debug panel, [`] key, reads the log and can auto-play with a bot).
 const tree = new ResearchTree();
@@ -168,9 +208,22 @@ async function endQuarter() {
   await ui.showQuarterReport({ quarter: q, board: r.board, heat: pb.heat, tension: pb.tension, notes: r.lines.slice(1) });
   await pbui.drain();
   if (pb.board.ousted) return;
-  if (q >= state.totalQuarters) return midnight();
+  if (q >= state.totalQuarters) {
+    if (em.phase === 'last_call' || em.phase === 'seal_order') { state.totalQuarters += 1; } // the date you set comes first
+    else {
+      // End of Q12 (or of an Overtime quarter): offer Overtime, or let Midnight come.
+      overtime ??= new Overtime({ baseQuota: pb.board.target });
+      const take = await offerOvertime({ root: document.body, quota: Math.round(overtime.quota * 1.3), unopened: overtime.pending });
+      if (!take) return midnight();
+      const o = overtime.nextQuarter();
+      pb.board.target = o.quota;
+      state.totalQuarters += 1;
+      if (o.opened) pbui.tick(`OVERTIME Q${o.quarter}: a new crisis opens: ${APOCALYPSES[o.opened].name}. Board quota now $${Math.round(o.quota / 1e3)}K.`);
+    }
+  }
   state.quarter += 1;
-  doom.advanceWeeks(13);
+  for (let w = 0; w < 13 && !midnightStarted; w++) { await advanceWeek(); if (em.phase === 'none' || em.phase === 'midnight') break; }
+  if (em.phase === 'none') doom.advanceWeeks(13);
   if ((state.quarter - 1) % 3 === 0) doom.chapterStart((state.quarter - 1) / 3 + 1);
   redraw();
 }
@@ -202,7 +255,17 @@ group('SCHEME', [
 ]);
 const ff = document.createElement('button'); ff.className = 'ff'; ff.id = 'fast-forward'; ff.textContent = '>> Q12'; ff.title = 'Fast-forward to the last quarter'; ff.onclick = fastForward;
 const end = document.createElement('button'); end.className = 'end'; end.id = 'end-quarter'; end.textContent = 'END QUARTER'; end.onclick = endQuarter;
-bar.append(ff, end);
+const eng = document.createElement('button'); eng.className = 'ff'; eng.id = 'engineer'; eng.textContent = 'ENGINEER MIDNIGHT';
+eng.onclick = async () => {
+  if (em.plan) return;
+  if (!engineerAvailable('lights_out')) { pbui.tick(`The engineering projects unlock in Q10 (Lights Out) and Q11 (The Final Product).`); return; }
+  const r = await openPlanner({ root: document.body, em, availability: engineerAvailable });
+  if (r) pbui.tick(`${r.plan.projectName}: ${r.plan.requirement.name} in ${r.plan.weeks} weeks. LAST CALL is open.`, 'ok');
+  redraw();
+};
+const wk = document.createElement('button'); wk.className = 'ff'; wk.id = 'week'; wk.textContent = '+1 WEEK'; wk.onclick = advanceWeek;
+bar.append(ff, eng, wk, end);
+createBanner({ root: document.body, em, onCallOff: () => pbui.tick(`Called it off. Board confidence ${board.confidence}.`) });
 
 // ---- presets for quick checks: ?preset=architect|gilded|ark|nobody ----
 const PRESETS = {
@@ -231,7 +294,7 @@ const botGame = {
 const debug = createDebugPanel({ root: document.body, log, game: botGame, endQuarter: async () => { await endQuarter(); redraw(); } });
 if (params.has('debug')) debug.show();
 redraw();
-window.__demo = { doom, gauge, log, debug, tree, audio, ledger, ui, pb, pbui, state, shelters, hq, build, sell, scheme, endQuarter, fastForward, midnight, redraw };
+window.__demo = { em, board, advanceWeek, get overtime() { return overtime; }, doom, gauge, log, debug, tree, audio, ledger, ui, pb, pbui, state, shelters, hq, build, sell, scheme, endQuarter, fastForward, midnight, redraw };
 </script>
 </body>
 </html>
