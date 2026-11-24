@@ -9,6 +9,9 @@ import { createGameUI } from '../ui/hud.js';
 import { createResearchPanel } from '../ui/researchPanel.js';
 import { Pushback } from '../pushback/pushback.js';
 import { createPushbackUI } from '../pushback/pushback-ui.js';
+import { createPressureGauge } from '../pushback/pressure-gauge.js';
+import { DoomClock, attachPushback } from '../doomclock/doomclock.js';
+import { createDoomClockHud } from '../doomclock/doomclock-hud.js';
 import { ResearchTree } from '../research/research.js';
 import { createAudio, wireAudio, createSoundToggle, startOnFirstGesture, midnightTimes } from '../audio/audio.js';
 import { computeMidnight } from '../midnight/midnight.js';
@@ -16,7 +19,7 @@ import { showMidnight, showClockStrike } from '../midnight/midnight-ui.js';
 import { drawShelter } from '../art/shelterView.js';
 import { drawWorldMap, MAP_REGIONS, MAP_W, MAP_H } from '../art/worldmap.js';
 import { CampaignClock, SPEEDS, formatClock, QUARTER_SECONDS } from './clock.js';
-import { createSaveSlot, ledgerSaveable, pushbackSaveable } from './save.js';
+import { createSaveSlot, ledgerSaveable, pushbackSaveable, doomClockSaveable } from './save.js';
 
 export const STARTING_CASH = 400_000;
 
@@ -98,6 +101,12 @@ function startCampaign({ resume }) {
   const clock = new CampaignClock({ quarterSeconds: QS });
   const ui = createGameUI({ root, ledger, views: { grid: gridView, map: mapView } });
   const pbui = createPushbackUI({ root, pushback: pb });
+  // Doom Clock: world tension and runaways move it; a Final Countdown can bring Midnight early.
+  const doom = new DoomClock();
+  attachPushback(doom, pb);
+  createDoomClockHud({ clock: doom, hud: root.querySelector('.hud') });
+  const gauge = createPressureGauge({ root, pushback: pb, getQuarterProfit: () => ledger.summary(ledger.quarter).net,
+    onRelief: (r) => r && pbui.tick(`${r.kind === 'layLow' ? 'Laid low' : 'Funded relief'}: -$${Math.round(r.cost / 1000)}K`, 'ok') });
   const research = createResearchPanel({ root, tree, getCrisis: () => pb.tension });
   root.querySelector('.hud')?.insertBefore(research.chip, root.querySelector('.view-toggle'));
   const audio = createAudio();
@@ -107,7 +116,8 @@ function startCampaign({ resume }) {
 
   slot.register('clock', clock);
   slot.register('ledger', ledgerSaveable(ledger));
-  slot.register('pushback', pushbackSaveable(pb));
+  slot.register('pushback', pushbackSaveable(pb, Pushback));
+  slot.register('doom', doomClockSaveable(doom, DoomClock));
   slot.register('research', tree);
   if (resume) slot.load(); else slot.clear();
   ledger.setQuarter(clock.quarter);
@@ -185,21 +195,31 @@ function startCampaign({ resume }) {
   });
   clock.onQuarterStart(({ quarter }) => {
     ledger.setQuarter(quarter);
+    doom.advanceWeeks(13);
+    if ((quarter - 1) % 3 === 0) doom.chapterStart((quarter - 1) / 3 + 1);
     slot.save(); // autosave at every quarter close
     ui.update(hudState());
   });
-  clock.onMidnight(async () => {
+  let midnightStarted = false;
+  async function midnight(cause = null) {
+    if (midnightStarted) return;
+    midnightStarted = true;
+    clock.hold('midnight');
     slot.clear();
     renderBar();
-    const result = computeMidnight({ shelters, world: { tension: pb.tension, heat: pb.heat, runaways: pb.runaways }, cash: ledger.cash });
+    const result = computeMidnight({ shelters, world: { tension: pb.tension, heat: pb.heat, runaways: pb.runaways }, cash: ledger.cash,
+      ...(cause ? { forceType: 'failed', cause } : {}) });
     const { tolls, boom } = midnightTimes();
     audio.midnight(result.type);
     await showClockStrike({ root: document.body, tolls: tolls.map((s) => s + 0.05), duration: boom + 0.05 });
     await showMidnight({ root: document.body, result, onRestart: () => { document.querySelectorAll('.mn-overlay').forEach((n) => n.remove()); session.destroy(); showMainMenu(); } });
-  });
+  }
+  clock.onMidnight(() => midnight());
+  // The Doom Clock can strike before Q12 ends.
+  doom.on('midnight', (e) => midnight(e.reason === 'clock' ? 'The Doom Clock struck zero before you were ready.' : 'Two collapses started a Final Countdown you could not stop.'));
   clock.onChange(renderBar);
   pb.on('change', () => ui.update(hudState()));
-  ledger.onChange(() => ui.update(hudState()));
+  ledger.onChange(() => { ui.update(hudState()); gauge.render(); });
 
   // Modals hold the clock: quarter report and choice cards pause time.
   const modalOpen = () => !!document.querySelector('.report-overlay:not([hidden]), .pb-overlay, .mn-overlay, .mn-strike');
@@ -254,7 +274,7 @@ function startCampaign({ resume }) {
   }
 
   session = {
-    clock, ledger, pb, tree, ui, shelters, hq, slot,
+    clock, doom, gauge, ledger, pb, tree, ui, shelters, hq, slot,
     destroy() {
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);

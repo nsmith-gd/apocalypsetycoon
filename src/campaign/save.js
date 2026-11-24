@@ -51,11 +51,24 @@ export const ledgerSaveable = (ledger) => ({
   },
 });
 
-const PUSHBACK_FIELDS = ['heat', 'tension', 'quarter', 'clients', 'board', 'runaways', 'doomsdayShift', 'log', '_ids'];
-export const pushbackSaveable = (pb) => ({
-  toJSON: () => Object.fromEntries(PUSHBACK_FIELDS.map((k) => [k, pb[k]])),
+// Systems with static fromJSON(): rebuild a fresh copy, then copy its state into the live
+// instance so existing listeners and UI stay attached.
+export function restoreInto(target, fresh, fields) {
+  for (const k of fields) if (k in fresh) target[k] = fresh[k];
+}
+
+const PUSHBACK_FIELDS = ['heat', 'tension', 'quarter', 'clients', 'board', 'pending', 'runaways', 'doomsdayShift', '_ids',
+  '_investigatedThisQuarter', '_runawayThisQuarter', '_reliefUses', '_internalCash', '_quarterProfit'];
+export const pushbackSaveable = (pb, Pushback) => ({
+  toJSON: () => pb.toJSON(),
   load(d) {
-    for (const k of PUSHBACK_FIELDS) if (k in d) pb[k] = d[k];
+    restoreInto(pb, Pushback.fromJSON(d, { ledger: pb.ledger }), PUSHBACK_FIELDS);
     pb._changed?.();
   },
+});
+
+const DOOM_FIELDS = ['floor', 'tensions', 'brinked', 'chapters', 'collapses', 'breachesContained', 'countdownWeeks', 'midnight', 'week', 'history'];
+export const doomClockSaveable = (doom, DoomClock) => ({
+  toJSON: () => doom.toJSON(),
+  load(d) { restoreInto(doom, DoomClock.fromJSON(d), DOOM_FIELDS); },
 });
