@@ -1,0 +1,63 @@
+{
+ "rep0": 50,
+ "res": {
+  "rep": 47,
+  "tests": [
+   {
+    "shelter": "spec1",
+    "name": "The Granite Keep",
+    "owner": "Lady Graves",
+    "region": "mea",
+    "pass": true,
+    "p": 1,
+    "why": [],
+    "lost": 0,
+    "track": "atomic"
+   },
+   {
+    "shelter": "spec2",
+    "name": "Marble Folly",
+    "owner": "Count Velasquez",
+    "region": "mea",
+    "pass": false,
+    "p": 0.015,
+    "why": [
+     "90 of 730 days sealed",
+     "blast 1/4",
+     "seal 1/3"
+    ],
+    "lost": 4,
+    "track": "atomic"
+   }
+  ],
+  "clients": [
+   [
+    "Lady Graves",
+    10
+   ],
+   [
+    "Count Velasquez",
+    25
+   ],
+   [
+    "Paloma",
+    10
+   ]
+  ],
+  "occupants": [
+   [
+    "The Granite Keep",
+    8
+   ],
+   [
+    "Marble Folly",
+    4
+   ],
+   [
+    "Alpine Retreat",
+    6
+   ]
+  ]
+ },
+ "errs": []
+}

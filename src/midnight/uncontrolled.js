@@ -22,10 +22,6 @@ export const UNCONTROLLED = Object.freeze({
   siegeAt: 90, // a client's region has a high-exposure track at 90+: the streets are besieged
 });
 
-// Roster track ids whose apocalypse is keyed differently in the GDD apocalypse table.
-const APOC_ID = { greygoo: 'goo', longshade: 'long_shade', cloudstrike: 'cloud' };
-const apocId = (id) => APOC_ID[id] ?? id;
-
 const CAUSES = {
   clock: 'The Doom Clock struck zero before you were ready.',
   countdown: 'Two collapses started a Final Countdown you could not stop.',
@@ -45,7 +41,7 @@ export function uncontrolledRoad({ reason = 'clock', crisis = null, doom = null 
     open.sort((a, b) => b[1] - a[1]);
     target = open[0]?.[0] ?? 'atomic';
   }
-  const apocalypse = requirementFor(Array.isArray(target) ? target.map(apocId) : apocId(target));
+  const apocalypse = requirementFor(target); // requirementFor maps roster and old track ids onto the apocalypse table
   return { reason, cause: CAUSES[reason] ?? CAUSES.clock, target, apocalypse, endingName: UNCONTROLLED.endingName };
 }
 
