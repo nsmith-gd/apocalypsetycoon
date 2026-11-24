@@ -1,3 +1,4 @@
+import { TUNING } from '../src/config/tuning.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CrisisSystem, DOMINO_LINKS, BREACH } from '../src/crisis/breach.js';
@@ -130,7 +131,7 @@ test('shelter-in-place: pass +2 reputation; fail -5 reputation and +15 leverage'
   pb.onSale({ client: 'Okoro', price: 1 });
   const lev = pb.clients[1].leverage;
   cs.setTension('pandemic', 95);
-  assert.equal(cs.reputation, 50 + 2 - 5);
+  assert.equal(cs.reputation, TUNING.reputation.start + 2 - 5);
   assert.equal(pb.clients[1].leverage, lev + 15);
   assert.equal(pb.clients[0].leverage, 10);
 });

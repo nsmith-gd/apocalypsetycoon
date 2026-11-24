@@ -25,29 +25,9 @@ import { gradeShelter } from '../midnight/midnight.js';
 import { apocalypseFor } from '../midnight/engineered.js';
 import { survival } from '../shelter/life.js';
 import { REGIONS as SALES_REGIONS } from '../demand/demand.js';
+import { BREACH, TUNING } from '../config/tuning.js';
 
-export const BREACH = Object.freeze({
-  tipBase: 90,
-  tipOffset: [-8, 4], // hidden roll, inclusive
-  tipMin: 72,
-  scar: 3,
-  windowWeeks: [6, 4, 3], // by the track's breach number (1st, 2nd, 3rd+)
-  perBreachWeek: { heat: 2, boardConfidence: -2, panicMultiplier: 2 },
-  recovery: { tension: 60, lockWeeks: 3 },
-  collapseTension: 100,
-  shove: { strong: 15, medium: 8, weak: 4 },
-  shelterTest: { pass: { reputation: 2 }, fail: { reputation: -5, leverage: 15 }, badlyBelow: 0.5, constructionDelayDays: 7 },
-  brinkMargin: 10,
-  // The five containment sources. Points and costs not given in the ticket are provisional
-  // (marked) until the GDD text is in the repo.
-  sources: {
-    op: { label: 'Containment op', points: 40, costPerBreach: 10_000_000, uses: 1 }, // $10M x breach count (ticket); 40 pts provisional
-    research: { label: 'Crash research program', points: 25, uses: 1, blocksResearch: true }, // provisional
-    calming: { label: 'Calming scheme', points: 10, uses: 3 }, // per scheme, provisional
-    government: { label: 'Government partnership', points: 30, uses: 1, heat: 10 }, // provisional
-    heroics: { label: 'Executive heroics', points: 15, uses: 1, boardConfidence: -5 }, // provisional
-  },
-});
+export { BREACH }; // lives in the single tuning table (#77)
 
 /** The domino map: 10 links over the five crisis tracks (every pair once). Provisional pairing. */
 export const DOMINO_LINKS = Object.freeze([
@@ -126,7 +106,7 @@ export class CrisisSystem {
     this.shelterTest = shelterTest;
     this.getConstruction = construction; // [{ id, name, region, delay(days) }]: sites still being built
     this.week = 0;
-    this.reputation = 50;
+    this.reputation = TUNING.reputation.start; // GDD: 0-100, starting at 40 (#77)
     this.boardConfidence = 60;
     this.breachCount = 0; // across the whole game: the containment op costs $10M x this
     this.researchBlocked = false;
