@@ -52,7 +52,7 @@ export function researchZone(crisis) {
 export function weeklyGrants(tracks, f = FUNDING) {
   const lines = [];
   for (const t of tracks ?? []) {
-    if (f.noGrantStates.includes(t.state)) continue;
+    if (t.open === false || f.noGrantStates.includes(t.state)) continue; // not in play yet, or breached
     const band = bandOf(t.tension ?? 0);
     if (band.grantRP > 0) lines.push({ track: t.id, name: t.name ?? t.id, band: band.name, rp: band.grantRP });
   }
