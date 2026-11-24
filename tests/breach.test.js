@@ -43,7 +43,11 @@ test('breach auto-pauses and opens a 6, then 4, then 3-week window', () => {
   assert.equal(cs.tracks.unrest.state, 'breach');
   assert.deepEqual(paused, { reason: 'breach', track: 'unrest' });
   assert.equal(cs.tracks.unrest.window.weeksLeft, 6);
-  cs.contribute('unrest', 'op'); cs.contribute('unrest', 'government'); cs.contribute('unrest', 'research'); cs.contribute('unrest', 'heroics');
+  cs.reputation = 60;
+  for (const exec of ['ruth', 'june', 'theo']) cs.contribute('unrest', 'heroics', { exec }); // 60
+  cs.contribute('unrest', 'government'); // 85
+  cs.tracks.unrest.window.bar = 96;
+  cs.contribute('unrest', 'calming'); // +4 -> 100
   assert.equal(cs.tracks.unrest.state, 'locked');
   for (let i = 0; i < 3; i++) cs.advanceWeek();
   cs.setTension('unrest', 100);
@@ -59,7 +63,8 @@ test('containment op costs $10M x breach count', () => {
   const cash = ledger.cash;
   cs.contribute('war', 'op');
   assert.equal(ledger.cash, cash - 20_000_000);
-  assert.equal(cs.contribute('war', 'op'), null); // one op per breach
+  assert.equal(cs.contribute('war', 'op'), null); // one op per track at a time
+  assert.match(cs.sourceOffer('war', 'op').reason, /under way/);
 });
 
 test('each breach week: +2 heat, -2 board confidence, panic premium doubled', () => {
@@ -78,9 +83,12 @@ test('each breach week: +2 heat, -2 board confidence, panic premium doubled', ()
 test('successful containment: tension 60 and locked 3 weeks, scar -3, exact tipping point revealed', () => {
   const { cs, clock } = world();
   cs.setTension('climate', 91);
-  for (const k of ['op', 'government', 'research']) cs.contribute('climate', k); // 40 + 30 + 25 = 95
+  cs.reputation = 60;
+  cs.contribute('climate', 'government'); // 25
+  for (const exec of ['ruth', 'june', 'theo']) cs.contribute('climate', 'heroics', { exec }); // 85
   assert.equal(cs.tracks.climate.state, 'breach');
-  cs.contribute('climate', 'calming'); // +10 -> 100 (capped)
+  cs.tracks.climate.window.bar = 97;
+  cs.contribute('climate', 'calming'); // +4 -> 100 (capped)
   const t = cs.tracks.climate;
   assert.equal(t.state, 'locked');
   assert.equal(t.tension, 60);
@@ -152,22 +160,25 @@ test('replay: a breach week by week, contained in week 4', () => {
   const conf0 = cs.boardConfidence;
   const cash0 = ledger.cash;
 
-  // week 1: launch the containment op ($10M, +40)
+  // week 1: launch the containment op ($10M, +40 in 2 weeks) and a crash research program (+15 a week)
   cs.contribute('unrest', 'op');
-  cs.advanceWeek();
-  assert.deepEqual([t.window.bar, t.window.weeksLeft, pb.heat, cs.boardConfidence], [40, 5, 22, conf0 - 2]);
-  assert.equal(ledger.cash, cash0 - 10_000_000);
-  // week 2: crash research program (+25), research is blocked meanwhile
   cs.contribute('unrest', 'research');
+  assert.equal(t.window.bar, 0); // nothing lands on purchase
   cs.advanceWeek();
-  assert.deepEqual([t.window.bar, t.window.weeksLeft, pb.heat, cs.researchBlocked], [65, 4, 24, true]);
-  // week 3: two calming schemes (+10 each)
-  cs.contribute('unrest', 'calming');
-  cs.contribute('unrest', 'calming');
+  assert.deepEqual([t.window.bar, t.window.weeksLeft, pb.heat, cs.boardConfidence, cs.researchBlocked], [15, 5, 22, conf0 - 2, true]);
+  assert.equal(ledger.cash, cash0 - 10_000_000);
+  // week 2: research +15 and the op lands (+40)
   cs.advanceWeek();
-  assert.equal(t.window.bar, 85);
-  // week 4: executive heroics (+15) closes it
-  cs.contribute('unrest', 'heroics');
+  assert.deepEqual([t.window.bar, t.window.weeksLeft, pb.heat], [70, 4, 24]);
+  // week 3: three Everything Is Fine campaigns (+4 each, $1M and heat -2 each), research +15
+  for (let i = 0; i < 3; i++) cs.contribute('unrest', 'calming');
+  assert.equal(t.window.bar, 82);
+  assert.equal(pb.heat, 18);
+  cs.advanceWeek();
+  assert.equal(t.window.bar, 97);
+  assert.equal(ledger.cash, cash0 - 13_000_000);
+  // week 4: Ruth's engineering fix (+20) closes it
+  cs.contribute('unrest', 'heroics', { exec: 'ruth' });
   assert.equal(t.state, 'locked');
   assert.equal(t.tension, 60);
   assert.equal(cs.paused, false);
@@ -182,4 +193,89 @@ test('config numbers match the ticket', () => {
   assert.deepEqual(BREACH.shove, { strong: 15, medium: 8, weak: 4 });
   assert.deepEqual(BREACH.recovery, { tension: 60, lockWeeks: 3 });
   assert.equal(BREACH.sources.op.costPerBreach, 10_000_000);
+  const S = BREACH.sources;
+  assert.deepEqual([S.op.points, S.op.weeks, S.research.points, S.research.rpPerWeek, S.research.requiresRD, S.calming.momentumShare, S.government.points, S.government.minReputation, S.government.heat, S.heroics.points],
+    [40, 2, 15, 40, 2, 0.5, 25, 50, -5, 20]);
+});
+
+test('containment op: paid at launch, its +40 lands two breach weeks later', () => {
+  const { cs, ledger } = world();
+  cs.setTension('war', 95);
+  const cash = ledger.cash;
+  cs.contribute('war', 'op');
+  const t = cs.tracks.war;
+  assert.equal(ledger.cash, cash - 10_000_000);
+  assert.equal(t.window.bar, 0);
+  cs.advanceWeek();
+  assert.equal(t.window.bar, 0);
+  cs.advanceWeek();
+  assert.equal(t.window.bar, 40);
+  assert.equal(cs.sourceOffer('war', 'op').available, true, 'a new op can start once the last one landed');
+});
+
+test('crash research: needs R&D level 2, drips +15 a week for 40 RP a week, stops when RP runs out', () => {
+  let rd = 1;
+  let rp = 100;
+  const cs = new CrisisSystem({ tips: TIPS, rdLevel: () => rd, spendRp: (n) => (rp >= n ? ((rp -= n), true) : false) });
+  cs.setTension('pandemic', 95);
+  const locked = cs.sourceOffer('pandemic', 'research');
+  assert.equal(locked.available, false);
+  assert.match(locked.reason, /R&D level 2/);
+  assert.equal(cs.contribute('pandemic', 'research'), null);
+  rd = 2;
+  cs.contribute('pandemic', 'research');
+  assert.equal(cs.researchBlocked, true);
+  const t = cs.tracks.pandemic;
+  cs.advanceWeek();
+  cs.advanceWeek();
+  assert.deepEqual([t.window.bar, rp], [30, 20]);
+  cs.advanceWeek(); // 20 RP left: not enough, the program stops
+  assert.equal(t.window.bar, 30);
+  assert.equal(t.window.research, null);
+  assert.equal(cs.researchBlocked, false);
+});
+
+test('calming: half the calming scheme’s momentum, at that scheme’s cost and heat', () => {
+  const { cs, pb, ledger } = world();
+  pb.heat = 30;
+  cs.setTension('war', 95); // a new breach: pb heat unchanged until the week turns
+  const cash = ledger.cash;
+  assert.equal(cs.sourceOffer('war', 'calming').points, 4); // Everything Is Fine: momentum 8 -> +4
+  assert.equal(cs.contribute('war', 'calming'), 4);
+  assert.equal(ledger.cash, cash - 1_000_000);
+  assert.equal(pb.heat, 28);
+  assert.equal(cs.sourceOffer('war', 'calming', { scheme: 'peacesummit' }).points, 7.5); // momentum 15
+  assert.equal(cs.sourceOffer('war', 'calming', { scheme: 'leak' }).available, false); // not a calming scheme
+  cs.contribute('war', 'calming'); cs.contribute('war', 'calming');
+  assert.equal(cs.sourceOffer('war', 'calming').available, false); // three per breach
+});
+
+test('government partnership: +25 once, needs reputation 50, lowers heat by 5', () => {
+  const { cs, pb } = world();
+  pb.heat = 30;
+  cs.setTension('markets', 95);
+  cs.reputation = 45;
+  assert.match(cs.sourceOffer('markets', 'government').reason, /reputation 50/);
+  assert.equal(cs.contribute('markets', 'government'), null);
+  cs.reputation = 50;
+  assert.equal(cs.contribute('markets', 'government'), 25);
+  assert.equal(pb.heat, 25);
+  assert.equal(cs.contribute('markets', 'government'), null); // once per breach
+});
+
+test('executive heroics: +20, each executive once per campaign, across breaches and saves', () => {
+  const { cs, pb } = world();
+  pb.heat = 0;
+  cs.setTension('climate', 95);
+  assert.deepEqual(cs.sourceOffer('climate', 'heroics').executives, ['ruth', 'june', 'theo']);
+  assert.equal(cs.contribute('climate', 'heroics', { exec: 'theo' }), 20);
+  assert.equal(pb.heat, 10); // Theo's dirty fix
+  assert.equal(cs.contribute('climate', 'heroics', { exec: 'theo' }), null);
+  cs.contribute('climate', 'heroics'); // the first unused: Ruth
+  const copy = new CrisisSystem({ tips: TIPS });
+  copy.load(JSON.parse(JSON.stringify(cs.toJSON())));
+  copy.setTension('war', 95);
+  assert.deepEqual(copy.sourceOffer('war', 'heroics').executives, ['june']);
+  copy.contribute('war', 'heroics');
+  assert.equal(copy.sourceOffer('war', 'heroics').available, false);
 });
