@@ -15,7 +15,7 @@
   .client { text-align: left; font: 700 12px var(--at-font); color: var(--at-ink); background: var(--at-panel-2); border: 2px solid var(--at-border); padding: 6px 8px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
   .client small { color: var(--at-dim); font-weight: 400; }
   .client[data-active='true'] { border-color: var(--at-gold); box-shadow: inset 0 0 0 2px var(--at-gold); }
-  .stage { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .stage { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
   canvas#shelter { image-rendering: pixelated; border: 4px solid var(--at-border); cursor: pointer; background: #0a0807; }
   .btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
   .btns button { font: 900 12px var(--at-font); letter-spacing: 1px; color: var(--at-ink); background: var(--at-panel-2); border: 2px solid var(--at-border); box-shadow: inset 2px 2px 0 var(--at-hi); padding: 8px 10px; cursor: pointer; }
@@ -45,7 +45,7 @@
   <div class="hint">Click a room to switch it between Brutalist and Gilded. Satisfaction = style multiplier s × Σ (willingness-to-pay weight × tier met). Match ×1.25, clash ×0.8.</div>
   <aside class="panel"><h2>CLIENT</h2><div id="clients"></div></aside>
   <section class="stage">
-    <canvas id="shelter" width="160" height="96"></canvas>
+    <canvas id="shelter" width="320" height="192"></canvas>
     <div class="btns">
       <button data-all="gilded" data-style="gilded">ALL GILDED</button>
       <button data-all="brutalist" data-style="brutalist">ALL BRUTALIST</button>
@@ -136,7 +136,7 @@ cv.addEventListener('click', (e) => {
 });
 for (const b of document.querySelectorAll('[data-all]')) b.onclick = () => { for (const r of grid.rooms) grid.setStyle(r.col, r.row, b.dataset.all); render(true); };
 
-const fit = () => fitIntegerScale(cv, Math.min(window.innerWidth - 40, 640), window.innerHeight - 160);
+const fit = () => { cv.style.width = '320px'; fitIntegerScale(cv, Math.max(320, document.querySelector('.stage').clientWidth - 8), window.innerHeight - 160); };
 window.addEventListener('resize', fit);
 setInterval(() => { frame++; draw(); }, 500);
 renderClients(); fit(); render();

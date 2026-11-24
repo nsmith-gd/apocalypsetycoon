@@ -20,7 +20,8 @@
 // FLOW      survey (1 week) -> dig -> shell -> fit-out -> pressure test (30 days) -> walkthrough -> handover.
 
 import { ResidentSim } from './residents.js';
-import { STRATA, stratumAt, STRUCTURES, CONDUITS, OBJECTS, ROOM_TYPES, NEEDS, ROOM_DEPTH_M, WATER_TABLE_M, fitDays, LAYERS, layerOf, FINISHES, variantsFor } from './bunker-catalog.js';
+import { identifyRoom } from '../catalog/identify.js';
+import { STRATA, stratumAt, STRUCTURES, CONDUITS, OBJECTS, NEEDS, ROOM_DEPTH_M, WATER_TABLE_M, fitDays, LAYERS, layerOf, FINISHES, variantsFor } from './bunker-catalog.js';
 
 export const BUNKER = Object.freeze({
   width: 24, // Family Vault plot
@@ -488,7 +489,10 @@ export class BunkerSite {
       r.width = r.maxX - r.minX + 1;
       r.height = r.maxY - r.minY + 1;
       r.size = r.tiles.length;
-      r.type = r.touchesSky ? { id: 'open_pit', name: 'Open pit', tier: 'survive' } : (ROOM_TYPES.find((t) => t.has(counts)) ?? ROOM_TYPES.at(-1));
+      // One identity per enclosed space, from the objects inside it (GDD room catalog requirements).
+      const id = r.touchesSky ? null : identifyRoom(counts, { roster: this.roster ?? null });
+      r.type = id ? id.type : { id: 'open_pit', name: 'Open pit', tier: 'survive', minW: 1 };
+      r.hint = id?.hint ?? null;
       r.beds = r.objects.reduce((s, o) => s + (OBJECTS[o.kind].beds ?? 0), 0);
       r.cramped = r.width < (r.type.minW ?? 1);
       r.seeps = r.rough > 0 && r.maxY >= WATER_TABLE_M;

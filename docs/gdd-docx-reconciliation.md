@@ -26,6 +26,8 @@ The page export the ticket names (`C:\Users\natha\.ballast\cloud\ca_e8a1a5c85b\p
 
 All prose matches word for word: every section's words are identical, apart from what's listed below. **The conversion dropped every equation, every diagram and one link.** These hold rules:
 
+> **Update (#95):** the nine equations below are restored in `gdd-full.md` as `text` code blocks, extracted from the docx's own math markup and placed after the same sentence they follow in the docx. `tests/gdd-formulas.test.js` checks they stay there.
+
 | Section | Lost in gdd-full.md | Matters because |
 |---|---|---|
 | World canvas | Leads formula: Leads_r = 0.5 + Σ F_i·e_i,r / 50 + R_r | The demand rule (the prose version survives in the tuning table) |

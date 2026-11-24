@@ -8,6 +8,7 @@
 
 import { OBJECTS, STRUCTURES, CONDUITS, STRATA, TIER_COLORS, WATER_TABLE_M, FINISHES, variantsFor, layerOf } from './bunker-catalog.js';
 import { drawText } from '../art/font.js';
+import { drawStratumTile, drawDigStage, drawShellStage, drawFitoutStage } from '../art/bunker-tiles.js';
 import { drawObjectSprite, drawResident, drawThought, hasSprite } from './bunker-sprites.js';
 import { NEED_IDS } from './bunker-catalog.js';
 
@@ -270,11 +271,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const i = site.idx(x, y);
       if (!site.dug[i]) {
-        const s = site.stratum(y);
-        ctx.fillStyle = s.color; ctx.fillRect(PX(x), PY(y), T, T);
-        ctx.fillStyle = 'rgba(0,0,0,.18)';
-        const h = (x * 73 + y * 151) % 17;
-        ctx.fillRect(PX(x) + (h % 11), PY(y) + ((h * 3) % 12), 3, 2);
+        drawStratumTile(ctx, site.stratum(y).id, PX(x), PY(y), x, y); // R32 strata tiles
         if (y === 0) { ctx.fillStyle = '#4a7a2a'; ctx.fillRect(PX(x), PY(y), T, 3); }
       } else if (site.finish?.wall[i]) wallFinish(x, y, FINISHES.wall[site.finish.wall[i]]);
       else {
@@ -369,8 +366,17 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     }
     // queued jobs
     for (const j of site.jobs) {
-      if (j.type === 'object') { drawObject(j, 0.4, true, frame); continue; }
+      const t = j.days ? Math.min(1, j.progress / j.days) : 0;
+      if (j.type === 'object') {
+        const o = OBJECTS[j.kind];
+        drawObject(j, 0.4 + 0.5 * t, true, frame);
+        drawFitoutStage(ctx, PX(j.x), PY(j.y - o.h + 1), o.w * T, o.h * T, t, frame); // R32 fit-out stage
+        if (t > 0) { ctx.fillStyle = '#7ed957'; ctx.fillRect(PX(j.x) + 1, PY(j.y) + T - 3, Math.round((o.w * T - 2) * t), 2); }
+        continue;
+      }
       const x = PX(j.x), y = PY(j.y);
+      if (j.type === 'dig') { drawDigStage(ctx, x, y, t, site.stratum(j.y).id, j.x, j.y); if (t > 0) { ctx.fillStyle = '#7ed957'; ctx.fillRect(x + 1, y + T - 3, Math.round((T - 2) * t), 2); } continue; }
+      if (j.type === 'build') { drawShellStage(ctx, x, y, t, j.kind ?? j.structure); if (t > 0) { ctx.fillStyle = '#7ed957'; ctx.fillRect(x + 1, y + T - 3, Math.round((T - 2) * t), 2); } continue; }
       ctx.strokeStyle = j.type === 'dig' ? 'rgba(245,197,66,.9)' : j.type === 'build' ? 'rgba(220,220,220,.8)' : CONDUITS[j.net].color;
       ctx.lineWidth = 1;
       ctx.strokeRect(x + 1.5, y + 1.5, T - 3, T - 3);
@@ -497,7 +503,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       ${r ? `<div class="bk-room"><b style="color:${TIER_COLORS[r.type.tier]}">${r.type.name.toUpperCase()}</b> ${r.width}x${r.height} m · ${r.size} tiles<br>
         Impressiveness <b>${r.impressiveness}</b> · beauty ${r.beauty}${r.finishBeauty ? ` (finishes +${r.finishBeauty})` : ''} · prestige ${Math.round(r.prestige)}${r.beds ? ` · beds ${r.beds}` : ''}<br>
         ${[r.noise ? `noise -${r.noise}` : '', r.rough ? 'raw rock walls -3' : '', r.cramped ? `cramped (needs ${r.type.minW} wide)` : '', r.seeps ? 'SEEPING' : ''].filter(Boolean).join(' · ') || 'No complaints.'}<br>
-        <small>${Object.entries(r.counts).map(([kk, n]) => `${n}x ${OBJECTS[kk].name}`).join(', ') || 'Empty'}</small></div>` : '<div class="bk-room"><small>Click inside a room to inspect it.</small></div>'}
+        <small>${Object.entries(r.counts).map(([kk, n]) => `${n}x ${OBJECTS[kk].name}`).join(', ') || 'Empty'}</small>${r.hint ? `<br><small class="bk-hint">Add ${r.hint.missing.map((m) => m.orAny ? m.orAny.filter((o) => OBJECTS[o]).map((o) => OBJECTS[o].name).join(' or ') : `${m.count}x ${OBJECTS[m.object]?.name ?? m.object}`).join(' and ')} to make it ${/^[AEIOU]/.test(r.hint.name) ? 'an' : 'a'} ${r.hint.name}.</small>` : ''}</div>` : '<div class="bk-room"><small>Click inside a room to inspect it.</small></div>'}
       <div class="bk-phase"><b>${ph.name.toUpperCase()}</b> · ${ph.detail}<br><small>${site.crews()} crew${site.crews() === 1 ? '' : 's'} · ${site.jobs.length} job${site.jobs.length === 1 ? '' : 's'} queued${site.jobs.some((j) => !site._workable(j, site.reachable())) ? ' · some unreachable: dig a way in' : ''}</small>
         <div class="bk-actions"><button class="bk-test" ${ph.id === 'ready' || ph.id === 'walkthrough' ? '' : 'disabled'}>30-DAY PRESSURE TEST</button>${onHandOver ? `<button class="bk-hand" ${site.jobs.length || !site.objects.size ? 'disabled' : ''}>HAND OVER</button>` : ''}</div></div>
       <div class="bk-notes">${s.notes.slice(0, 6).map((n) => `<div>${n}</div>`).join('')}</div>`;
