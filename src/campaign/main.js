@@ -285,10 +285,16 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
       }
     }
   }
+  // The Doom Clock counts real in-game weeks (13 a quarter), so a Final Countdown runs week by week.
+  // Synced from the campaign clock, so skipped quarters and loaded saves land on the right week.
+  const syncDoomWeeks = () => {
+    const target = (clock.quarter - 1) * 13 + Math.floor(clock.elapsed / WEEK_SECONDS);
+    if (target > doom.week) doom.advanceWeeks(target - doom.week);
+  };
   clock.onQuarterStart(({ quarter }) => {
+    syncDoomWeeks();
     ledger.setQuarter(quarter);
     leads.expire(quarter); // unused leads go cold on schedule
-    doom.advanceWeeks(13);
     if ((quarter - 1) % 3 === 0) doom.chapterStart((quarter - 1) / 3 + 1);
     slot.save(); // autosave at every quarter close
     ui.update(hudState());
@@ -344,6 +350,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
       grid.tick(g);
       weekAcc += g;
       while (weekAcc >= WEEK_SECONDS) { weekAcc -= WEEK_SECONDS; crisis.advanceWeek(); }
+      syncDoomWeeks();
     }
     clock.tick(dt);
     acc += dt;
