@@ -169,6 +169,7 @@ export class MapSales {
       ratings: { air: r2(graded.ratios.air), water: r2(graded.ratios.water), food: r2(graded.ratios.food) },
       grades: { ...graded.grades },
       prestige: graded.prestige,
+      ...(shelter.sealed ? { sealed: shelter.sealed } : {}), // Midnight grades tile-built bunkers on their own sim
     };
     this.sold.push(record);
     this.ledger?.record('sales', `${type?.label ?? 'Client'} shelter (${region.name}): ${owner}`, price);
