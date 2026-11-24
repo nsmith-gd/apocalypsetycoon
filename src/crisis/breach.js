@@ -35,15 +35,28 @@ export const BREACH = Object.freeze({
   shove: { strong: 15, medium: 8, weak: 4 },
   shelterTest: { pass: { reputation: 2 }, fail: { reputation: -5, leverage: 15 } },
   brinkMargin: 10,
-  // The five containment sources. Points and costs not given in the ticket are provisional
-  // (marked) until the GDD text is in the repo.
+  // The five containment sources (GDD: Breach and containment). Money is in GDD dollars; the campaign
+  // passes `costScale` to fit its economy.
   sources: {
-    op: { label: 'Containment op', points: 40, costPerBreach: 10_000_000, uses: 1 }, // $10M x breach count (ticket); 40 pts provisional
-    research: { label: 'Crash research program', points: 25, uses: 1, blocksResearch: true }, // provisional
-    calming: { label: 'Calming scheme', points: 10, uses: 3 }, // per scheme, provisional
-    government: { label: 'Government partnership', points: 30, uses: 1, heat: 10 }, // provisional
-    heroics: { label: 'Executive heroics', points: 15, uses: 1, boardConfidence: -5 }, // provisional
+    // +40 when it lands, 2 weeks after launch. $10M x the game's breach count. One per track at a time.
+    op: { label: 'Containment op', points: 40, delayWeeks: 2, costPerBreach: 10_000_000, uses: Infinity, oneAtATime: true },
+    // +15 every week it runs, for 40 RP that week. Needs R&D at level 2 or higher. Toggle on/off.
+    research: { label: 'Crash research program', pointsPerWeek: 15, rpPerWeek: 40, rdLevel: 2, uses: Infinity, program: true },
+    // Calming schemes on the breached track give half their momentum. The card's button runs Everything Is Fine
+    // (-8 momentum, $1M, heat -2): +4.
+    calming: { label: 'Everything Is Fine', points: 4, momentum: -8, cost: 1_000_000, heat: -2, uses: Infinity },
+    // +25, once per breach. Needs reputation 50+. Heat -5.
+    government: { label: 'Government partnership', points: 25, uses: 1, heat: -5, minReputation: 50 },
+    // +20, once per executive per campaign.
+    heroics: { label: 'Executive heroics', points: 20, uses: Infinity, perExec: true },
   },
+  // The three executives who can step in once each (GDD: Characters). Theo's fix is dirty: heat +10.
+  executives: {
+    ruth: { name: 'Ruth', deed: "Ruth's engineering fix", heat: 0 },
+    june: { name: 'June', deed: "June's media blackout", heat: 0 },
+    theo: { name: 'Theo', deed: "Theo's dirty fix", heat: 10 },
+  },
+  costScale: 1,
 });
 
 /** The domino map: 10 links over the five crisis tracks (every pair once). Provisional pairing. */
@@ -88,8 +101,8 @@ export function defaultShelterTest(shelter) {
 }
 
 export class CrisisSystem {
-  constructor({ seed = 1, tracks = TRACKS, links = DOMINO_LINKS, config = {}, pushback = null, doomClock = null, ledger = null, shelters = () => [], shelterTest = defaultShelterTest, tips = null, clockWeeks = false } = {}) {
-    this.cfg = { ...BREACH, ...config, sources: { ...BREACH.sources, ...(config.sources ?? {}) } };
+  constructor({ seed = 1, tracks = TRACKS, links = DOMINO_LINKS, config = {}, pushback = null, doomClock = null, ledger = null, shelters = () => [], shelterTest = defaultShelterTest, tips = null, clockWeeks = false, research = null } = {}) {
+    this.cfg = { ...BREACH, ...config, sources: { ...BREACH.sources, ...(config.sources ?? {}) }, executives: { ...BREACH.executives, ...(config.executives ?? {}) } };
     this.rng = rngFrom(seed);
     this.links = links;
     this.pb = pushback;
@@ -102,7 +115,10 @@ export class CrisisSystem {
     this.reputation = 50;
     this.boardConfidence = 60;
     this.breachCount = 0; // across the whole game: the containment op costs $10M x this
-    this.researchBlocked = false;
+    this.researchBlocked = false; // kept for saves; the crash program no longer blocks research (it costs RP)
+    // R&D hooks for the crash program: level() and spend(rp) -> true if paid. Without hooks: level 2, RP free.
+    this.research = { level: () => 2, spend: () => true, ...(research ?? {}) };
+    this.heroicsUsed = {}; // exec id -> track id, for the whole campaign
     this.paused = false;
     this.log = [];
     this._listeners = new Map();
@@ -229,32 +245,107 @@ export class CrisisSystem {
     this._shelterInPlace(t);
   }
 
-  /** Cost and points of a containment source for this breach (null if used up). */
-  sourceOffer(id, key) {
+  /**
+   * What a containment source offers on this breach right now, or null if it can't be used.
+   * opts.exec picks the executive for heroics. The offer says why it's unavailable in `blocked` (then null is
+   * returned by contribute): { key, label, points, cash, heat, usesLeft, blocked, pending, running, ... }.
+   */
+  sourceOffer(id, key, opts = {}) {
     const t = this.tracks[id];
     const s = this.cfg.sources[key];
     if (!t?.window || !s) return null;
     const used = t.window.used[key] ?? 0;
-    if (used >= s.uses) return null;
-    return { key, label: s.label, points: s.points, cash: s.costPerBreach ? s.costPerBreach * t.window.breachNo : 0, usesLeft: s.uses - used, heat: s.heat ?? 0, boardConfidence: s.boardConfidence ?? 0, blocksResearch: !!s.blocksResearch };
+    const scale = this.cfg.costScale ?? 1;
+    const offer = { key, label: s.label, points: s.points ?? s.pointsPerWeek, cash: 0, heat: s.heat ?? 0, usesLeft: s.uses - used, blocked: null };
+    if (used >= s.uses) offer.blocked = 'Used for this breach';
+    if (key === 'op') {
+      offer.cash = Math.round(s.costPerBreach * this.breachCount * scale);
+      offer.delayWeeks = s.delayWeeks;
+      offer.pending = t.window.ops?.length ?? 0;
+      if (s.oneAtATime && offer.pending) offer.blocked = 'Op already under way';
+    } else if (key === 'research') {
+      offer.rpPerWeek = s.rpPerWeek;
+      offer.running = !!t.window.program;
+      if (this.research.level() < s.rdLevel) offer.blocked = `Needs R&D level ${s.rdLevel}`;
+    } else if (key === 'calming') {
+      offer.cash = Math.round(s.cost * scale);
+      offer.momentum = s.momentum;
+    } else if (key === 'government') {
+      if (this.reputation < s.minReputation) offer.blocked = offer.blocked ?? `Needs reputation ${s.minReputation}`;
+    } else if (key === 'heroics') {
+      const free = Object.keys(this.cfg.executives).filter((e) => !this.heroicsUsed[e]);
+      offer.execs = free;
+      const exec = opts.exec ?? free[0];
+      offer.exec = exec ?? null;
+      if (!exec || this.heroicsUsed[exec]) offer.blocked = 'No executive left to step in';
+      else { offer.label = this.cfg.executives[exec].deed; offer.heat = this.cfg.executives[exec].heat ?? 0; }
+    }
+    return offer;
   }
 
-  /** Spend a containment source on an open breach. Returns the new bar value, or null. */
-  contribute(id, key) {
+  /**
+   * Spend a containment source on an open breach. Returns the bar value afterwards, or null if not possible.
+   * The op is paid now and lands +40 two weeks later; research toggles a weekly program.
+   */
+  contribute(id, key, opts = {}) {
     const t = this.tracks[id];
-    const offer = this.sourceOffer(id, key);
-    if (!offer || t.state !== 'breach') return null;
+    const offer = this.sourceOffer(id, key, opts);
+    if (!offer || offer.blocked || t.state !== 'breach') return null;
+    const s = this.cfg.sources[key];
+    if (key === 'research') {
+      t.window.program = !t.window.program;
+      this._note(`${s.label} on ${t.name} ${t.window.program ? 'STARTED (+15 a week for 40 RP a week)' : 'stopped'}.`, { type: 'contain', track: t.id, source: key });
+      this._emit('contribute', { track: t.id, source: key, bar: t.window.bar, program: t.window.program });
+      return t.window.bar;
+    }
     t.window.used[key] = (t.window.used[key] ?? 0) + 1;
     if (offer.cash) this.ledger?.record('schemes', `${offer.label}: ${t.name}`, -offer.cash);
-    if (offer.heat) this.pb?.addHeat(offer.heat, offer.label);
-    if (offer.boardConfidence) this.boardConfidence = clamp(this.boardConfidence + offer.boardConfidence);
-    if (offer.blocksResearch) this.researchBlocked = true;
-    if (key === 'calming' && this.pb?.fundRelief) this.pb.fundRelief(); // the scheme itself (costs and heat via pushback)
-    const bar = (t.window.bar = Math.min(100, t.window.bar + offer.points));
-    this._note(`${offer.label} on ${t.name}: +${offer.points} (bar ${bar}/100).`, { type: 'contain', track: t.id, source: key });
+    if (offer.heat > 0) this.pb?.addHeat(offer.heat, offer.label);
+    else if (offer.heat < 0 && this.pb) this.pb.heat = clamp(this.pb.heat + offer.heat);
+    if (key === 'op') {
+      (t.window.ops ??= []).push({ weeksLeft: s.delayWeeks, points: s.points });
+      this._note(`${offer.label} launched on ${t.name}: +${s.points} lands in ${s.delayWeeks} weeks.`, { type: 'contain', track: t.id, source: key });
+      this._emit('contribute', { track: t.id, source: key, bar: t.window.bar, pending: true });
+      this.pb?._changed?.();
+      return t.window.bar;
+    }
+    if (key === 'heroics') this.heroicsUsed[offer.exec] = t.id;
+    this.pb?._changed?.();
+    return this._addPoints(t, offer.points, offer.label, key);
+  }
+
+  /**
+   * A calming scheme ran on a track (from the scheme board). During a breach it adds half its momentum
+   * value to the containment bar (Everything Is Fine, -8 momentum: +4). Returns the points added.
+   */
+  calmingScheme(id, momentum, label = 'Calming scheme') {
+    const t = this.tracks[id];
+    if (t?.state !== 'breach') return 0;
+    const pts = Math.abs(momentum) / 2;
+    this._addPoints(t, pts, label, 'calming');
+    return pts;
+  }
+
+  _addPoints(t, points, label, key) {
+    const bar = (t.window.bar = Math.min(100, Math.round((t.window.bar + points) * 10) / 10));
+    this._note(`${label} on ${t.name}: +${points} (bar ${bar}/100).`, { type: 'contain', track: t.id, source: key });
     this._emit('contribute', { track: t.id, source: key, bar });
     if (bar >= 100) this._contain(t);
     return bar;
+  }
+
+  /** Weekly containment work: ops land after their delay, the crash program pays +15 for 40 RP. */
+  _containmentWeek(t) {
+    const w = t.window;
+    for (const op of w.ops ?? []) op.weeksLeft -= 1;
+    const landed = (w.ops ?? []).filter((op) => op.weeksLeft <= 0);
+    w.ops = (w.ops ?? []).filter((op) => op.weeksLeft > 0);
+    for (const op of landed) { this._addPoints(t, op.points, this.cfg.sources.op.label, 'op'); if (t.state !== 'breach') return; }
+    if (w.program) {
+      const R = this.cfg.sources.research;
+      if (this.research.level() >= R.rdLevel && this.research.spend(R.rpPerWeek)) this._addPoints(t, R.pointsPerWeek, R.label, 'research');
+      else { w.program = false; this._note(`${R.label} on ${t.name} stopped: not enough RP.`, { type: 'contain', track: t.id, source: 'research' }); }
+    }
   }
 
   _contain(t) {
@@ -325,6 +416,8 @@ export class CrisisSystem {
     const W = this.cfg.perBreachWeek;
     const breaches = this.activeBreaches;
     for (const t of breaches) {
+      this._containmentWeek(t);
+      if (t.state !== 'breach') continue; // contained by this week's work
       this.pb?.addHeat(W.heat, `${t.name} breach`);
       this.boardConfidence = clamp(this.boardConfidence + W.boardConfidence);
       t.window.weeksLeft -= 1;
@@ -349,13 +442,14 @@ export class CrisisSystem {
   toJSON() {
     return {
       week: this.week, reputation: this.reputation, boardConfidence: this.boardConfidence, breachCount: this.breachCount,
-      researchBlocked: this.researchBlocked, paused: this.paused,
-      tracks: Object.values(this.tracks).map((t) => ({ ...t, window: t.window ? { ...t.window, used: { ...t.window.used } } : null })),
+      researchBlocked: this.researchBlocked, paused: this.paused, heroicsUsed: { ...this.heroicsUsed },
+      tracks: Object.values(this.tracks).map((t) => ({ ...t, window: t.window ? { ...t.window, used: { ...t.window.used }, ops: (t.window.ops ?? []).map((o) => ({ ...o })) } : null })),
     };
   }
 
   load(d = {}) {
     for (const k of ['week', 'reputation', 'boardConfidence', 'breachCount', 'researchBlocked', 'paused']) if (d[k] != null) this[k] = d[k];
+    this.heroicsUsed = { ...(d.heroicsUsed ?? {}) };
     for (const saved of d.tracks ?? []) if (this.tracks[saved.id]) Object.assign(this.tracks[saved.id], saved);
     this._sync();
   }
@@ -366,7 +460,7 @@ export class CrisisSystem {
       panicMultiplier: this.panicMultiplier, paused: this.paused, researchBlocked: this.researchBlocked,
       tracks: Object.values(this.tracks).map((t) => ({
         id: t.id, name: t.name, open: t.open, tension: t.tension, state: t.state, scars: t.scars, breaches: t.breaches,
-        lockWeeks: t.lockWeeks, tip: this.visibleTip(t.id), window: t.window ? { ...t.window, used: { ...t.window.used } } : null,
+        lockWeeks: t.lockWeeks, tip: this.visibleTip(t.id), window: t.window ? { ...t.window, used: { ...t.window.used }, ops: (t.window.ops ?? []).map((o) => ({ ...o })) } : null,
       })),
     };
   }
