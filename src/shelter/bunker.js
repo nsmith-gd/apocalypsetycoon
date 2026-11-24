@@ -19,7 +19,8 @@
 //           Ratings: seal, blast (stratum + best blast door above the bedrooms), security (0-5), morale (0-100).
 // FLOW      survey (1 week) -> dig -> shell -> fit-out -> pressure test (30 days) -> walkthrough -> handover.
 
-import { STRATA, stratumAt, STRUCTURES, CONDUITS, OBJECTS, ROOM_TYPES, NEEDS, ROOM_DEPTH_M, WATER_TABLE_M, fitDays } from './bunker-catalog.js';
+import { ResidentSim } from './residents.js';
+import { STRATA, stratumAt, STRUCTURES, CONDUITS, OBJECTS, ROOM_TYPES, NEEDS, ROOM_DEPTH_M, WATER_TABLE_M, fitDays, LAYERS, layerOf, FINISHES, variantsFor } from './bunker-catalog.js';
 
 export const BUNKER = Object.freeze({
   width: 24, // Family Vault plot
@@ -59,13 +60,18 @@ export class BunkerSite {
     this.dug = new Uint8Array(n); // 1 = excavated
     this.structure = new Array(n).fill(null); // 'wall' | 'spine'
     this.conduits = new Uint8Array(n); // bitmask air/water/power
-    this.occupant = new Int32Array(n).fill(0); // object id occupying the tile (0 = none)
+    // object ids per layer (0 = none): rugs under, furniture, back-wall decor, ceiling fixtures
+    this.layers = Object.fromEntries(LAYERS.map((l) => [l, new Int32Array(n).fill(0)]));
+    this.occupant = this.layers.floor; // the furniture layer (what blocks walls and other furniture)
+    // interior finishes per tile (null = bare): back wall, floor, room lighting
+    this.finish = { wall: new Array(n).fill(null), floor: new Array(n).fill(null), light: new Array(n).fill(null) };
     this.objects = new Map(); // id -> { id, kind, x, y, built }
     this.jobs = [];
     this._id = 1;
     this.surveyed = surveyed;
     this.surveyLeft = surveyed ? 0 : this.cfg.surveyDays;
     this.pressureTest = null; // { daysLeft, result }
+    this.people = new ResidentSim(this, { seed: 7 + (this.handedOver ?? 0) }); // the billionaires who live here
     this.day = 0;
     this._version = 0;
     this._cache = null;
@@ -78,7 +84,9 @@ export class BunkerSite {
   stratum(y) { return stratumAt(Math.max(0, y)); }
   isDug(x, y) { return y < 0 || this.dug[this.idx(x, y)] === 1; }
   isSolid(x, y) { return !this.inside(x, y) ? true : y >= 0 && (!this.isDug(x, y) || this.structure[this.idx(x, y)] === 'wall'); }
-  objectAt(x, y) { const id = this.inside(x, y) ? this.occupant[this.idx(x, y)] : 0; return id ? this.objects.get(id) : null; }
+  objectAt(x, y, layer = 'floor') { const id = this.inside(x, y) ? this.layers[layer][this.idx(x, y)] : 0; return id ? this.objects.get(id) : null; }
+  /** Everything on a tile, top layer first. */
+  objectsAt(x, y) { return ['ceiling', 'wall', 'floor', 'rug'].map((l) => this.objectAt(x, y, l)).filter(Boolean); }
   /** Open for walking and for air: dug (or sky), not a wall. Spine, doors and furniture are passable. */
   passable(x, y) {
     if (!this.inside(x, y)) return false;
@@ -130,7 +138,7 @@ export class BunkerSite {
     if (this.research && !this.research.canBuildStructure(kind)) return { ok: false, reason: this.research.lockedReason?.('structure', kind) ?? `Research ${def.name} first` };
     if (!this._willBeDug(x, y)) return { ok: false, reason: 'Dig the tile first' };
     if (this.structure[this.idx(x, y)] || this.jobs.some((j) => j.type === 'build' && j.x === x && j.y === y)) return { ok: false, reason: 'Already built' };
-    if (this.occupant[this.idx(x, y)] || this._plannedObjectAt(x, y)) return { ok: false, reason: 'Something is in the way' };
+    if (LAYERS.some((l) => this.layers[l][this.idx(x, y)]) || this._plannedObjectAt(x, y)) return { ok: false, reason: 'Something is in the way' };
     const paid = this._charge(def.name, def.cost);
     return { ok: true, job: this._queue({ type: 'build', kind, x, y, days: def.days, paid, label: def.name }) };
   }
@@ -166,8 +174,8 @@ export class BunkerSite {
     return n;
   }
 
-  _plannedObjectAt(x, y) {
-    return this.jobs.some((j) => j.type === 'object' && x >= j.x && x < j.x + OBJECTS[j.kind].w && y <= j.y && y > j.y - OBJECTS[j.kind].h);
+  _plannedObjectAt(x, y, layer = null) {
+    return this.jobs.some((j) => j.type === 'object' && (!layer || layerOf(OBJECTS[j.kind]) === layer) && x >= j.x && x < j.x + OBJECTS[j.kind].w && y <= j.y && y > j.y - OBJECTS[j.kind].h);
   }
 
   /**
@@ -183,11 +191,22 @@ export class BunkerSite {
     if (o.surface) { if (y !== -1) return { ok: false, reason: `${o.name} goes on the surface` }; }
     else if (top < 0) return { ok: false, reason: `${o.name} goes underground` };
     if (o.minDepth && y < o.minDepth) return { ok: false, reason: `${o.name} needs ${o.minDepth} m or deeper` };
+    const layer = layerOf(o);
+    const wallAt = (xx, yy) => this.structure[this.idx(xx, yy)] === 'wall' || this.jobs.some((j) => j.type === 'build' && j.kind === 'wall' && j.x === xx && j.y === yy);
     for (let yy = top; yy <= y; yy++) for (let xx = x; xx < x + o.w; xx++) {
       if (yy >= 0 && !this._willBeDug(xx, yy)) return { ok: false, reason: 'Dig out the space first' };
       const i = this.idx(xx, yy);
-      if (this.structure[i] === 'wall' || this.jobs.some((j) => j.type === 'build' && j.kind === 'wall' && j.x === xx && j.y === yy)) return { ok: false, reason: 'A wall is in the way' };
-      if (this.occupant[i] || this._plannedObjectAt(xx, yy)) return { ok: false, reason: 'Something is already there' };
+      if (wallAt(xx, yy)) return { ok: false, reason: 'A wall is in the way' };
+      if (layer !== 'floor' && this.structure[i] === 'spine') return { ok: false, reason: 'Not on the spine' };
+      if (this.layers[layer][i] || this._plannedObjectAt(xx, yy, layer)) return { ok: false, reason: 'Something is already there' };
+    }
+    if (layer === 'wall') return { ok: true }; // hangs on the back wall: no floor needed, sits over furniture
+    if (layer === 'ceiling') {
+      for (let xx = x; xx < x + o.w; xx++) {
+        const above = top - 1;
+        if (!(above < -this.S || (above >= 0 && (!this._willBeDug(xx, above) || wallAt(xx, above))))) return { ok: false, reason: 'It hangs from a ceiling' };
+      }
+      return { ok: true };
     }
     for (let xx = x; xx < x + o.w; xx++) {
       const below = y + 1;
@@ -197,12 +216,45 @@ export class BunkerSite {
     return { ok: true };
   }
 
-  place(kind, x, y) {
+  place(kind, x, y, { variant = null, flip = false } = {}) {
     const c = this.canPlace(kind, x, y);
     if (!c.ok) return c;
     const o = OBJECTS[kind];
     const paid = this._charge(o.name, o.cost);
-    return { ok: true, job: this._queue({ type: 'object', kind, x, y, days: fitDays(o), paid, label: `Fit ${o.name}` }) };
+    const v = variant ?? variantsFor(kind)[0].id;
+    return { ok: true, job: this._queue({ type: 'object', kind, x, y, variant: v, flip: !!flip, days: layerOf(o) === 'floor' ? fitDays(o) : 0.25, paid, label: `Fit ${o.name}` }) };
+  }
+
+  /** Recolour an installed object (or a queued one) to one of its variants. Free, instant. */
+  recolor(objOrJob, variantId = null) {
+    const list = variantsFor(objOrJob.kind);
+    const i = list.findIndex((v) => v.id === objOrJob.variant);
+    objOrJob.variant = variantId ?? list[(i + 1) % list.length].id;
+    this._changed({ type: 'recolor' });
+    return objOrJob.variant;
+  }
+  flip(objOrJob) { objOrJob.flip = !objOrJob.flip; this._changed({ type: 'flip' }); return objOrJob.flip; }
+
+  /**
+   * Finish a room like The Sims: `kind` wall | floor | light, applied to every tile of the room that
+   * (x, y) is in (or just that tile with { single: true }). Charged per tile, applied at once.
+   */
+  paint(kind, finishId, x, y, { single = false } = {}) {
+    const def = FINISHES[kind]?.[finishId];
+    if (!def || !this.inside(x, y) || y < 0) return { ok: false, reason: 'Nothing to finish there' };
+    let tiles;
+    if (single) tiles = this.passable(x, y) && this.structure[this.idx(x, y)] !== 'spine' ? [[x, y]] : [];
+    else {
+      const { rooms, roomOf } = this.rooms();
+      const r = rooms[roomOf[this.idx(x, y)]];
+      tiles = r && !r.touchesSky ? r.tiles : [];
+    }
+    if (!tiles.length) return { ok: false, reason: 'Click inside a room' };
+    const todo = tiles.filter(([tx, ty]) => this.finish[kind][this.idx(tx, ty)] !== finishId);
+    const cost = this._charge(`${def.name} (${todo.length} m²)`, def.cost * todo.length);
+    for (const [tx, ty] of todo) this.finish[kind][this.idx(tx, ty)] = finishId === 'concrete' || finishId === 'plain' ? null : finishId;
+    this._changed({ type: 'paint' });
+    return { ok: true, tiles: todo.length, cost };
   }
 
   /** Cancel a queued job on a tile (full refund) or deconstruct what's there (50% back on objects). */
@@ -214,10 +266,10 @@ export class BunkerSite {
       this._changed();
       return { ok: true, cancelled: j };
     }
-    const obj = this.objectAt(x, y);
+    const obj = this.objectAt(x, y, 'floor') ?? this.objectAt(x, y, 'wall') ?? this.objectAt(x, y, 'ceiling') ?? this.objectAt(x, y, 'rug');
     if (obj) {
       const o = OBJECTS[obj.kind];
-      for (const [xx, yy] of this.footprint(obj)) this.occupant[this.idx(xx, yy)] = 0;
+      for (const [xx, yy] of this.footprint(obj)) this.layers[layerOf(o)][this.idx(xx, yy)] = 0;
       this.objects.delete(obj.id);
       this._refund(`${o.name} salvage`, Math.round(o.cost * 0.5));
       this._changed();
@@ -276,9 +328,9 @@ export class BunkerSite {
     else if (j.type === 'build') this.structure[i] = j.kind;
     else if (j.type === 'conduit') this.conduits[i] |= BIT[j.net];
     else if (j.type === 'object') {
-      const obj = { id: this._id++, kind: j.kind, x: j.x, y: j.y, built: true };
+      const obj = { id: this._id++, kind: j.kind, x: j.x, y: j.y, built: true, variant: j.variant ?? variantsFor(j.kind)[0].id, flip: !!j.flip };
       this.objects.set(obj.id, obj);
-      for (const [xx, yy] of this.footprint(obj)) this.occupant[this.idx(xx, yy)] = obj.id;
+      for (const [xx, yy] of this.footprint(obj)) this.layers[layerOf(OBJECTS[j.kind])][this.idx(xx, yy)] = obj.id;
     }
     this.jobs = this.jobs.filter((k) => k !== j);
     this._changed({ type: 'built', job: j });
@@ -286,6 +338,7 @@ export class BunkerSite {
 
   /** Advance game time (seconds). Survey first, then crews work the queue; runs the pressure test. */
   tick(seconds) {
+    this.people.tick(seconds);
     let days = seconds / this.cfg.daySeconds;
     this.day += days;
     if (this.pressureTest && this.pressureTest.daysLeft > 0) {
@@ -569,11 +622,16 @@ export class BunkerSite {
     for (const r of rooms) {
       for (const obj of r.objects) {
         const o = OBJECTS[obj.kind];
-        r.beauty += o.beauty ?? 0;
+        r.beauty += (o.beauty ?? 0) + (variantsFor(obj.kind).find((v) => v.id === obj.variant)?.beauty ?? 0);
         let p = o.prestige ?? 0;
         if (o.cellar && r.minY >= 10) p *= 1.5; // GDD: wine cellar +50% at 10 m or deeper
         r.prestige += p;
       }
+      // finishes: the room's average wall + floor + light beauty per tile, x3 (a fully marbled room is +9)
+      let fin = 0;
+      for (const [x, y] of r.tiles) { const i = this.idx(x, y); for (const k of ['wall', 'floor', 'light']) fin += FINISHES[k][this.finish[k][i]]?.beauty ?? 0; }
+      r.finishBeauty = Math.round((fin / Math.max(1, r.tiles.length)) * 3);
+      r.beauty += r.finishBeauty;
       r.prestige = Math.max(0, r.prestige - (r.type.tier === 'status' ? r.noise : 0));
       r.impressiveness = Math.round(r.beauty + Math.min(10, r.size / 4) - (r.beds ? r.noise : 0) - (r.rough ? 3 : 0) - (r.cramped ? 5 : 0) - (r.seeps ? 4 : 0));
       prestige += r.prestige;
@@ -659,7 +717,10 @@ export class BunkerSite {
 
   toShelter() {
     const s = this.simulate();
-    return { id: 'hq', name: this.name, owner: 'your board', occupants: s.occupants, rooms: this.legacyRooms(), sold: false, sealed: { daysSealed: s.daysSealed, ratings: { ...s.ratings, morale: Math.round(s.ratings.morale / 20) }, prestige: s.prestige } };
+    // morale: the layout's rating blended with how the residents actually feel living here
+    const mood = this.people.averageMood;
+    const morale = mood == null ? s.ratings.morale : Math.round((s.ratings.morale + mood) / 2);
+    return { id: 'hq', name: this.name, owner: 'your board', occupants: s.occupants, rooms: this.legacyRooms(), sold: false, sealed: { daysSealed: s.daysSealed, ratings: { ...s.ratings, morale: Math.round(morale / 20) }, prestige: s.prestige } };
   }
 
   handOver(name = 'Shelter') {
@@ -677,7 +738,7 @@ export class BunkerSite {
     return {
       v: 2, W: this.W, H: this.H, S: this.S,
       dug: Array.from(this.dug), structure: this.structure, conduit: Array.from(this.conduits),
-      objects: [...this.objects.values()], jobs: this.jobs, id: this._id,
+      objects: [...this.objects.values()], jobs: this.jobs, id: this._id, finish: this.finish,
       surveyed: this.surveyed, surveyLeft: this.surveyLeft, pressureTest: this.pressureTest, day: this.day, handedOver: this.handedOver,
     };
   }
@@ -688,8 +749,10 @@ export class BunkerSite {
     this.structure = d.structure;
     this.conduits = Uint8Array.from(d.conduit);
     this.objects = new Map(d.objects.map((o) => [o.id, { ...o }]));
-    this.occupant = new Int32Array(this.dug.length).fill(0);
-    for (const o of this.objects.values()) for (const [x, y] of this.footprint(o)) this.occupant[this.idx(x, y)] = o.id;
+    this.layers = Object.fromEntries(LAYERS.map((l) => [l, new Int32Array(this.dug.length).fill(0)]));
+    this.occupant = this.layers.floor;
+    for (const o of this.objects.values()) for (const [x, y] of this.footprint(o)) this.layers[layerOf(OBJECTS[o.kind])][this.idx(x, y)] = o.id;
+    if (d.finish) this.finish = { wall: [...d.finish.wall], floor: [...d.finish.floor], light: [...d.finish.light] };
     this.jobs = d.jobs.map((j) => ({ ...j }));
     this._id = d.id;
     this.surveyed = d.surveyed;

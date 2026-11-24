@@ -12,3 +12,30 @@
 .dc-hud.dc-drop { animation: dc-shake 0.5s steps(5); }
 @keyframes dc-shake { 20% { transform: translateX(-2px); background: #4a1a14; } 40% { transform: translateX(2px); } 60% { transform: translateX(-1px); background: #4a1a14; } 80% { transform: translateX(1px); } }
 @keyframes at-blink { 50% { opacity: 0.3; } }
+
+/* Centre of the top bar: the crown strip (#71). */
+.hud-crown { flex: 1 1 100%; display: flex; justify-content: center; align-items: center; position: relative; min-height: 52px; }
+.hud-crown > .hud-brand { position: absolute; left: 0; top: 50%; transform: translateY(-50%); }
+.dc-center { min-width: 0; padding: 4px 10px; }
+.dc-center .dc-row { gap: 10px; }
+.dc-center .dc-face { width: 48px; height: 48px; }
+.dc-center .dc-time { font-size: 22px; line-height: 1; }
+.dc-center .dc-text { gap: 1px; min-width: 250px; }
+.dc-trackbox { display: flex; flex-direction: column; gap: 2px; width: 170px; }
+.dc-track { position: relative; height: 10px; background: #e8d6a8; border: 2px solid var(--at-border); }
+.dc-lost { position: absolute; left: 0; top: 0; bottom: 0; background: #c98a7a; transition: width .4s steps(6); }
+.dc-hud[data-zone='countdown'] .dc-lost { background: var(--at-red); }
+.dc-pin { position: absolute; top: -5px; bottom: -5px; width: 3px; margin-left: -1px; background: var(--at-paper-ink); box-shadow: 0 0 0 1px var(--at-ink); transition: left .4s steps(6); }
+.dc-scale { display: flex; justify-content: space-between; font-size: 8px; font-weight: 700; color: var(--at-dim); letter-spacing: 1px; }
+.dc-countdown { display: flex; flex-direction: column; align-items: center; padding: 2px 8px; border: 2px solid var(--at-red); color: var(--at-red); animation: at-blink 0.8s steps(2) infinite; }
+.dc-countdown[data-on='false'] { visibility: hidden; animation: none; } /* keeps the clock's width steady */
+.dc-cd-label { font-size: 8px; font-weight: 900; letter-spacing: 1px; }
+.dc-cd-weeks { font-size: 18px; font-weight: 900; line-height: 1; }
+@media (max-width: 760px) {
+  .hud-crown > .hud-brand { display: none; }
+  .dc-trackbox { width: 110px; }
+  .dc-center .dc-sub { white-space: normal; }
+  .dc-center .dc-text { min-width: 0; }
+  .dc-countdown[data-on='false'] { display: none; }
+}
+@media (max-width: 480px) { .dc-trackbox { display: none; } }

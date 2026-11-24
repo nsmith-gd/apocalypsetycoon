@@ -23,7 +23,8 @@ export const BRANCHES = Object.freeze({
   corporate: 'Corporate',
 });
 
-// GDD row 1, the starter kit: everything here is buildable without research.
+// GDD row 1, the starter kit: buildable without research. Any object no node unlocks is also free
+// (ordinary furniture and decor), so new catalog items never get stuck behind research by accident.
 export const STARTER = Object.freeze({
   objects: ['door', 'airlock', 'bunk', 'bed', 'crank_scrubber', 'o2_rack', 'tank', 'shelf', 'fridge', 'diesel', 'fuel',
     'stove', 'toilet', 'shower', 'camera', 'plant', 'lamp'],
@@ -53,9 +54,9 @@ export const TREE_NODES = Object.freeze([
   n('l4_reactor', 'life', 4, 'Micro-reactor', 350, 2_000_000, ['l3_geo'], 'Shielding, specialists and regulator heat.', [{ type: 'object', id: 'reactor' }]),
 
   // ---------- Luxury: what clients pay for ----------
-  n('x1_suite', 'luxury', 1, 'Master Suite, Lounge', 0, 50_000, [], 'More power, a second generator, noise in the layout.', [{ type: 'object', id: 'king_bed' }, { type: 'object', id: 'sofa' }, { type: 'object', id: 'tv' }, { type: 'object', id: 'bookshelf' }, { type: 'object', id: 'gold_taps' }]),
-  n('a_cellar', 'luxury', 2, "Wine Cellar, Home Cinema, Chef's Kitchen, Gym", 50, 200_000, ['x1_suite'], 'Status rooms. Midnight does not care.', [{ type: 'object', id: 'wine_rack' }, { type: 'object', id: 'cinema_seats' }, { type: 'object', id: 'cinema_screen' }, { type: 'object', id: 'gym_rig' }, { type: 'object', id: 'led_sky' }, { type: 'object', id: 'chef_range' }, { type: 'amenity', id: 'wine_cellar' }]),
-  n('x3_art', 'luxury', 3, 'Art Vault', 200, 800_000, ['a_cellar'], 'Oils and marble for the end of the world.', [{ type: 'object', id: 'painting' }, { type: 'object', id: 'statue' }]),
+  n('x1_suite', 'luxury', 1, 'Master Suite, Lounge', 0, 50_000, [], 'More power, a second generator, noise in the layout.', [{ type: 'object', id: 'king_bed' }, { type: 'object', id: 'sofa' }, { type: 'object', id: 'tv' }, { type: 'object', id: 'bookshelf' }, { type: 'object', id: 'gold_taps' }, { type: 'object', id: 'bathtub' }, { type: 'object', id: 'vanity' }, { type: 'object', id: 'faux_window' }, { type: 'object', id: 'fireplace' }]),
+  n('a_cellar', 'luxury', 2, "Wine Cellar, Home Cinema, Chef's Kitchen, Gym", 50, 200_000, ['x1_suite'], 'Status rooms. Midnight does not care.', [{ type: 'object', id: 'wine_rack' }, { type: 'object', id: 'cinema_seats' }, { type: 'object', id: 'cinema_screen' }, { type: 'object', id: 'gym_rig' }, { type: 'object', id: 'led_sky' }, { type: 'object', id: 'chef_range' }, { type: 'object', id: 'bar_counter' }, { type: 'object', id: 'pool_table' }, { type: 'object', id: 'arcade' }, { type: 'object', id: 'neon_sign' }, { type: 'amenity', id: 'wine_cellar' }]),
+  n('x3_art', 'luxury', 3, 'Art Vault', 200, 800_000, ['a_cellar'], 'Oils and marble for the end of the world.', [{ type: 'object', id: 'painting' }, { type: 'object', id: 'statue' }, { type: 'object', id: 'piano' }, { type: 'object', id: 'aquarium' }, { type: 'object', id: 'rug_persian' }, { type: 'object', id: 'trophy' }, { type: 'object', id: 'chandelier' }, { type: 'object', id: 'mirror' }]),
   n('a_cryo', 'luxury', 4, 'Cryo Pod Bay', 300, 2_000_000, ['x3_art', 'l3_geo'], 'Sleep through the worst of it. Reactor-grade power.', [{ type: 'object', id: 'cryo_pod' }, { type: 'amenity', id: 'cryo_pod' }]),
   n('a_butler', 'luxury', 4, 'AI Butler Core', 250, 1_500_000, ['a_cellar'], 'Runs the bunker. Mostly obeys.', [{ type: 'amenity', id: 'ai_butler' }]),
 

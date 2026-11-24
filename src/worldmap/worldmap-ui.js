@@ -193,7 +193,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     const z = zoneOf(v.crisis);
     const crisis = el('div', 'wm-crisis');
     crisis.dataset.zone = z.name;
-    crisis.innerHTML = `<div class="wm-lbl">CRISIS <b>${v.crisis}</b> ${z.word}${v.crisisTrack ? ` · worst: ${TRACK_NAMES[v.crisisTrack]}` : ''}</div><div class="wm-bar"><i style="width:${v.crisis}%"></i></div>`;
+    crisis.innerHTML = `<div class="wm-lbl">CRISIS <b>${v.crisis}</b> ${z.word}${v.crisisTrack ? ` · worst: ${schemes?.crisis.tracks[v.crisisTrack]?.name ?? TRACK_NAMES[v.crisisTrack] ?? v.crisisTrack}` : ''}</div><div class="wm-bar"><i style="width:${v.crisis}%"></i></div>`;
     panel.append(crisis);
     if (schemes) panel.append(tracksBlock(v));
 
@@ -224,7 +224,10 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     const region = sales.region(v.id);
     const wrap = el('div', 'wm-tracks');
     wrap.append(el('h3', 'wm-h3', 'CRISES HERE · $$$ = THE EDGE, JUST BELOW THE TIPPING POINT'));
-    const ids = Object.keys(region.exposure).sort((a, b) => EXPO_ORDER[region.exposure[a]] - EXPO_ORDER[region.exposure[b]]);
+    // only the crises in play in this world (a roster track shows once it has opened)
+    const ids = Object.keys(region.exposure).filter((id) => schemes.crisis.tracks[id]?.open)
+      .sort((a, b) => EXPO_ORDER[region.exposure[a]] - EXPO_ORDER[region.exposure[b]]);
+    if (!ids.length) wrap.append(el('div', 'wm-dim', 'No threat has opened yet. The world is calm, and calm worlds don\'t buy bunkers.'));
     for (const id of ids) {
       const tv = schemes.trackView(id);
       const row = el('div', 'wm-track');

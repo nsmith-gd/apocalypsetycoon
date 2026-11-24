@@ -88,12 +88,13 @@ export function defaultShelterTest(shelter) {
 }
 
 export class CrisisSystem {
-  constructor({ seed = 1, tracks = TRACKS, links = DOMINO_LINKS, config = {}, pushback = null, doomClock = null, ledger = null, shelters = () => [], shelterTest = defaultShelterTest, tips = null } = {}) {
+  constructor({ seed = 1, tracks = TRACKS, links = DOMINO_LINKS, config = {}, pushback = null, doomClock = null, ledger = null, shelters = () => [], shelterTest = defaultShelterTest, tips = null, clockWeeks = false } = {}) {
     this.cfg = { ...BREACH, ...config, sources: { ...BREACH.sources, ...(config.sources ?? {}) } };
     this.rng = rngFrom(seed);
     this.links = links;
     this.pb = pushback;
     this.clock = doomClock;
+    this.clockWeeks = clockWeeks; // true: each advanceWeek() also advances the Doom Clock a week (campaign)
     this.ledger = ledger;
     this.getShelters = shelters;
     this.shelterTest = shelterTest;
@@ -115,8 +116,26 @@ export class CrisisSystem {
         scars: 0, revealed: false, breaches: 0,
         state: 'calm', // calm | brink | breach | locked | collapsed
         lockWeeks: 0, window: null,
+        open: t.open ?? true, // a closed track waits for its opening time (openTrack); its tip still rolls now
       };
     }
+  }
+
+  /** Open tracks only: the ones that are in play. */
+  get openTracks() { return Object.values(this.tracks).filter((t) => t.open); }
+
+  /**
+   * A track opens (its time in the roster has come). Its tipping point was rolled at the start, and
+   * Doom Clock fragility has been lowering it all along, so it opens already fragile.
+   */
+  openTrack(id, { tension = 0 } = {}) {
+    const t = this.tracks[id];
+    if (!t || t.open) return false;
+    t.open = true;
+    this._note(`${t.name} OPENS. Tipping point somewhere in ${JSON.stringify(this.visibleTip(id).range)}.`, { type: 'open', track: id });
+    this._emit('open', { track: id });
+    if (tension) this.setTension(id, tension, 'opening'); else this._sync();
+    return true;
   }
 
   on(type, fn) {
@@ -161,6 +180,7 @@ export class CrisisSystem {
   addTension(id, delta, source = '') {
     const t = this.tracks[id];
     if (!t) return;
+    if (!t.open) return; // not in play yet
     if (t.state === 'collapsed') return; // pinned at 100
     if (t.state === 'locked' && delta > 0) return; // recovering: can't be pushed up
     this.setTension(id, t.tension + delta, source);
@@ -168,7 +188,7 @@ export class CrisisSystem {
 
   setTension(id, value, source = '') {
     const t = this.tracks[id];
-    if (!t || t.state === 'collapsed') return;
+    if (!t || !t.open || t.state === 'collapsed') return;
     t.tension = clamp(value);
     if (t.state === 'breach' || t.state === 'locked') return this._sync();
     const tip = this.tippingPoint(id);
@@ -181,8 +201,17 @@ export class CrisisSystem {
     this._sync();
   }
 
+  /** Tipping point before Doom Clock fragility (rolled minus scars): what the clock lowers by itself. */
+  baseTip(id) {
+    const t = this.tracks[id];
+    return t.tipRolled - t.scars * this.cfg.scar;
+  }
+
+  /** Push every OPEN track's tension, and its pre-fragility tip, to the Doom Clock. */
   _sync() {
-    if (this.clock) this.clock.setTensions(Object.fromEntries(Object.values(this.tracks).map((t) => [t.id, t.tension])));
+    if (!this.clock) return;
+    const open = this.openTracks;
+    this.clock.setTensions(Object.fromEntries(open.map((t) => [t.id, t.tension])), { tips: Object.fromEntries(open.map((t) => [t.id, this.baseTip(t.id)])) });
   }
 
   // ---------- breach ----------
@@ -291,6 +320,8 @@ export class CrisisSystem {
   /** One in-game week. Call once per week from the campaign clock (after the player resumes). */
   advanceWeek() {
     this.week += 1;
+    // The clock's week turns first, so a countdown started by this week's collapse gets its full 4 weeks.
+    if (this.clockWeeks) this.clock?.advanceWeeks(1);
     const W = this.cfg.perBreachWeek;
     const breaches = this.activeBreaches;
     for (const t of breaches) {
@@ -309,7 +340,24 @@ export class CrisisSystem {
         this.setTension(t.id, t.tension);
       }
     }
+    // Every week the clock hears every open track's tension and tip (and, in the campaign, the week itself).
+    this._sync();
     this._emit('week', { week: this.week });
+  }
+
+  /** Save slot: every track (including its hidden roll), the week and the shared meters. */
+  toJSON() {
+    return {
+      week: this.week, reputation: this.reputation, boardConfidence: this.boardConfidence, breachCount: this.breachCount,
+      researchBlocked: this.researchBlocked, paused: this.paused,
+      tracks: Object.values(this.tracks).map((t) => ({ ...t, window: t.window ? { ...t.window, used: { ...t.window.used } } : null })),
+    };
+  }
+
+  load(d = {}) {
+    for (const k of ['week', 'reputation', 'boardConfidence', 'breachCount', 'researchBlocked', 'paused']) if (d[k] != null) this[k] = d[k];
+    for (const saved of d.tracks ?? []) if (this.tracks[saved.id]) Object.assign(this.tracks[saved.id], saved);
+    this._sync();
   }
 
   snapshot() {
@@ -317,7 +365,7 @@ export class CrisisSystem {
       week: this.week, reputation: this.reputation, boardConfidence: this.boardConfidence, breachCount: this.breachCount,
       panicMultiplier: this.panicMultiplier, paused: this.paused, researchBlocked: this.researchBlocked,
       tracks: Object.values(this.tracks).map((t) => ({
-        id: t.id, name: t.name, tension: t.tension, state: t.state, scars: t.scars, breaches: t.breaches,
+        id: t.id, name: t.name, open: t.open, tension: t.tension, state: t.state, scars: t.scars, breaches: t.breaches,
         lockWeeks: t.lockWeeks, tip: this.visibleTip(t.id), window: t.window ? { ...t.window, used: { ...t.window.used } } : null,
       })),
     };

@@ -14,9 +14,12 @@ test('the tree data is valid and every effect points at something real', () => {
     if (e.type === 'scheme') assert.ok(schemeIds.has(e.id), `${n.id}: scheme ${e.id}`);
   }
   for (const id of STARTER.objects) assert.ok(OBJECTS[id], `starter ${id}`);
-  // every bunker object is either in the starter kit or unlocked by some node
+  // ungated objects are free; every luxury and every system machine beyond the starter kit is gated
   const t = new ResearchTree();
-  for (const id of Object.keys(OBJECTS)) assert.ok(STARTER.objects.includes(id) || t.gates('object', id), `${id} is unreachable`);
+  for (const [id, o] of Object.entries(OBJECTS)) {
+    if (STARTER.objects.includes(id)) continue;
+    if (o.luxury || o.prestige || ['air', 'water', 'food', 'power', 'security', 'status'].includes(o.cat)) assert.ok(t.gates('object', id), `${id} (${o.cat}) should need research`);
+  }
 });
 
 test('crisis grants: weekly RP by band, stacking, none from breached tracks', () => {
