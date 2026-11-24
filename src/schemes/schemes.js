@@ -77,6 +77,10 @@ export class SchemeBoard {
   onChange(fn) { this._listeners.add(fn); return () => this._listeners.delete(fn); }
   _emit(e) { for (const fn of this._listeners) fn(e, this); }
 
+  /** Save slot (#80). */
+  toJSON() { return { runsThisWeek: { ...this.runsThisWeek }, log: this.log.map((x) => ({ ...x })) }; }
+  load(d = {}) { this.runsThisWeek = { ...(d.runsThisWeek ?? {}) }; this.log = (d.log ?? []).map((x) => ({ ...x })); this._emit({ type: 'load' }); }
+
   region(id) { return this.regions.find((r) => r.id === id) ?? null; }
   scheme(id) { return this.schemes.find((s) => s.id === id) ?? null; }
 
