@@ -326,7 +326,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       const left = l.expiresQuarter - q;
       const expiry = left <= 0 ? 'goes cold after this quarter' : `good until end of Q${l.expiresQuarter}`;
       card.innerHTML = `<div class="wm-card-name">${l.guest.name} <em class="wm-tier" data-tier="${l.tier}">${l.tier.toUpperCase()}</em> <em class="wm-w-${l.salesWealth}">${l.salesWealth}</em></div>
-        <div class="wm-dim">${l.wealthClass} · met at ${venueName(l.source?.venueId)} · ${expiry}${l.fears.length ? ` · fears ${l.fears.join(', ')}` : ''}</div>`;
+        <div class="wm-dim">${l.wealthClass} · met at ${l.source?.venueName ?? venueName(l.source?.venueId)} · ${expiry}${l.fears.length ? ` · fears ${l.fears.join(', ')}` : ''}</div>`;
       for (const s of sales.stock) {
         const qt = quoteLead(sales, leads, l.id, s.id);
         if (qt.error) continue;
