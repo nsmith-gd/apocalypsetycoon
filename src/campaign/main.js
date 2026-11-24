@@ -16,6 +16,9 @@ import { ResearchTree } from '../research/research.js';
 import { createAudio, wireAudio, createSoundToggle, startOnFirstGesture, midnightTimes } from '../audio/audio.js';
 import { computeMidnight } from '../midnight/midnight.js';
 import { showMidnight, showClockStrike } from '../midnight/midnight-ui.js';
+import { showSealOrder } from '../midnight/engineered-ui.js';
+import { uncontrolledRoad, sealOrderClients, resolveUncontrolled } from '../midnight/uncontrolled.js';
+import { REGIONS as SALES_REGIONS } from '../demand/demand.js';
 import { BunkerSite } from '../shelter/bunker.js';
 import { createBunkerUI } from '../shelter/bunker-ui.js';
 import { CrisisSystem } from '../crisis/breach.js';
@@ -318,23 +321,36 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     ui.update(hudState());
   });
   let midnightStarted = false;
-  async function midnight(cause = null) {
+  // road: null = the end of Q12 (still graded straight away); an uncontrolledRoad = the Doom Clock struck zero or
+  // the Final Countdown ran out, which runs the Midnight sequence: the strike, the Seal Order, the grade (#70).
+  async function midnight(road = null) {
     if (midnightStarted) return;
     midnightStarted = true;
     markCampaignFinished();
     clock.hold('midnight');
     slot.clear();
     renderBar();
-    const result = computeMidnight({ shelters: shelters(), world: { tension: pb.tension, heat: pb.heat, runaways: pb.runaways }, cash: ledger.cash,
-      ...(cause ? { forceType: 'failed', cause } : {}) });
+    const world = { tension: pb.tension, heat: pb.heat, runaways: pb.runaways, collapses: doom.collapses.length };
     const { tolls, boom } = midnightTimes();
-    audio.midnight(result.type);
-    await showClockStrike({ root: document.body, tolls: tolls.map((s) => s + 0.05), duration: boom + 0.05 });
+    let result;
+    if (road) {
+      const clients = sealOrderClients({ sold: mapSales.sold, pushback: pb, crisis, regions: SALES_REGIONS });
+      const run = resolveUncontrolled({ road, shelters: shelters(), clients, world, cash: ledger.cash, seed: worldSeed });
+      result = run.result;
+      audio.midnight(result.type);
+      await showClockStrike({ root: document.body, tolls: tolls.map((s) => s + 0.05), duration: boom + 0.05 });
+      if (run.seal.length) await showSealOrder({ root: document.body, results: run.seal });
+    } else {
+      result = computeMidnight({ shelters: shelters(), world, cash: ledger.cash });
+      audio.midnight(result.type);
+      await showClockStrike({ root: document.body, tolls: tolls.map((s) => s + 0.05), duration: boom + 0.05 });
+    }
+    session && (session.midnightResult = result);
     await showMidnight({ root: document.body, result, onRestart: () => { document.querySelectorAll('.mn-overlay').forEach((n) => n.remove()); session.destroy(); showMainMenu(); } });
   }
   clock.onMidnight(() => midnight());
-  // The Doom Clock can strike before Q12 ends.
-  doom.on('midnight', (e) => midnight(e.reason === 'clock' ? 'The Doom Clock struck zero before you were ready.' : 'Two collapses started a Final Countdown you could not stop.'));
+  // The Doom Clock can strike before Q12 ends: that is the uncontrolled road.
+  doom.on('midnight', (e) => midnight(uncontrolledRoad({ reason: e.reason, crisis, doom })));
   clock.onChange(renderBar);
   pb.on('change', () => ui.update(hudState()));
   ledger.onChange(() => { ui.update(hudState()); gauge.render(); });
@@ -452,7 +468,47 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     },
   };
   window.__game = session;
+  // Debug presets for a NEW campaign: ?preset=countdown | clockzero (add &qs=26 for 2-second weeks).
+  const preset = DEBUG_PRESETS[params.get('preset')];
+  if (!resume && preset) preset(session);
 }
+
+// ======================= Debug presets (#70) =======================
+// Both set up a world with every threat open and three shelters sold (one built for the end of the world, one full
+// of gold taps, one in between), then take the uncontrolled road to Midnight.
+const PRESET_SHELTERS = [
+  { region: 'nam', name: 'The Deep Vault', occupants: 6, rooms: ['bunk', 'bunk', 'air_vent', 'water_tank', 'pantry', 'hydroponics', 'water_recycler', 'mil_scrubber'], sealed: { daysSealed: 1500, ratings: { seal: 5, blast: 5, security: 4, morale: 3 } } },
+  { region: 'eur', name: 'Gold Tap Grotto', occupants: 6, rooms: ['bunk', 'bunk', 'gold_taps', 'gold_taps', 'cryo_pod', 'wine_cellar', 'air_vent'], sealed: { daysSealed: 60, ratings: { seal: 1, blast: 1, security: 1, morale: 4 } } },
+  { region: 'eas', name: 'Silo No. 7', occupants: 8, rooms: ['bunk', 'bunk', 'bunk', 'air_vent', 'air_vent', 'water_tank', 'water_tank', 'pantry', 'pantry'], sealed: { daysSealed: 500, ratings: { seal: 3, blast: 3, security: 2, morale: 2 } } },
+];
+function presetWorld(g) {
+  for (const id of g.world.roster) { if (!g.world.opened.includes(id)) g.world.opened.push(id); g.crisis.openTrack(id, { tension: 45 }); }
+  for (const sh of PRESET_SHELTERS) {
+    const s = g.mapSales.addFinished(sh);
+    g.market.addLeads(sh.region, 1);
+    g.mapSales.sell(sh.region, s.id);
+  }
+  g.mapScreen.refresh();
+}
+function collapseTrack(g, id) {
+  g.crisis.setTension(id, 100);
+  for (let i = 0; i < 8 && g.crisis.tracks[id].state === 'breach'; i++) g.crisis.advanceWeek();
+}
+const DEBUG_PRESETS = {
+  // Two collapses: the Final Countdown starts, and Midnight comes 4 in-game weeks later.
+  countdown(g) {
+    presetWorld(g);
+    for (const id of g.world.roster.slice(2)) g.crisis.setTension(id, 25); // low enough that the dominoes don't tip a third
+    collapseTrack(g, g.world.roster[0]);
+    collapseTrack(g, g.world.roster[1]);
+  },
+  // The floor falls to zero a few seconds in: the Doom Clock strikes.
+  clockzero(g) {
+    presetWorld(g);
+    for (const id of g.world.roster) g.crisis.setTension(id, 70);
+    setTimeout(() => g.doom._drop(g.doom.floor, 'debug', 'preset: clock zero'), 3000);
+  },
+};
 
 showMainMenu();
 window.__menu = { showMainMenu, startCampaign };
