@@ -17,14 +17,22 @@
       board confidence -5; used executives are saved (`heroicsUsed`).
     Breach weeks: +2 heat, -2 board confidence, panic premium x2 (`panicMultiplier`).
   - Contained: tension 60, locked 3 weeks, scar, revealed; Doom Clock `breachContained`.
-  - Collapse: pinned at 100, Doom Clock `collapse`, linked tracks shoved +15/+8/+4 via `DOMINO_LINKS` (10 links).
+  - Domino map by slot (#65): `slotLinks(trackIds)` resolves the GDD's 10 directed links (`SLOT_LINKS` in
+    src/world/tracks.js) for whatever tracks sit in slots 1-6, so alternates inherit their slot's links. Tracks
+    without a slot (the old generic demo tracks) are not on the map; `links` can still be passed explicitly.
+  - Breach spillover: each breach week a breached track adds +6 / +3 / +1.5 momentum (strong / medium / weak,
+    `TUNING.breachSpillover`) to every track it links to; a collapsed track keeps spilling for good, doubled. Each
+    week a quarter of every movable track's momentum turns into tension (`TUNING.momentum.release`); 'spillover'
+    event per link.
+  - Collapse: pinned at 100, Doom Clock `collapse`, the OPEN tracks it links to (one way) shoved +15/+8/+4
+    (`TUNING.collapseShove`).
   - Shelter-in-place on each breach: every sold shelter is tested (default: air, water and food cover its occupants):
     pass +2 reputation, fail -5 reputation and +15 leverage for its client.
   - `advanceWeek()` once per in-game week. `snapshot()` for UI/save.
 - `breach-ui.js` + `breach.css`: the containment card (pauses the game until resolved or the player advances).
 - Still provisional: the strength of each domino link, the starting board confidence (60), the 6/4/3 window mapping
   (by the track's own breach number), and the heroics board-confidence cost (the GDD lists none). All in `BREACH` /
-  `DOMINO_LINKS` (src/config/tuning.js).
+  `SLOT_LINKS` (src/world/tracks.js) and src/config/tuning.js.
 - Demo: `demo/breach-demo.html`.
 - `consequences.js` (#67): `new CrisisConsequences({ crisis, board, sites, seed })` listens to the crisis events.
   Contained breach: the board reacts per member (Priya Sandoval -10, Cornelius Vane -5, Bryce Kettering +5, via

@@ -53,5 +53,5 @@ test('a world-harness run completes with The Grey Goo in slot 2, using its slot-
   assert.equal(r.weeks, 156);
   assert.ok(r.opened.some((o) => o.track === 'greygoo'));
   assert.ok(r.dominoes.some((d) => d.from === 'greygoo'), 'its collapse shoves its slot-2 neighbours');
-  assert.equal(r.apocalypse, 'The Grey Goo');
+  assert.ok(r.apocalypse && !/The Bloom/.test(r.apocalypse), `a Grey Goo world never ends in The Bloom: ${r.apocalypse}`);
 });

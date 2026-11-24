@@ -79,9 +79,11 @@ test('a collapse moves the floor 4 minutes and every tip drops by 4, unopened tr
 
 test('the domino map is the roster\'s: a collapse shoves the linked roster tracks', () => {
   const { crisis } = world({ open: ['atomic', 'bloom', 'pitchforks'] });
-  const pitch0 = crisis.tracks.pitchforks.tension;
-  collapse(crisis, 'bloom'); // slot 2 -> slot 6 (medium, +8)
-  assert.equal(crisis.tracks.pitchforks.tension, pitch0 + 8);
+  const shoves = [];
+  crisis.on('domino', (e) => shoves.push(e));
+  collapse(crisis, 'bloom'); // slot 2 -> slot 6 (medium, +8); breach weeks also spill momentum along the link
+  assert.deepEqual(shoves.map((e) => [e.from, e.to, e.shove]), [['bloom', 'pitchforks', 8]]); // hush is closed here
+  assert.ok(crisis.tracks.pitchforks.tension >= 8);
 });
 
 test('a second collapse starts the four-week Final Countdown, counted in real crisis weeks, then Midnight', () => {

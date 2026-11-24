@@ -1,3 +1,4 @@
+import { TUNING } from '../config/tuning.js';
 // Threat track roster (GDD: World canvas > Threat tracks, Alternate tracks; Crises > The domino map).
 // Data only, plus roster selection. No DOM.
 //
@@ -102,24 +103,25 @@ export const COUNTER_ROOMS = Object.freeze({
   cloud_embassy: { name: 'Cloud Embassy', size: '4x3 surface', track: 'cloudstrike', unlockAt: hm('3:30'), provides: '+10 containment points to every Collective Bargaining; reputation +1 a quarter', draws: 'A diplomat; raises surface visibility' },
 });
 
-// Domino links belong to SLOTS, so alternates inherit their slot's links. The GDD gives the map as a
-// picture (6 tracks, 10 links; every track feeds The Pitchforks, which feeds Atomic Standoff straight
-// back; Kessler debris blinds Atomic's early-warning satellites). The other links and all weights
-// below are assumptions until the picture's data is in the repo.
+// Domino links belong to SLOTS, so alternates inherit their slot's links (Grey Goo takes The Bloom's,
+// Long Shade Superstorm's, Kessler Rain The Optimizer's, Cloud Strike The Hush's). #65 read the GDD picture.
 export const SLOT_LINKS = Object.freeze([
-  { from: 1, to: 6, strength: 'strong' },
-  { from: 2, to: 6, strength: 'medium' },
-  { from: 3, to: 6, strength: 'medium' },
-  { from: 4, to: 6, strength: 'medium' },
-  { from: 5, to: 6, strength: 'strong' },
-  { from: 6, to: 1, strength: 'strong' },
-  { from: 4, to: 1, strength: 'medium' },
-  { from: 3, to: 5, strength: 'strong' },
-  { from: 2, to: 5, strength: 'weak' },
-  { from: 1, to: 3, strength: 'weak' },
+  // GDD domino map (docs/gdd-figures/04-domino-map.png): 10 directed links. Slots: 1 Atomic, 2 Bloom,
+  // 3 Superstorm, 4 Optimizer, 5 Hush, 6 Pitchforks. Alternates inherit their slot's links.
+  { from: 1, to: 6, strength: 'strong' }, // Atomic -> Pitchforks (the feedback loop)
+  { from: 6, to: 1, strength: 'medium' }, // Pitchforks -> Atomic (the feedback loop)
+  { from: 4, to: 1, strength: 'strong' }, // Optimizer -> Atomic
+  { from: 4, to: 6, strength: 'medium' }, // Optimizer -> Pitchforks
+  { from: 1, to: 3, strength: 'weak' }, // Atomic -> Superstorm
+  { from: 3, to: 2, strength: 'medium' }, // Superstorm -> Bloom
+  { from: 3, to: 5, strength: 'strong' }, // Superstorm -> Hush
+  { from: 2, to: 5, strength: 'strong' }, // Bloom -> Hush
+  { from: 2, to: 6, strength: 'medium' }, // Bloom -> Pitchforks
+  { from: 5, to: 6, strength: 'strong' }, // Hush -> Pitchforks
 ]);
-export const LINK_SPILLOVER = Object.freeze({ strong: 6, medium: 3, weak: 1.5 }); // momentum per breach week
-export const LINK_SHOVE = Object.freeze({ strong: 15, medium: 8, weak: 4 }); // tension on collapse
+// Weights come from the single tuning table (GDD: breach spillover +6/+3/+1.5 momentum a week; collapse +15/+8/+4).
+export const LINK_SPILLOVER = TUNING.breachSpillover; // momentum per breach week
+export const LINK_SHOVE = TUNING.collapseShove; // tension on collapse
 
 /** Links between the tracks of a roster (by track id). */
 export function rosterLinks(roster) {
