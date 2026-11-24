@@ -19,6 +19,11 @@ import { formatMoney } from '../ledger/ledger.js';
 import { CLIENT_TYPES } from '../clients/clients.js';
 import { ROOM_CATALOG } from '../clients/rooms.js';
 import { settings } from '../settings/settings.js';
+import { buildRegionMask, drawRegionLayer } from '../art/map-regions.js';
+
+let MASK = null;
+/** Per-pixel region mask from the clickable hit areas (built once). */
+export const regionMask = () => (MASK ??= buildRegionMask({ w: MAP_W, h: MAP_H, cell: CELL, regionAtCell }));
 
 // Short map labels (the 3x5 font is 4px a letter) and marker anchors, in cells.
 export const MAP_PLACES = Object.freeze({
@@ -131,17 +136,9 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       const ov = crisisOverlay(byId[id]?.crisis ?? 0);
       if (ov) drawSprite(ctx, CRISIS_OVERLAYS[ov], c * CELL, r * CELL, { frame: anim });
       if (settings.get('trackPatterns')) hatch(zoneOf(byId[id]?.crisis ?? 0).name, c * CELL, r * CELL); // #94
-      if (id === selected || id === hover) {
-        if (id === selected) drawSprite(ctx, CRISIS_OVERLAYS.selected, c * CELL, r * CELL, { frame: anim });
-        // outline the region's edge
-        ctx.fillStyle = id === selected ? HEX.L : HEX.S;
-        const other = (dc, dr) => regionAtCell(c + dc, r + dr) !== id;
-        if (other(0, -1)) ctx.fillRect(c * CELL, r * CELL, CELL, 1);
-        if (other(0, 1)) ctx.fillRect(c * CELL, r * CELL + CELL - 1, CELL, 1);
-        if (other(-1, 0)) ctx.fillRect(c * CELL, r * CELL, 1, CELL);
-        if (other(1, 0)) ctx.fillRect(c * CELL + CELL - 1, r * CELL, 1, CELL);
-      }
     }
+    // region borders and idle / hover / selected states (#101), on the region hit areas
+    drawRegionLayer(ctx, regionMask(), { hover, selected, frame: Math.floor(frame / 3) });
     // sold bunkers
     const soldIn = {};
     for (const s of sales.sold) soldIn[s.region] = (soldIn[s.region] ?? 0) + 1;
