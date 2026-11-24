@@ -27,7 +27,7 @@ import { LeadMarket, attachCrisis } from '../demand/demand.js';
 import { SchemeBoard } from '../schemes/schemes.js';
 import { MapSales } from '../worldmap/sales.js';
 import { createWorldMapScreen } from '../worldmap/worldmap-ui.js';
-import { TRACK_BY_ID, CLASSIC_ROSTER, rosterLinks } from '../world/tracks.js';
+import { TRACK_BY_ID, CLASSIC_ROSTER, rosterLinks, rosterPicksFromParams, slotOf, resolveTrack } from '../world/tracks.js';
 import { showWorldSetup, createThreatsPanel } from '../world/world-ui.js';
 import { CampaignClock, SPEEDS, formatClock, QUARTER_SECONDS } from './clock.js';
 import { createSaveSlot, ledgerSaveable, pushbackSaveable, doomClockSaveable } from './save.js';
@@ -173,6 +173,8 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   // The six roster tracks (#33) are the world's crises (#69). Each rolls its hidden tipping point now and stays
   // closed until its opening time; Doom Clock fragility lowers that roll from day one, so a late track opens fragile.
   if (resume) roster = slot.peek()?.parts?.world?.roster ?? roster;
+  // Debug roster swap (#75): ?greygoo puts The Grey Goo in slot 2; ?slot3=longshade etc. New campaigns only.
+  else { const picks = rosterPicksFromParams(params); roster = roster.map((id) => picks[slotOf(id)] ?? id); }
   const crisis = new CrisisSystem({
     seed: worldSeed, pushback: pb, doomClock: doom, ledger, shelters: () => mapSales.sold, // live records: breaches can cost occupants
     // the HQ grid is the site under construction (in North America, where the HQ site is)
@@ -205,7 +207,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   root.querySelector('.view-toggle')?.prepend(eventsBtn);
   loadVenueCatalog().then((catalog) => {
     if (session?.ledger !== ledger) return; // campaign was replaced while loading
-    const circuit = new EventCircuit({ catalog, ledger, seed: worldSeed, clock,
+    const circuit = new EventCircuit({ catalog, ledger, seed: worldSeed, clock, roster: () => world.roster,
       addHeat: (n, why) => pb.addHeat(n, why), addReputation: (n) => { crisis.reputation = Math.max(0, Math.min(100, crisis.reputation + n)); } });
     slot.register('events', circuit);
     if (resume) { const saved = slot.peek(); if (saved?.parts?.events) circuit.load(saved.parts.events); }
@@ -381,9 +383,10 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   const cardQueue = [];
   let cardOpen = false;
   const campaignWeek = () => (clock.quarter - 1) * 13 + Math.floor(clock.elapsed / WEEK_SECONDS);
-  const trackName = (id) => TRACK_BY_ID[id]?.name ?? id;
+  const trackName = (id) => TRACK_BY_ID[resolveTrack(world.roster, id) ?? id]?.name ?? id;
   const cardHooks = {
     addTension: (track, n, why) => {
+      track = resolveTrack(world.roster, track) ?? track; // cards name Classic tracks: read them by slot (#75)
       if (track && crisis.tracks[track]?.open) crisis.addTension(track, n, why);
       else pb.addTension(n, why); // general cards, or a track not in play: the world's tension takes it
     },
