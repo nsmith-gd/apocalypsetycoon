@@ -1,0 +1,36 @@
+# Subtest: a lead records its source event, guest, region, wealth class, quality and expiry quarter
+ok 1 - a lead records its source event, guest, region, wealth class, quality and expiry quarter
+# Subtest: tiers and lifetimes: cold expires with its quarter, warm one later, hot two later
+ok 2 - tiers and lifetimes: cold expires with its quarter, warm one later, hot two later
+# Subtest: dialogue outcomes that are not leads create nothing; a guest is only in the pipeline once
+ok 3 - dialogue outcomes that are not leads create nothing; a guest is only in the pipeline once
+# Subtest: leads expire at the start of the quarter after their expiry quarter
+ok 4 - leads expire at the start of the quarter after their expiry quarter
+# Subtest: consume marks a lead used once; an expired lead cannot be consumed
+ok 5 - consume marks a lead used once; an expired lead cannot be consumed
+# Subtest: open() lists the best leads first and filters by region
+ok 6 - open() lists the best leads first and filters by region
+# Subtest: reputation and Showroom prestige above 40 raise quality in steps of 20
+ok 7 - reputation and Showroom prestige above 40 raise quality in steps of 20
+# Subtest: the pipeline is capped: past the cap the oldest cold lead is lost
+ok 8 - the pipeline is capped: past the cap the oldest cold lead is lost
+# Subtest: validation rejects a bad region or wealth class
+ok 9 - validation rejects a bad region or wealth class
+# Subtest: every GDD region and class maps onto the world map for the sales hook
+ok 10 - every GDD region and class maps onto the world map for the sales hook
+# Subtest: a shelter sale on the world map consumes the lead through the sales hook
+ok 11 - a shelter sale on the world map consumes the lead through the sales hook
+# Subtest: the sales hook refuses a lead from another region, and the lead stays open
+ok 12 - the sales hook refuses a lead from another region, and the lead stays open
+# Subtest: save and load
+ok 13 - save and load
+# Subtest: lifetimes match the LEADS table
+ok 14 - lifetimes match the LEADS table
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 70.809263

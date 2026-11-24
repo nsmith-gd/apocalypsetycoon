@@ -123,12 +123,15 @@ export class MapSales {
     return { ...row, buyerList: buyers, best, quotes };
   }
 
-  quote(regionId, shelterId) {
+  quote(regionId, shelterId, { lead: pipelineLead = null } = {}) {
     const region = this.region(regionId);
     if (!region) return { error: 'Unknown region.' };
     const shelter = this.stock.find((s) => s.id === shelterId);
     if (!shelter) return { error: 'That shelter is not in stock.' };
-    const lead = this.buyers(regionId)[0];
+    // Hook (#50): a lead from the player's pipeline (src/leads) can be the buyer instead of the
+    // region's best waiting lead. Same price rule; it must be in this region.
+    if (pipelineLead && pipelineLead.region !== regionId) return { error: `That lead is in another region.` };
+    const lead = pipelineLead ?? this.buyers(regionId)[0];
     if (!lead) return { error: `No buyers in ${region.name}. Calm worlds don't buy bunkers.` };
     const premium = this.overview().find((r) => r.id === regionId).premium;
     return { region, shelter, lead, premium, price: salePrice(shelter, lead.wealth, premium, this.cfg) };
@@ -137,14 +140,14 @@ export class MapSales {
   canSell(regionId, shelterId) { return !this.quote(regionId, shelterId).error; }
 
   /** Sell a finished shelter to the region's best waiting buyer. */
-  sell(regionId, shelterId) {
-    const q = this.quote(regionId, shelterId);
+  sell(regionId, shelterId, { lead: pipelineLead = null } = {}) {
+    const q = this.quote(regionId, shelterId, { lead: pipelineLead });
     if (q.error) throw new Error(q.error);
     const { region, shelter, lead, price, premium } = q;
-    this.market.work(lead.id); // the buyer leaves the inbox: local demand falls
+    if (!pipelineLead) this.market.work(lead.id); // the buyer leaves the inbox: local demand falls
     this.stock = this.stock.filter((s) => s !== shelter);
     const type = CLIENT_TYPES[lead.type];
-    const owner = type?.names?.[lead.id % type.names.length] ?? 'A client';
+    const owner = lead.name ?? type?.names?.[lead.id % type.names.length] ?? 'A client';
     const graded = gradeShelter({ id: shelter.id, name: shelter.name, owner, occupants: shelter.occupants, rooms: shelter.rooms, sold: true });
     const record = {
       id: shelter.id,
