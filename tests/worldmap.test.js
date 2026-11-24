@@ -4,6 +4,7 @@ import { MapSales, regionCrisis, specValue, salePrice, SALES } from '../src/worl
 import { LeadMarket, REGIONS } from '../src/demand/demand.js';
 import { Ledger } from '../src/ledger/ledger.js';
 import { gradeShelter } from '../src/midnight/midnight.js';
+import { ROOM_CATALOG } from '../src/clients/rooms.js';
 
 const ROOMS = ['bunk', 'bunk', 'air_vent', 'water_tank', 'pantry', 'gold_taps'];
 const region = (id) => REGIONS.find((r) => r.id === id);
@@ -36,12 +37,18 @@ test('demand rises with crisis: a hotter world puts more buyers in every region'
   for (const r of hot) assert.ok(r.crisis >= calm.find((c) => c.id === r.id).crisis);
 });
 
-test('spec value and sale price: room costs x2 + fee, x wealth class, x panic premium', () => {
+test('spec value and sale price: build cost + 40% margin, x wealth class, x panic premium', () => {
   const s = { rooms: ROOMS };
-  // rooms: 20+20+15+15+12+40 = 122K; 150K + 244K = 394K
-  assert.equal(specValue(s), 394_000);
-  assert.equal(salePrice(s, 'rich', 1), 394_000);
-  assert.equal(salePrice(s, 'ultra', 1.2), Math.round((394_000 * SALES.wealthMultiplier.ultra * 1.2) / 1000) * 1000);
+  // no build cost on record: dig and shell estimate + rooms at catalog price, plus the 40% margin
+  const roomCost = ROOMS.reduce((sum, id) => sum + ROOM_CATALOG[id].cost, 0);
+  const spec = Math.round(((SALES.digShellEstimate + roomCost) * (1 + SALES.margin)) / 1000) * 1000;
+  assert.equal(SALES.margin, 0.4, 'GDD: 40% contract margin');
+  assert.equal(specValue(s), spec);
+  // a recorded build cost replaces the estimate
+  assert.equal(specValue({ rooms: ROOMS, buildCost: 10_000_000 }), 14_000_000);
+  assert.equal(salePrice(s, 'comfortable', 1), spec);
+  assert.equal(salePrice(s, 'rich', 1), Math.round((spec * SALES.wealthMultiplier.rich) / 1000) * 1000);
+  assert.equal(salePrice(s, 'ultra', 1.2), Math.round((spec * SALES.wealthMultiplier.ultra * 1.2) / 1000) * 1000);
   assert.ok(salePrice(s, 'comfortable', 1) < salePrice(s, 'apex', 1));
 });
 

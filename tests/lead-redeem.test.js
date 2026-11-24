@@ -5,6 +5,7 @@ import { MapSales } from '../src/worldmap/sales.js';
 import { LeadInventory } from '../src/leads/leads.js';
 import { quoteLead, redeemLead, leadBonus, REDEMPTION } from '../src/leads/redeem.js';
 import { Ledger } from '../src/ledger/ledger.js';
+import { MONEY } from '../src/config/tuning.js';
 
 // A small world: one shelter in stock, a calm-ish market, and a lead inventory on a settable quarter.
 function setup({ walkIns = 1, tensions = { pandemic: 60 } } = {}) {
@@ -51,7 +52,10 @@ test('leads give access to higher client tiers than the region\'s walk-ins', () 
   assert.equal(q.walkIn.wealth, 'comfortable');
   assert.equal(apex.salesWealth, 'apex');
   assert.equal(q.tierUp, 3);
-  assert.ok(q.price >= q.walkIn.price * 2, 'an apex buyer pays over twice a comfortable walk-in');
+  // GDD class multipliers: apex (C5) pays 1.5x what a comfortable (C1) walk-in pays for the same shelter
+  const ratio = MONEY.classMultiplier.C5 / MONEY.classMultiplier.C1;
+  assert.ok(Math.abs(q.base / q.walkIn.price - ratio) < 0.01, `apex base ${q.base} vs walk-in ${q.walkIn.price}`);
+  assert.ok(q.price >= q.walkIn.price * ratio, 'an apex lead pays at least the apex class premium over a comfortable walk-in');
 });
 
 test('a lead can sell where no walk-in buyer exists', () => {

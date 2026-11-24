@@ -30,14 +30,14 @@ export { DEMAND }; // lives in the single tuning table (#77)
 // until the GDD tables are in the repo.
 const h = 'high', m = 'medium', l = 'low';
 export const REGIONS = Object.freeze([
-  { id: 'nam', name: 'North America', art: 'na', siteCost: 2_500_000, exposure: { pandemic: m, climate: m, unrest: h, markets: h, war: l }, pool: { tech_founder: 4, celebrity: 3, oil_heir: 1, politician: 2, prepper: 3 }, wealth: 'rich' },
-  { id: 'lat', name: 'Latin America', art: 'sa', siteCost: 1_200_000, exposure: { pandemic: h, climate: h, unrest: h, markets: m, war: l }, pool: { politician: 3, celebrity: 2, oil_heir: 2, prepper: 1, tech_founder: 1 }, wealth: 'comfortable' },
-  { id: 'eur', name: 'Europe', art: 'eu', siteCost: 2_200_000, exposure: { pandemic: m, climate: m, unrest: m, markets: h, war: m }, pool: { oil_heir: 2, politician: 3, celebrity: 2, tech_founder: 2, prepper: 2 }, wealth: 'rich' },
-  { id: 'mea', name: 'Middle East', art: 'as', siteCost: 3_000_000, exposure: { pandemic: l, climate: h, unrest: m, markets: m, war: h }, pool: { oil_heir: 5, politician: 2, celebrity: 1, prepper: 1, tech_founder: 1 }, wealth: 'ultra' },
-  { id: 'afr', name: 'Africa', art: 'af', siteCost: 900_000, exposure: { pandemic: h, climate: h, unrest: m, markets: l, war: m }, pool: { politician: 3, oil_heir: 2, prepper: 2, celebrity: 1, tech_founder: 1 }, wealth: 'comfortable' },
-  { id: 'sas', name: 'South Asia', art: 'as', siteCost: 1_100_000, exposure: { pandemic: h, climate: h, unrest: m, markets: m, war: m }, pool: { tech_founder: 3, politician: 2, celebrity: 2, oil_heir: 1, prepper: 1 }, wealth: 'comfortable' },
-  { id: 'eas', name: 'East Asia', art: 'as', siteCost: 2_800_000, exposure: { pandemic: h, climate: m, unrest: l, markets: h, war: m }, pool: { tech_founder: 4, celebrity: 2, oil_heir: 1, politician: 2, prepper: 2 }, wealth: 'ultra' },
-  { id: 'oce', name: 'Oceania', art: 'oc', siteCost: 1_800_000, exposure: { pandemic: l, climate: h, unrest: l, markets: m, war: l }, pool: { prepper: 4, tech_founder: 2, celebrity: 1, oil_heir: 1, politician: 1 }, wealth: 'rich' },
+  { id: 'nam', name: 'North America', art: 'na', siteCost: 5_000_000, exposure: { pandemic: m, climate: m, unrest: h, markets: h, war: l }, pool: { tech_founder: 4, celebrity: 3, oil_heir: 1, politician: 2, prepper: 3 }, wealth: 'rich' },
+  { id: 'lat', name: 'Latin America', art: 'sa', siteCost: 2_000_000, exposure: { pandemic: h, climate: h, unrest: h, markets: m, war: l }, pool: { politician: 3, celebrity: 2, oil_heir: 2, prepper: 1, tech_founder: 1 }, wealth: 'comfortable' },
+  { id: 'eur', name: 'Europe', art: 'eu', siteCost: 5_000_000, exposure: { pandemic: m, climate: m, unrest: m, markets: h, war: m }, pool: { oil_heir: 2, politician: 3, celebrity: 2, tech_founder: 2, prepper: 2 }, wealth: 'rich' },
+  { id: 'mea', name: 'Middle East', art: 'as', siteCost: 12_000_000, exposure: { pandemic: l, climate: h, unrest: m, markets: m, war: h }, pool: { oil_heir: 5, politician: 2, celebrity: 1, prepper: 1, tech_founder: 1 }, wealth: 'ultra' },
+  { id: 'afr', name: 'Africa', art: 'af', siteCost: 2_000_000, exposure: { pandemic: h, climate: h, unrest: m, markets: l, war: m }, pool: { politician: 3, oil_heir: 2, prepper: 2, celebrity: 1, tech_founder: 1 }, wealth: 'comfortable' },
+  { id: 'sas', name: 'South Asia', art: 'as', siteCost: 2_000_000, exposure: { pandemic: h, climate: h, unrest: m, markets: m, war: m }, pool: { tech_founder: 3, politician: 2, celebrity: 2, oil_heir: 1, prepper: 1 }, wealth: 'comfortable' },
+  { id: 'eas', name: 'East Asia', art: 'as', siteCost: 12_000_000, exposure: { pandemic: h, climate: m, unrest: l, markets: h, war: m }, pool: { tech_founder: 4, celebrity: 2, oil_heir: 1, politician: 2, prepper: 2 }, wealth: 'ultra' },
+  { id: 'oce', name: 'Oceania', art: 'oc', siteCost: 5_000_000, exposure: { pandemic: l, climate: h, unrest: l, markets: m, war: l }, pool: { prepper: 4, tech_founder: 2, celebrity: 1, oil_heir: 1, politician: 1 }, wealth: 'rich' },
 ]);
 
 export const TRACK_IDS = Object.freeze(['pandemic', 'climate', 'unrest', 'markets', 'war']);

@@ -6,10 +6,9 @@
 // comes from what is inside it (a Bunk Room is an enclosed space with bunks in it, a Pantry is one
 // with pantry shelves...). GDD room names, sizes and system numbers are used throughout.
 //
-// Money: the GDD prices in $M; the game's economy is still in $K, so every price here is the GDD price
-// x PRICE_SCALE (see the gap review). One constant to change when the economy is rescaled.
+// Money: GDD dollars (#91 moved the whole economy to the GDD $M scale). PRICE_SCALE stays as the one knob.
 
-export const PRICE_SCALE = 0.1;
+export const PRICE_SCALE = 1;
 export const TILE_M = 1; // 1 tile = 1 m x 1 m (GDD grid spec)
 export const ROOM_DEPTH_M = 4; // the cutaway is 4 m deep: one tile of room holds 4 m3 of air
 export const WATER_TABLE_M = 12; // clay: water table at 12 m needs sump pumps

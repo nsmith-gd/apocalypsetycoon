@@ -22,6 +22,10 @@ import { STYLES, DEFAULT_STYLE } from './styles.js';
 import { ROOM_CATALOG, availableRooms } from '../clients/rooms.js';
 import { gradeShelter, LUXURY_PRESTIGE } from '../midnight/midnight.js';
 import { stratumAt, FLOOR_METERS } from './life.js';
+import { MONEY } from '../config/tuning.js';
+
+// Fit-out time per $100K of the old $K room prices; #91 moved prices to GDD dollars (x MONEY.fromStandIn.rooms).
+const FIT_OUT_PER = 100_000 * MONEY.fromStandIn.rooms;
 
 export const GRID = Object.freeze({
   cols: 10,
@@ -85,7 +89,7 @@ export class ShelterGrid {
 
   buildSeconds(col, row, id) {
     const dig = this.dug.has(this.key(col, row)) ? 0 : this.cfg.digSeconds[this.stratum(row).id] ?? 90;
-    return dig + this.cfg.fitOutSeconds + Math.round((ROOM_CATALOG[id].cost / 100_000) * this.cfg.fitOutPer100k);
+    return dig + this.cfg.fitOutSeconds + Math.round((ROOM_CATALOG[id].cost / FIT_OUT_PER) * this.cfg.fitOutPer100k);
   }
 
   // ---------- actions ----------
