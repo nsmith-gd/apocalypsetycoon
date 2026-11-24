@@ -16,6 +16,8 @@
 // #4's schemes call `addLeads()` (local panic) and `flee()` (runaway crisis).
 // Feed tensions weekly with `week({ tensions, breaching })`, or `attachCrisis(market, crisisSystem)`.
 
+import { TRACKS as GDD_TRACKS } from '../world/tracks.js';
+
 export const EXPOSURE = Object.freeze({ high: 1, medium: 0.5, low: 0.25 });
 export const WEALTH = Object.freeze(['comfortable', 'rich', 'ultra', 'apex']);
 
@@ -47,6 +49,15 @@ export const REGIONS = Object.freeze([
 ]);
 
 export const TRACK_IDS = Object.freeze(['pandemic', 'climate', 'unrest', 'markets', 'war']);
+
+// The GDD's threat tracks (src/world/tracks.js) have their exposure on the GDD's eight regions. Each map
+// region takes the exposure of its GDD region (the pairing src/leads uses), so the campaign's six roster
+// tracks drive Fear, leads and prices here too (#69). Provisional until the map moves to the GDD regions.
+export const SALES_TO_GDD_REGION = Object.freeze({ nam: 'heartland', eur: 'coastal', eas: 'tech', mea: 'capitals', sas: 'north', afr: 'equator', oce: 'islands', lat: 'frontier' });
+for (const r of REGIONS) {
+  const gdd = SALES_TO_GDD_REGION[r.id];
+  for (const t of GDD_TRACKS) if (!(t.id in r.exposure)) r.exposure[t.id] = t.exposure[gdd] ?? 'low';
+}
 
 const clamp = (v, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
 const r2 = (n) => Math.round(n * 100) / 100;
@@ -149,7 +160,8 @@ export class LeadMarket {
   week({ tensions = {}, breaching = [] } = {}) {
     this.weekNo += 1;
     const prev = this.lastTension ?? tensions;
-    for (const t of TRACK_IDS) {
+    for (const t of new Set([...TRACK_IDS, ...Object.keys(tensions)])) {
+      this.fear[t] ??= 0;
       const gained = (tensions[t] ?? 0) - (prev[t] ?? 0);
       this.fear[t] = nextFear(this.fear[t], gained, breaching.includes(t), this.cfg);
     }
