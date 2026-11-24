@@ -1,0 +1,20 @@
+bot        seed  first breach  track        how       wildcard pushed
+cautious      1         never  -            -         -
+cautious      2         never  -            -         -
+cautious      3         never  -            -         -
+cautious      4         never  -            -         -
+cautious      5         never  -            -         -
+edge          1          3:03  atomic       natural   -
+edge          2         never  -            -         -
+edge          3         never  -            -         -
+edge          4         never  -            -         -
+edge          5          1:04  atomic       natural   -
+luxury        1         never  -            -         -
+luxury        2         never  -            -         -
+luxury        3         never  -            -         -
+luxury        4         never  -            -         -
+luxury        5         never  -            -         -
+
+Checks: {"everyRunBreachesByDeadline":false,"latestFirstBreach":null,"naturalShare":0.13}
+
+FAIL
