@@ -66,7 +66,12 @@ const el = (tag, cls, text) => {
 };
 
 // ======================= Main menu =======================
+// The title screen's sound toggle writes the shared mute preference; it never starts audio itself.
+const menuAudio = createAudio();
+let menuKeyOff = null; // the title screen's M key, removed whenever the title screen goes away
+
 function showMainMenu() {
+  menuKeyOff?.();
   app.replaceChildren();
   const mm = el('div', 'mm');
   const sky = el('canvas', 'mm-sky');
@@ -80,17 +85,41 @@ function showMainMenu() {
   const demos = el('a', 'mm-link', 'System demos');
   demos.href = 'demos.html';
   // The first campaign is always Classic; after one is finished, NEW CAMPAIGN opens the world setup.
-  start.onclick = () => (campaignsFinished() > 0 ? openSetup() : startCampaign({ resume: false, roster: [...CLASSIC_ROSTER] }));
+  const begin = () => (campaignsFinished() > 0 ? openSetup() : (leave(), startCampaign({ resume: false, roster: [...CLASSIC_ROSTER] })));
+  // One save slot (#80): starting over replaces it, so ask first (#81).
+  const confirmBox = el('div', 'mm-confirm');
+  confirmBox.hidden = true;
+  start.onclick = () => {
+    if (!save) return begin();
+    confirmBox.hidden = false;
+    confirmBox.replaceChildren(el('div', null, `Start over? Your saved campaign (${describeSave(save)}) will be replaced.`));
+    const yes = el('button', null, 'START OVER');
+    const no = el('button', 'mm-small', 'KEEP MY SAVE');
+    yes.onclick = () => begin();
+    no.onclick = () => { confirmBox.hidden = true; cont.focus(); };
+    confirmBox.append(yes, no);
+    no.focus();
+  };
+  // Sound (#81): the same saved preference the in-game SOUND toggle uses. Nothing plays on the title screen.
+  const sound = el('button', 'mm-small mm-sound');
+  const renderSound = () => { sound.textContent = menuAudio.muted ? 'SOUND: OFF' : 'SOUND: ON'; sound.setAttribute('aria-pressed', String(!menuAudio.muted)); };
+  sound.title = 'Mute or unmute the game [M]';
+  sound.onclick = () => { menuAudio.setMuted(!menuAudio.muted); renderSound(); };
+  renderSound();
+  const onKey = (e) => { if ((e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey) sound.click(); };
+  addEventListener('keydown', onKey);
+  const leave = () => { removeEventListener('keydown', onKey); menuKeyOff = null; };
+  menuKeyOff = leave;
   const setup = el('button', 'mm-small', 'WORLD SETUP');
   setup.title = 'Choose Classic, Random or Custom threat tracks (debug start)';
   setup.onclick = () => openSetup();
   const openSetup = () => showWorldSetup({ root: document.body, firstCampaign: campaignsFinished() === 0,
-    onStart: (roster) => startCampaign({ resume: false, roster }), onBack: () => start.focus() });
-  cont.onclick = () => startCampaign({ resume: true });
+    onStart: (roster) => { leave(); startCampaign({ resume: false, roster }); }, onBack: () => start.focus() });
+  cont.onclick = () => { leave(); startCampaign({ resume: true }); };
   mm.append(sky, el('div', 'mm-title', 'APOCALYPSE TYCOON'), el('div', 'mm-tag', "You don't survive the apocalypse. You sell it."),
-    start, cont, setup, sub, demos, el('div', 'mm-foot', 'LAST RESORT HOLDINGS · 12 QUARTERS TO MIDNIGHT'));
+    start, cont, confirmBox, setup, sound, sub, demos, el('div', 'mm-foot', 'LAST RESORT HOLDINGS · 12 QUARTERS TO MIDNIGHT'));
   app.append(mm);
-  start.focus();
+  (save ? cont : start).focus();
 }
 
 function describeSave(save) {
