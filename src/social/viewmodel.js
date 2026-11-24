@@ -22,7 +22,7 @@
 // it defaults to the stand-in runner until the real engine (#54) and trees (#56) land.
 
 import { resolveOutcome, applyOutcome, ENDINGS } from '../dialogue/outcomes.js';
-import { createStubDialogue } from './dialogue-stub.js';
+import { createTreeDialogue } from './tree-dialogue.js';
 import { GDD_REGIONS, TRACKS } from '../world/tracks.js';
 
 const regionName = (id) => GDD_REGIONS.find((r) => r.id === id)?.name ?? id;
@@ -41,7 +41,7 @@ export function choiceTags(effects = {}) {
 
 export class SocialSession {
   constructor({ circuit, leads = null, getQuarter = () => 1, getCash = null, addHeat = null, addReputation = null,
-    pushback = null, press = null, dialogueFactory = (guest) => createStubDialogue(guest), rng = Math.random } = {}) {
+    pushback = null, press = null, dialogueFactory = null, rng = Math.random } = {}) {
     if (!circuit) throw new Error('SocialSession needs an EventCircuit');
     this.circuit = circuit;
     this.leads = leads;
@@ -51,7 +51,7 @@ export class SocialSession {
     this.addReputation = addReputation;
     this.pushback = pushback;
     this.press = press;
-    this.dialogueFactory = dialogueFactory;
+    this.dialogueFactory = dialogueFactory ?? ((guest) => createTreeDialogue(guest, { rng }));
     this.rng = rng;
     this.screen = 'events';
     this.results = new Map(); // guestId -> resolved outcome (this visit)
@@ -131,7 +131,7 @@ export class SocialSession {
     const { guest, session } = this.talking;
     const n = session.node();
     return {
-      guest: { id: guest.id, name: guest.name, wealthClass: guest.wealthClass, fears: (guest.fears ?? []).map(trackName) },
+      guest: { id: guest.id, name: guest.name, wealthClass: guest.wealthClass, fears: (guest.fears ?? []).map(trackName), archetype: session.archetype ?? null },
       line: n ? { speaker: n.speaker, text: n.text } : null,
       transcript: session.transcript.map(({ speaker, text }) => ({ speaker, text })),
       choices: n ? n.choices.map((c) => ({ id: c.id, text: c.text, tags: choiceTags(c.effects) })) : [],
@@ -148,7 +148,7 @@ export class SocialSession {
 
   _finish(guest, session) {
     const v = this.visit;
-    const result = resolveOutcome({ ending: session.ending, guest, effects: session.effects, context: { journalistPresent: v.press }, rng: this.rng });
+    const result = resolveOutcome({ ending: session.ending, guest: session.guest ?? guest, effects: session.effects, context: { journalistPresent: v.press }, rng: this.rng });
     const { lead, tipOffs } = applyOutcome(result, {
       leads: this.leads, pushback: this.pushback, press: this.press, addHeat: this.addHeat, addReputation: this.addReputation,
       guest, venueId: v.venueId, quarter: v.quarter,

@@ -11,6 +11,7 @@ touches the rules directly, so the final screens (#19 + art tasks) can replace t
   - actions: `attend(venueId)`, `talk(guestId)`, `choose(choiceId)`, `backToGuests()`, `leave()`, `close()`
   - A finished conversation runs `resolveOutcome` + `applyOutcome` (src/dialogue/outcomes.js): lead into the
     pipeline, heat, reputation, slips; marks the guest met in the EventCircuit.
+- `tree-dialogue.js`: the default; plays the authored archetype trees (#56) via `Conversation`, falls back to the stub.
 - `dialogue-stub.js`: STAND-IN runner + one placeholder conversation covering all seven #55 endings. The real
   engine (#54) and authored trees (#56) plug in via `dialogueFactory(guest, { venueId, journalistPresent, quarter })`,
   returning a session with `node()`, `choose(id)`, `done`, `ending`, `effects`, `transcript` (see the file header).

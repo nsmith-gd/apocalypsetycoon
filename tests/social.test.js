@@ -8,7 +8,7 @@ import { SocialSession, choiceTags } from '../src/social/viewmodel.js';
 import { createStubDialogue, PLACEHOLDER_TREE } from '../src/social/dialogue-stub.js';
 import { ENDINGS } from '../src/dialogue/outcomes.js';
 
-async function setup() {
+async function setup({ stub = true } = {}) {
   const catalog = await loadVenueCatalog();
   const ledger = new Ledger({ startingCash: 5_000_000 });
   let heat = 0, rep = 40;
@@ -16,7 +16,7 @@ async function setup() {
   const clock = { hold: (w) => held.add(w), release: (w) => held.delete(w) };
   const circuit = new EventCircuit({ catalog, ledger, seed: 7, clock });
   const leads = new LeadInventory({ getQuarter: () => 1 });
-  const social = new SocialSession({ circuit, leads, getQuarter: () => 1, addHeat: (n) => { heat += n; }, addReputation: (n) => { rep += n; }, rng: () => 0.99 });
+  const social = new SocialSession({ circuit, leads, getQuarter: () => 1, addHeat: (n) => { heat += n; }, addReputation: (n) => { rep += n; }, rng: () => 0.99, ...(stub ? { dialogueFactory: (g) => createStubDialogue(g) } : {}) });
   return { social, circuit, leads, ledger, held, get heat() { return heat; }, get rep() { return rep; } };
 }
 
@@ -99,4 +99,24 @@ test('a losing conversation gives no lead and risky lines are tagged', async () 
 test('choiceTags', () => {
   assert.deepEqual(choiceTags({ fear: 'x', promise: 'gold_taps' }), ['FEAR', 'PROMISE']);
   assert.deepEqual(choiceTags(), []);
+});
+
+test('by default guests get their archetype\'s authored conversation (#56), played to an ending', async () => {
+  const s = await setup({ stub: false });
+  const { social } = s;
+  social.attend(social.eventsView().events.find((e) => e.canAttend).id);
+  const g = social.guestsView().guests[0];
+  let d = social.talk(g.id);
+  assert.ok(d.guest.archetype, 'archetype label shown');
+  let guard = 0;
+  while (social.screen === 'dialogue' && guard++ < 20) {
+    d = social.dialogueView();
+    assert.ok(d.choices.length >= 1);
+    social.choose(d.choices[0].id);
+  }
+  assert.equal(social.screen, 'result');
+  const r = social.resultView();
+  assert.ok(ENDINGS[r.ending], r.ending);
+  assert.ok(r.transcript.length >= 3);
+  assert.equal(r.transcript.at(-1).speaker === 'you', false, 'the ending line is in the transcript');
 });

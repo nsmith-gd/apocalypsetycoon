@@ -95,7 +95,7 @@ export function createSocialScreens({ root = document.body, social, onClose } = 
 
   function renderDialogue() {
     const v = social.dialogueView();
-    header(`TALKING TO ${v.guest.name.toUpperCase()}`, `${v.guest.wealthClass} · afraid of ${v.guest.fears.join(', ') || '?'}`);
+    header(`TALKING TO ${v.guest.name.toUpperCase()}`, `${v.guest.archetype ? `${v.guest.archetype} · ` : ''}${v.guest.wealthClass} · afraid of ${v.guest.fears.join(', ') || '?'}`);
     const log = el('div', 'soc-log');
     for (const t of v.transcript) log.append(el('p', `soc-line soc-${t.speaker}`, `${t.speaker === 'you' ? 'YOU' : t.speaker === 'guest' ? v.guest.name.toUpperCase() : ''}${t.speaker === 'narrator' ? '' : ': '}${t.text}`));
     if (v.line) log.append(el('p', `soc-line soc-${v.line.speaker} soc-now`, `${v.line.speaker === 'guest' ? `${v.guest.name.toUpperCase()}: ` : ''}${v.line.text}`));
