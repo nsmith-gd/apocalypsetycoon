@@ -225,6 +225,27 @@ export class CrisisSystem {
   }
 
   // ---------- breach ----------
+  /**
+   * Controlled burn (#93; GDD Crises > Holding patterns): deliberately breach a track at its Brink. You get a
+   * breach-length window of doubled premiums (the panic premium doubles while any breach is open), and pay
+   * for it: heat now, a scar when you contain it, and a shorter window the next time it breaches (6/4/3).
+   * Returns { ok, reason?, weeks }.
+   */
+  controlledBurn(id) {
+    const t = this.tracks[id];
+    if (!t?.open) return { ok: false, reason: 'That threat is not open.' };
+    if (t.state !== 'brink') return { ok: false, reason: `${t.name} must be at its Brink to burn it.` };
+    const heat = this.cfg.controlledBurnHeat ?? 10;
+    t.burns = (t.burns ?? 0) + 1;
+    this.setTension(id, this.tippingPoint(id), 'controlled burn');
+    if (t.state !== 'breach') return { ok: false, reason: 'It would not catch.' };
+    t.window.controlled = true;
+    this.pb?.addHeat?.(heat, `Controlled burn: ${t.name}`);
+    this._note(`CONTROLLED BURN: you tipped ${t.name} on purpose. Heat +${heat}. Contain it within ${t.window.total} weeks; its next window will be shorter.`, { type: 'burn', track: id });
+    this._emit('burn', { track: id, weeks: t.window.total, heat });
+    return { ok: true, weeks: t.window.total, heat, nextWindow: this.cfg.windowWeeks[Math.min(t.breaches + 1, this.cfg.windowWeeks.length) - 1] };
+  }
+
   _breach(t, source) {
     t.breaches += 1;
     this.breachCount += 1;

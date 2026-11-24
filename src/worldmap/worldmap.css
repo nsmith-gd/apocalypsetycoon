@@ -84,3 +84,7 @@
 .wm-tier { font-style: normal; font-size: 10px; font-weight: 900; padding: 0 3px; border: 1px solid currentColor; }
 .wm-tier[data-tier='hot'] { color: var(--at-red); } .wm-tier[data-tier='warm'] { color: var(--at-amber); } .wm-tier[data-tier='cold'] { color: #8fd3ff; }
 .wm-sell-lead small { display: block; font-size: 10px; color: var(--at-paper-ink); font-weight: 700; opacity: 0.8; }
+
+/* Controlled burn (#93) */
+.wm-burn { margin-top: 3px; font: 900 10px var(--at-font); padding: 3px 6px; color: #fff1a8; background: #6b1f1a; border: 2px solid var(--at-border); cursor: pointer; letter-spacing: 1px; }
+.wm-burn:hover { background: var(--at-red); color: var(--at-paper-ink); }
