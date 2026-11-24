@@ -89,3 +89,16 @@ test('save and load', () => {
   assert.equal(copy.queue.length, 1);
   assert.equal(copy.quote(1, 1, 'pantry').ok, false);
 });
+
+test('hand over: needs finished rooms, returns the shelter and clears the site', () => {
+  const { grid } = setup();
+  assert.equal(grid.handOver().ok, false);
+  grid.place(1, 1, 'bunk');
+  assert.equal(grid.handOver().reason, 'The crew is still working');
+  grid.finishAll();
+  const r = grid.handOver('Shelter #1');
+  assert.ok(r.ok);
+  assert.deepEqual(r.shelter, { name: 'Shelter #1', rooms: ['bunk'], occupants: GRID.baseOccupants + GRID.bedsPerBunk });
+  assert.equal(grid.rooms.length, 0);
+  assert.equal(grid.quote(1, 1, 'pantry').dig > 0, true);
+});
