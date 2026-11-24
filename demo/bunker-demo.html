@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bunker Builder</title>
+<link rel="stylesheet" href="../src/ui/ui.css">
+<link rel="stylesheet" href="../src/shelter/bunker.css">
+<style>
+  html, body { margin: 0; background: #14110f; }
+  .top { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 8px 12px; font-family: 'Courier New', monospace; color: #f2e6c9; background: #241f1a; border-bottom: 3px solid #0a0807; }
+  .top b { color: #f5c542; letter-spacing: 2px; }
+  .top button { font-family: inherit; font-weight: 700; font-size: 11px; padding: 5px 8px; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; cursor: pointer; }
+  .top button.on { background: #f5c542; color: #2a2118; }
+  .top .cash { color: #7ed957; font-weight: 900; }
+  #mount { padding: 10px 12px; }
+</style>
+</head>
+<body class="at-ui">
+<div class="top">
+  <b>BUNKER BUILDER</b>
+  <span class="cash" id="cash"></span>
+  <span id="day"></span>
+  <span>SPEED</span><button data-speed="0">PAUSE</button><button data-speed="1">1x</button><button data-speed="4">4x</button><button data-speed="16" class="on">16x</button>
+  <span>CREWS</span><button id="crew-">-</button><b id="crews"></b><button id="crew+">+</button>
+  <button id="starter">ORDER A STARTER BUNKER</button>
+</div>
+<div id="mount"></div>
+<script type="module">
+import { Ledger } from '../src/ledger/ledger.js';
+import { BunkerSite } from '../src/shelter/bunker.js';
+import { createBunkerUI } from '../src/shelter/bunker-ui.js';
+
+const params = new URLSearchParams(location.search);
+const ledger = new Ledger({ startingCash: 2_000_000 });
+let crews = 2;
+let speed = 16;
+let frame = 0;
+const site = new BunkerSite({ ledger, crews: () => crews, surveyed: params.has('surveyed') });
+const ui = createBunkerUI({ mount: document.getElementById('mount'), grid: site, getFrame: () => frame, onHandOver: () => {} });
+
+// A small working Solo Pod: spine, two floors, bunks, pantry, tank, scrubber, generator, ducts.
+function starter() {
+  for (let y = 0; y < 10; y++) { site.dig(0, y); site.dig(1, y); site.build('spine', 0, y); site.build('spine', 1, y); }
+  // floor 1: y 1..3 living (ceiling slab at 0, floor slab at 4)
+  site.digRect(2, 0, 14, 4);
+  site.buildRect('wall', 2, 0, 14, 0); site.buildRect('wall', 2, 4, 14, 4); site.buildRect('wall', 14, 1, 14, 3);
+  site.place('door', 8, 3); // the door divides the bunk room from the store
+  site.place('bunk', 2, 3); site.place('bunk', 4, 3); site.place('plant', 6, 3); site.place('lamp', 7, 3);
+  site.place('shelf', 9, 3); site.place('shelf', 10, 3); site.place('tank', 11, 3); site.place('crank_scrubber', 13, 3);
+  site.conduitLine('air', 2, 3, 13, 3); // ducts, pipes and cables can share tiles
+  site.conduitLine('water', 2, 2, 12, 2);
+  site.conduitLine('power', 2, 2, 7, 2);
+  // floor 2: y 5..7 plant room
+  site.digRect(2, 5, 9, 8);
+  site.buildRect('wall', 2, 8, 9, 8); site.buildRect('wall', 9, 5, 9, 7);
+  site.place('diesel', 2, 7); site.place('fuel', 4, 7); site.place('fuel', 5, 7); site.place('battery', 6, 7);
+  site.conduitLine('air', 2, 6, 3, 6);
+  site.conduitLine('power', 2, 7, 6, 7);
+  site.conduitLine('power', 1, 9, 1, 9); // (the spine carries power between floors)
+}
+if (params.has('starter')) starter();
+document.getElementById('starter').onclick = () => { starter(); ui.refresh(); };
+
+for (const b of document.querySelectorAll('[data-speed]')) b.onclick = () => { speed = Number(b.dataset.speed); document.querySelectorAll('[data-speed]').forEach((x) => x.classList.toggle('on', x === b)); };
+document.getElementById('crew-').onclick = () => { crews = Math.max(1, crews - 1); ui.refresh(); };
+document.getElementById('crew+').onclick = () => { crews = Math.min(6, crews + 1); ui.refresh(); };
+
+let last = performance.now();
+let acc = 0;
+function loop(now) {
+  const dt = Math.min(0.25, (now - last) / 1000);
+  last = now;
+  frame++;
+  if (speed) site.tick(dt * speed);
+  acc += dt;
+  if (acc > 0.25) { acc = 0; ui.refresh(); }
+  else ui.render();
+  document.getElementById('cash').textContent = `CASH $${Math.round(ledger.cash / 1000)}K`;
+  document.getElementById('day').textContent = `DAY ${Math.floor(site.day)}`;
+  document.getElementById('crews').textContent = crews;
+  requestAnimationFrame(loop);
+}
+ui.fit(innerWidth - 520, innerHeight - 160);
+addEventListener('resize', () => ui.fit(innerWidth - 520, innerHeight - 160));
+requestAnimationFrame(loop);
+window.__demo = { site, ui, ledger, starter, setSpeed: (s) => { speed = s; } };
+</script>
+</body>
+</html>

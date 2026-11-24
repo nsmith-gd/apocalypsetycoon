@@ -159,6 +159,14 @@ export function computeMidnight({ shelters = [], world = {}, cash = 0, cfg = MID
       g.outcome = g.survivors === g.occupants ? 'survived' : g.survivors === 0 ? 'lost' : 'rationing';
       g.life = { daysSealed: sim.daysSealed, ratings: sim.ratings, p: sv.p };
     }
+    // Tile-built bunkers carry their own simulated Days Sealed and ratings (src/shelter/bunker.js).
+    if (s.sealed) {
+      const need = apocalypse ? { days: Math.round(apocalypse.days * needMultiplier), ...apocalypse.critical } : { days: Math.round(365 * needMultiplier) };
+      const sv = lifeSurvival({ daysSealed: s.sealed.daysSealed, ratings: s.sealed.ratings }, need);
+      g.survivors = Math.round(g.occupants * sv.p);
+      g.outcome = g.survivors === g.occupants ? 'survived' : g.survivors === 0 ? 'lost' : 'rationing';
+      g.life = { daysSealed: s.sealed.daysSealed, ratings: s.sealed.ratings, p: sv.p };
+    }
     // Seal Order: clients who never arrived, or arrived late.
     const pick = pickups?.[s.id] ?? (s.owner ? pickups?.[s.owner] : null);
     if (pick === 'lost') { g.survivors = 0; g.outcome = 'lost'; g.pickup = 'lost'; }

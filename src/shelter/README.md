@@ -33,3 +33,16 @@
     luxury/survival counts, invested, crew status. `toShelter()` feeds `computeMidnight`. `toJSON()/load()`.
 - `grid-ui.js` + `grid.css` — palette strip, click-to-build canvas (hover quote, scaffolding + progress on jobs,
   floating cost text), right-click or DEMOLISH [X] to remove, stat sheet. Used by the campaign (`index.html`).
+
+## Tile-level bunker (#37) — now the in-game shelter view
+- `bunker-catalog.js`: GDD strata (dig cost, crew speed, base blast), 52 objects (beds, scrubbers, tanks, generators, doors,
+  blast doors, decor, status furniture...) with footprints in 1 m tiles and GDD system numbers, room types recognised from
+  contents, `PRICE_SCALE` (GDD $ x 0.1 until the economy is rescaled).
+- `bunker.js` `BunkerSite`: dig tiles, build walls/spine, lay air/water/power conduits, place objects (must stand on a floor;
+  depth gates; surface items). Crews work a job queue and can only reach tiles connected to the surface. Rooms = enclosed
+  spaces, typed by their furniture, with impressiveness (beauty, space, noise, raw rock, cramping). Networks power and plumb
+  machines (load-shedding by priority). Days Sealed from air (CO2 buffer), water, food, power (fuel, battery); seal, blast,
+  security, morale; seepage below the 12 m water table; survey and 30-day pressure test; `toShelter`/`handOver`/save.
+- `bunker-ui.js` + `bunker.css`: the editor (drag tools, palette, ghosts with reasons, overlays, crews, room inspector).
+- `computeMidnight` grades tile-built shelters from their simulated Days Sealed and ratings (`shelter.sealed`).
+- Demo: `demo/bunker-demo.html?starter`. The old cell grid (`grid.js`) is no longer used by the campaign.
