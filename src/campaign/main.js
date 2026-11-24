@@ -211,7 +211,8 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   const qStats = { handovers: 0, breaches: 0, schemesAtStart: 0, crisisConfidence: null };
   const tree = new ResearchTree({ ledger }); // R&D costs cash up front; RP comes from crisis grants (#16)
   const clock = new CampaignClock({ quarterSeconds: QS });
-  const ui = createGameUI({ root, ledger, views: { grid: gridView, map: mapView } });
+  let fitRef = null; // set once the canvases exist; re-fit when the player switches canvas (the map needs a visible width)
+  const ui = createGameUI({ root, ledger, views: { grid: gridView, map: mapView }, onViewChange: () => requestAnimationFrame(() => fitRef?.()) });
   const pbui = createPushbackUI({ root, pushback: pb });
   // Doom Clock: fed by the crisis system's open roster tracks (below); a Final Countdown can bring Midnight early.
   const doom = new DoomClock();
@@ -400,10 +401,20 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     const sideW = innerWidth >= 1100 ? 540 : 40; // the pressure and client panels sit on both sides
     // On narrow screens the page scrolls, so size the grid by width only.
     gridUI.fit(innerWidth < 600 ? innerWidth - 40 : Math.min(innerWidth - sideW, 740) - 60, innerWidth < 700 ? Infinity : innerHeight - hudH - gridUI.chromeHeight() - (root.querySelector('.cb')?.offsetHeight ?? 44) - 20);
+
+    // The world map shows at whole-number scales only (style guide), so its painted pixels stay crisp (#100).
+    const mapWrap = mapView.querySelector('.wm-map');
+    const mapCanvas = mapWrap?.querySelector('canvas');
+    if (mapCanvas && mapWrap.clientWidth) {
+      const scale = Math.max(1, Math.floor(mapWrap.clientWidth / mapCanvas.width));
+      mapCanvas.style.width = `${mapCanvas.width * scale}px`;
+      mapCanvas.style.maxWidth = 'none';
+    }
   };
   fit();
   requestAnimationFrame(fit);
   addEventListener('resize', fit);
+  fitRef = fit;
 
   // ---------- end of quarter ----------
   clock.onQuarterEnd(async ({ quarter, isFinal }) => {
