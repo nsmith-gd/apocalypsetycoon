@@ -26,3 +26,9 @@
   (by the track's own breach number), and the heroics board-confidence cost (the GDD lists none). All in `BREACH` /
   `DOMINO_LINKS` (src/config/tuning.js).
 - Demo: `demo/breach-demo.html`.
+- `consequences.js` (#67): `new CrisisConsequences({ crisis, board, sites, seed })` listens to the crisis events.
+  Contained breach: the board reacts per member (Priya Sandoval -10, Cornelius Vane -5, Bryce Kettering +5, via
+  `board.react`). Collapse: every sold site in the track's hot regions gets a seeded damage check (high 60%, medium
+  30%; provisional odds), its retainer stops (`retainerFor(site)` = 0), and clients in high-exposure regions demand
+  evacuation (`evacuations` queue, 'evacuation' event). The breach-week heat +2 / confidence -2 stays in breach.js
+  (`CONSEQUENCES.breachWeek` mirrors it; not applied twice). Notes go to the quarter report via `drainNotes()`.

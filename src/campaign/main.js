@@ -23,6 +23,7 @@ import { REGIONS as SALES_REGIONS } from '../demand/demand.js';
 import { BunkerSite } from '../shelter/bunker.js';
 import { createBunkerUI } from '../shelter/bunker-ui.js';
 import { CrisisSystem } from '../crisis/breach.js';
+import { CrisisConsequences } from '../crisis/consequences.js';
 import { createContainmentUI } from '../crisis/breach-ui.js';
 import { LeadMarket, attachCrisis } from '../demand/demand.js';
 import { SchemeBoard } from '../schemes/schemes.js';
@@ -280,6 +281,11 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   crisis.on('week', () => mapScreen.refresh());
   crisis.on('breach', () => { qStats.breaches += 1; });
   slot.register('sales', mapSales);
+  // Crisis consequences (#67): board members react to contained breaches; collapses ruin sites in hot regions.
+  const consequences = new CrisisConsequences({ crisis, board, sites: () => mapSales.sold, seed: worldSeed + 67 });
+  consequences.on('evacuation', (e) => toast(`EVACUATION: ${e.owner} demands to be got out of ${e.name}.`));
+  consequences.on('reaction', () => ui.update(hudState()));
+  slot.register('consequences', consequences);
   slot.register('market', market);
   slot.register('schemes', schemes);
   // Telemetry (#78): weekly meters and every event, exportable as CSV (TELEMETRY button).
@@ -381,7 +387,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     const r = pb.endQuarter({ quarter, profit: ledger.summary(quarter).net });
     telemetry.quota(quarter, { met: review.met, target: review.quota, profit: review.revenue, strikes: 0 });
     audio.play(review.met ? 'boardMet' : 'boardMiss');
-    await ui.showQuarterReport({ quarter, heat: pb.heat, tension: pb.tension, notes: [...review.lines.slice(1), ...r.lines],
+    await ui.showQuarterReport({ quarter, heat: pb.heat, tension: pb.tension, notes: [...consequences.drainNotes(), ...review.lines.slice(1), ...r.lines],
       board: { met: review.met, revenue: review.revenue, target: review.quota, state: review.stateLabel, average: review.average } });
     await pbui.drain();
     if (board.ousted) { clock.hold('ousted'); slot.clear(); showOusted(quarter); return; }
@@ -575,7 +581,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   }
 
   session = {
-    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, market, schemes, mapSales, mapScreen, slot, leads, social, company, story, telemetry, firstBreach,
+    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, board, consequences, market, schemes, mapSales, mapScreen, slot, leads, social, company, story, telemetry, firstBreach,
     destroy() {
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);
