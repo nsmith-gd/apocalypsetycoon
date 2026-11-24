@@ -7,6 +7,14 @@ The GDD's room, product and unlock tables, one file each. Pure data, no DOM; `te
   gives one, otherwise placed in the tier's price range by unlock time). Links to the live tables: `objects`
   (bunker objects), `roomType` (grid room recognition), `amenity` (client-package rooms), `track` (alternates;
   ids match `COUNTER_ROOMS`). `roomsForRoster(roster)` = the rooms in a given world.
+- `identify.js` — room identity (director review of #36): a room is an enclosed space, and the objects inside it
+  decide which room it is. Every enclosed GDD room has a `requires` definition (objects and counts). `identifyRoom(counts)`
+  returns ONE identity: the most specific definition met, then the one with more of its defining objects inside, then
+  the higher needs tier, then the more valuable defining objects, then the later unlock. Nothing met = Storeroom; nothing
+  inside = Empty room. It also returns a hint: the closest room the space is not yet, and what to add. The shelter grid
+  (`src/shelter/bunker.js`) uses it for every room; its old hand-written room list is gone. Fixtures (doors, linings,
+  seals), the spine and surface builds are catalogued but are not rooms (`kind`). Rooms whose defining object is not in
+  the bunker catalog yet (e.g. the Throne Room's throne) exist as data and are never recognised until it is added.
 - `products.js` — `PRODUCT_LINES`: Solo Pod, Family Vault, Condo Silo, Compound, Ark with occupants, plots, prices.
 - `unlocks.js` — `UNLOCK_SCHEDULE`: the 48 rows (39 research, 9 free) with gate, RP, cash, what each unlocks and its
   fan-out; `nodes` = the live research nodes (`src/research/tree-data.js`) that implement a row today.
