@@ -6,12 +6,17 @@ export default {
   start: 'open',
   nodes: {
     open: {
+      alt: [
+        { when: { suspicious: true }, text: "{name} has a terminal open. \"Bunker demand spikes the same week {fear} gets a shove. Every time. Want to explain that correlation?\"" },
+        { when: { band: 'brink' }, text: "\"{fear} is {level} and my risk desk is crying.\" {name} checks a watch. \"Fine. Thirty seconds.\"" },
+      ],
       speaker: 'guest',
       text: '{name} doesn\'t shake your hand. "Bunkers. The most overpriced asset class since tulips. Convince me in thirty seconds."',
       choices: [
         { text: "I won't. Here's the spec sheet. Days sealed, litres per head, calories per square metre.", next: 'numbers', effects: { trait: 'skeptic', learn: 'skeptic' } },
         { text: "It's not an asset, it's a hedge. Your whole book goes to zero with {fear}. This doesn't.", next: 'hedge', effects: { fear: '$guest' } },
         { text: 'Gold taps, a cinema and a wine cellar. You deserve it.', next: 'scoff', effects: { trait: 'vain' } },
+        { when: { suspicious: true }, text: "Correlation isn't causation. But if you can see the pattern, you're already late to the trade.", next: 'hedge', effects: { aggressive: true, trait: 'gambler' } },
       ],
     },
     numbers: {
@@ -20,6 +25,7 @@ export default {
       choices: [
         { text: 'The marble pays for the water. You only buy the water.', next: 'won_fear', effects: { trust: 8, trait: 'skeptic' } },
         { text: "Because rich people buy marble. You're not rich people, you're a counterparty.", next: 'hedge', effects: { trait: 'gambler', trust: 4 } },
+        { when: { bandBelow: 'simmer' }, text: "Nobody is pricing {fear} yet. That's why it's cheap today.", next: 'won_fear', effects: { trait: 'gambler', trust: 4 } },
       ],
     },
     hedge: {
