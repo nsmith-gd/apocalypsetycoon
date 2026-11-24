@@ -4,7 +4,7 @@ Pixel-art management sim. Plain ES modules, no build step.
 
 - **Play:** serve the repo root (`python3 -m http.server`) and open `http://localhost:8000/` (the root `index.html`).
 - **Tests:** `node --test tests/*.test.js`
-- Demos of individual systems live in `demo/`.
+- Demos of individual systems live in `demo/`, listed on `demos.html` (linked from the main menu).
 
 ## Campaign (src/campaign)
 - `clock.js` — `CampaignClock`: 12 quarters of `PACING.quarterMinutes` (27 min) each, then Midnight.
@@ -16,5 +16,5 @@ Pixel-art management sim. Plain ES modules, no build step.
 - `main.js` — main menu → campaign scene (HUD, shelter/world views, clock bar) → Midnight ending.
   `window.__game` exposes the live systems. The shelter and world views are placeholders for their own tasks.
 
-Controls: Space pause, 1/2/3 speed, N end the quarter now, TAB shelter/world map, R research.
+Controls: Space pause, , and . step speed, N end the quarter now, TAB shelter/world map, R research.
 `?qs=20` makes each quarter 20 seconds (testing); `?seed=N` fixes the pushback RNG.

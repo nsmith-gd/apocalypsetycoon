@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fear and Demand</title>
+<link rel="stylesheet" href="../src/ui/ui.css">
+<link rel="stylesheet" href="../src/doomclock/doomclock.css">
+<link rel="stylesheet" href="../src/crisis/breach.css">
+<style>
+  html, body { margin: 0; background: #14110f; }
+  #game { min-height: 100vh; display: flex; flex-direction: column; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 12px 16px; font-family: 'Courier New', monospace; color: #f2e6c9; width: 100%; box-sizing: border-box; display: grid; grid-template-columns: 1fr 330px; gap: 12px; }
+  .panel { background: #241f1a; border: 3px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; padding: 10px; }
+  .panel h2 { font-size: 11px; letter-spacing: 2px; color: #a8977a; margin: 0 0 8px; }
+  #map { width: 100%; image-rendering: pixelated; display: block; border: 3px solid #0a0807; }
+  .gauges { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .gauge { text-align: center; font-size: 10px; }
+  .gauge canvas { width: 100%; image-rendering: pixelated; }
+  .gauge .name { font-weight: 700; letter-spacing: 1px; }
+  .gauge .vals { color: #a8977a; }
+  .gauge .vals b { color: #ff5a4f; }
+  .gauge button { font-family: inherit; font-size: 10px; font-weight: 700; padding: 3px 5px; margin: 2px 1px 0; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; cursor: pointer; }
+  .gauge button.on { background: #ff9f1c; color: #2a2118; }
+  .legend { font-size: 10px; color: #a8977a; margin-top: 6px; }
+  .legend i { display: inline-block; width: 12px; height: 3px; vertical-align: middle; margin: 0 4px 0 8px; }
+  .controls { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .controls button { font-family: inherit; font-weight: 700; font-size: 11px; padding: 6px 8px; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; cursor: pointer; }
+  .controls .hot { background: #f5c542; color: #2a2118; }
+  #chart { width: 100%; height: 110px; image-rendering: pixelated; display: block; background: #0a0807; border: 2px solid #4a3f33; }
+  .inbox { max-height: 260px; overflow: auto; font-size: 11px; }
+  .lead { display: grid; grid-template-columns: 1fr auto; gap: 4px; align-items: center; padding: 3px 0; border-bottom: 1px solid #2f2821; }
+  .lead small { color: #a8977a; }
+  .lead[data-age='3'] small { color: #ff5a4f; }
+  .lead button { font-family: inherit; font-size: 10px; font-weight: 700; padding: 3px 6px; color: #2a2118; background: #7ed957; border: 2px solid #0a0807; cursor: pointer; }
+  .wealth-apex, .wealth-ultra { color: #f5c542; }
+  .stats { font-size: 11px; line-height: 1.7; }
+  .stats b { color: #f5c542; }
+  @media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } .gauges { grid-template-columns: repeat(3, 1fr); } }
+</style>
+</head>
+<body>
+<div id="game">
+  <div class="wrap">
+    <div>
+      <div class="panel"><h2>WORLD DEMAND · REGION NUMBER = DEMAND HEAT · TICKER = LEADS PER WEEK AND PRICE PREMIUM</h2><canvas id="map"></canvas></div>
+      <div class="panel" style="margin-top:12px"><h2>CRISIS TRACKS · TENSION AND FEAR</h2><div class="gauges" id="gauges"></div>
+        <div class="legend"><i style="background:#2a2118;outline:1px solid #a8977a"></i>tension needle<i style="background:#ff5a4f"></i>Fear needle (+2 per tension point gained, +10 per breach week, -15% a week)</div></div>
+    </div>
+    <div>
+      <div class="panel"><div class="controls">
+        <button id="week">ADVANCE 1 WEEK</button><button id="auto" class="hot">AUTO 13 WEEKS</button>
+      </div>
+      <canvas id="chart" width="160" height="60"></canvas>
+      <div class="legend">Leads per week (last 32 weeks). <span style="color:#ff5a4f">Red</span> = a week in which unworked leads went to a rival.</div>
+      <div class="stats" id="stats"></div></div>
+      <div class="panel" style="margin-top:12px"><h2>LEADS INBOX · UNWORKED LEADS GO TO A RIVAL AFTER 4 WEEKS</h2><div class="inbox" id="inbox"></div></div>
+    </div>
+  </div>
+</div>
+<script type="module">
+import { Ledger } from '../src/ledger/ledger.js';
+import { createGameUI } from '../src/ui/hud.js';
+import { Pushback } from '../src/pushback/pushback.js';
+import { DoomClock } from '../src/doomclock/doomclock.js';
+import { createDoomClockHud } from '../src/doomclock/doomclock-hud.js';
+import { CrisisSystem } from '../src/crisis/breach.js';
+import { createContainmentUI } from '../src/crisis/breach-ui.js';
+import { LeadMarket, attachCrisis, REGIONS } from '../src/demand/demand.js';
+import { drawTrackGauge, createDemandMap } from '../src/demand/demand-ui.js';
+import { CLIENT_TYPES } from '../src/clients/clients.js';
+
+const params = new URLSearchParams(location.search);
+const ledger = new Ledger({ startingCash: 60_000_000 });
+const pb = new Pushback({ ledger });
+const clock = new DoomClock();
+const root = document.getElementById('game');
+const ui = createGameUI({ root, ledger });
+createDoomClockHud({ clock, hud: root.querySelector('.hud') });
+const crisis = new CrisisSystem({ seed: 4, pushback: pb, doomClock: clock, ledger, tips: { pandemic: 92, climate: 90, unrest: 88, markets: 90, war: 94 } });
+const market = new LeadMarket({ seed: 9, reputation: () => crisis.reputation });
+attachCrisis(market, crisis);
+market.ownSite('nam', { prestige: 2 }); // HQ in North America with a Showroom
+market.ownSite('eur');
+market.setReferrals('nam', 0.25); // one Influencer
+for (const [id, v] of Object.entries({ pandemic: 30, climate: 35, unrest: 30, markets: 25, war: 15 })) crisis.setTension(id, v);
+createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => advanceWeek() });
+
+const map = createDemandMap({ canvas: document.getElementById('map'), market, getTensions: () => Object.fromEntries(Object.values(crisis.tracks).map((t) => [t.id, t.tension])), getBreachMultiplier: () => crisis.panicMultiplier });
+
+// Each track either drifts (pushed by schemes) or is held flat. "HOLD AT BRINK" pushes it to the
+// Brink and keeps it there, so you can watch Fear, then leads, drain away.
+const mode = Object.fromEntries(Object.keys(crisis.tracks).map((id) => [id, 'drift']));
+const gaugesEl = document.getElementById('gauges');
+for (const t of Object.values(crisis.tracks)) {
+  const g = document.createElement('div');
+  g.className = 'gauge';
+  g.dataset.id = t.id;
+  g.innerHTML = `<canvas width="48" height="28"></canvas><div class="name">${t.name.toUpperCase()}</div><div class="vals"></div><button data-a="push">+10</button><button data-a="hold">HOLD AT BRINK</button>`;
+  g.querySelector('[data-a=push]').onclick = () => { mode[t.id] = 'drift'; crisis.addTension(t.id, 10, 'scheme'); render(); };
+  g.querySelector('[data-a=hold]').onclick = () => {
+    mode[t.id] = mode[t.id] === 'hold' ? 'drift' : 'hold';
+    if (mode[t.id] === 'hold') crisis.setTension(t.id, crisis.visibleTip(t.id).range?.[0] ?? crisis.tippingPoint(t.id) - 8);
+    render();
+  };
+  gaugesEl.append(g);
+}
+
+function advanceWeek() {
+  // world drift: tracks not held creep up a little
+  for (const t of Object.values(crisis.tracks)) if (mode[t.id] === 'drift' && t.state !== 'collapsed' && t.state !== 'breach') crisis.addTension(t.id, Math.round(Math.random() * 3), 'drift');
+  crisis.advanceWeek(); // also runs the lead market week (attachCrisis)
+  clock.advanceWeeks(1);
+  render();
+}
+
+const chart = document.getElementById('chart').getContext('2d');
+function drawChart() {
+  const h = market.history.slice(-32);
+  chart.fillStyle = '#0a0807'; chart.fillRect(0, 0, 160, 60);
+  chart.fillStyle = '#2f2821'; for (let y = 10; y < 60; y += 10) chart.fillRect(0, y, 160, 1);
+  const max = Math.max(4, ...h.map((r) => r.total));
+  h.forEach((r, i) => {
+    const bh = Math.round((r.total / max) * 50);
+    chart.fillStyle = r.lost ? '#ff5a4f' : '#7ed957';
+    chart.fillRect(i * 5, 58 - bh, 4, bh);
+  });
+  chart.fillStyle = '#a8977a';
+  chart.fillRect(0, 58, 160, 1);
+}
+
+function render() {
+  for (const t of Object.values(crisis.tracks)) {
+    const g = gaugesEl.querySelector(`[data-id=${t.id}]`);
+    const tip = crisis.visibleTip(t.id);
+    drawTrackGauge(g.querySelector('canvas').getContext('2d'), { tension: t.tension, fear: market.fear[t.id], tipRange: tip.exact != null ? [tip.exact - 0.5, tip.exact + 0.5] : tip.range, state: t.state });
+    g.querySelector('.vals').innerHTML = `tension ${Math.round(t.tension)} · <b>fear ${Math.round(market.fear[t.id])}</b>${t.state !== 'calm' ? `<br>${t.state.toUpperCase()}` : ''}`;
+    g.querySelector('[data-a=hold]').classList.toggle('on', mode[t.id] === 'hold');
+  }
+  const last = market.history.at(-1);
+  const rows = market.regionDemand({ tensions: market.lastTension ?? {}, breachMultiplier: crisis.panicMultiplier });
+  document.getElementById('stats').innerHTML = `<b>WEEK ${market.weekNo}</b> · leads this week <b>${last ? last.total.toFixed(2) : '0'}</b><br>
+    Open ${market.leads.length} · worked ${market.worked.length} · <span style="color:#ff5a4f">lost to rivals ${market.lost.length}</span><br>
+    Reputation ${crisis.reputation} · Showroom in North America<br>
+    ${rows.filter((r) => r.leadsPerWeek >= 0.05).sort((a, b) => b.leadsPerWeek - a.leadsPerWeek).slice(0, 4).map((r) => `${r.name}: ${r.leadsPerWeek.toFixed(2)}/wk, prices x${r.panicPremium}`).join('<br>')}`;
+  const inbox = document.getElementById('inbox');
+  inbox.replaceChildren(...market.leads.slice().reverse().map((l) => {
+    const d = document.createElement('div');
+    const age = market.weekNo - l.week;
+    d.className = 'lead';
+    d.dataset.age = String(Math.min(3, age));
+    d.innerHTML = `<span>${CLIENT_TYPES[l.type]?.label ?? l.type} <span class="wealth-${l.wealth}">(${l.wealth})</span><br><small>${REGIONS.find((r) => r.id === l.region).name} · ${4 - age} week${4 - age === 1 ? '' : 's'} before a rival takes it</small></span><button>WORK</button>`;
+    d.querySelector('button').onclick = () => { market.work(l.id); render(); };
+    return d;
+  }));
+  if (!market.leads.length) inbox.innerHTML = '<span style="color:#a8977a">No open leads. Calm worlds don\'t buy bunkers.</span>';
+  drawChart();
+  ui.update({ quarter: 1 + Math.floor(market.weekNo / 13), totalQuarters: 12, heat: pb.heat, tension: Math.round(Object.values(crisis.tracks).reduce((a, t) => a + t.tension, 0) / 5), boardTarget: 0 });
+  map.refresh();
+}
+document.getElementById('week').onclick = advanceWeek;
+document.getElementById('auto').onclick = async () => { for (let i = 0; i < 13; i++) { if (crisis.paused) break; advanceWeek(); await new Promise((r) => setTimeout(r, Number(params.get('speed') ?? 250))); } };
+render();
+window.__demo = { crisis, market, clock, render, advanceWeek, mode };
+</script>
+</body>
+</html>

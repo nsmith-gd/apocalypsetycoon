@@ -7,6 +7,7 @@
 //   await ui.showQuarterReport({ quarter, boardTarget, heat, tension });
 
 import { formatMoney } from '../ledger/ledger.js';
+import { createLedgerChip, createLedgerRail, createLedgerScreen, renderStatement, CATEGORY_CANVAS } from './ledgerRail.js';
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -49,7 +50,9 @@ const HEAT_ZONES = [
   { below: 101, name: 'tipping', word: 'HOT' },
 ];
 
-export function createGameUI({ root, ledger, views = {}, onViewChange, initialView = 'grid' }) {
+// rail: an element to dock the always-on ledger rail into (optional). Without it the HUD's
+// ledger chip still shows this quarter's net and the latest line at all times.
+export function createGameUI({ root, ledger, views = {}, onViewChange, initialView = 'grid', rail = null }) {
   root.classList.add('at-ui');
 
   // ---------- HUD ----------
@@ -85,9 +88,12 @@ export function createGameUI({ root, ledger, views = {}, onViewChange, initialVi
   // ---------- View toggle ----------
   const toggle = el('nav', 'view-toggle');
   const viewButtons = {};
-  for (const [key, label] of [['grid', 'SHELTER'], ['map', 'WORLD MAP']]) {
+  for (const [key, label, n] of [['grid', 'SHELTER', 1], ['map', 'WORLD MAP', 2]]) {
     const b = el('button', 'view-btn', label);
     b.type = 'button';
+    b.dataset.view = key;
+    b.title = `${label === 'SHELTER' ? 'Shelter grid: what you build' : 'World map: what you sell'} (${n} or TAB)`;
+    b.append(el('i', 'view-badge'));
     b.addEventListener('click', () => setView(key));
     viewButtons[key] = b;
     toggle.append(b);
@@ -95,26 +101,46 @@ export function createGameUI({ root, ledger, views = {}, onViewChange, initialVi
   const hint = el('span', 'view-hint', '[TAB]');
   toggle.append(hint);
 
-  hud.append(brand, cashBox, qBox, heat.wrap, tension.wrap, boardBox, toggle);
+  // ---------- Ledger: chip in the HUD, optional docked rail, full screen on L ----------
+  const ledgerScreen = createLedgerScreen({ root, ledger });
+  const ledgerChip = createLedgerChip({ ledger, onOpen: () => ledgerScreen.toggle() });
+  const ledgerRail = rail ? createLedgerRail({ ledger, onOpen: () => ledgerScreen.toggle() }) : null;
+  if (ledgerRail) { rail.append(ledgerRail.el); root.dataset.rail = 'true'; }
+
+  hud.append(brand, cashBox, qBox, heat.wrap, tension.wrap, boardBox, ledgerChip.el, toggle);
   root.prepend(hud);
+  // Docked panels (the ledger rail) stick just below the HUD, whatever height it wraps to.
+  const syncHudHeight = () => root.style.setProperty('--hud-h', `${hud.offsetHeight}px`);
+  const hudObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(syncHudHeight) : null;
+  hudObserver?.observe(hud);
+  syncHudHeight();
 
   let view = null;
   function setView(next) {
     if (next === view) return;
     view = next;
     for (const [key, node] of Object.entries(views)) if (node) node.hidden = key !== view;
-    for (const [key, b] of Object.entries(viewButtons)) b.classList.toggle('active', key === view);
+    for (const [key, b] of Object.entries(viewButtons)) {
+      b.classList.toggle('active', key === view);
+      if (key === view) b.dataset.badge = 'false';
+    }
+    const shown = views[view];
+    if (shown) { shown.classList.remove('view-in'); void shown.offsetWidth; shown.classList.add('view-in'); }
     root.dataset.view = view;
     onViewChange?.(view);
   }
   setView(initialView);
 
   const onKey = (e) => {
-    if (e.key !== 'Tab' || reportOpen) return;
+    if (reportOpen || e.ctrlKey || e.metaKey || e.altKey) return;
     const tag = e.target?.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-    e.preventDefault();
-    setView(view === 'grid' ? 'map' : 'grid');
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (e.key === 'l' || e.key === 'L') { e.preventDefault(); ledgerScreen.toggle(); return; }
+    if (e.key === 'Escape' && ledgerScreen.open) { e.preventDefault(); ledgerScreen.toggle(false); return; }
+    if (ledgerScreen.open) return;
+    if (e.key === 'Tab') { e.preventDefault(); setView(view === 'grid' ? 'map' : 'grid'); }
+    else if (e.key === '1' && views.grid) setView('grid');
+    else if (e.key === '2' && views.map) setView('map');
   };
   window.addEventListener('keydown', onKey);
 
@@ -155,6 +181,9 @@ export function createGameUI({ root, ledger, views = {}, onViewChange, initialVi
   ledger.onChange((entry) => {
     render();
     if (!entry) return;
+    // Money made on the other canvas lights that canvas's button: one ledger, two canvases.
+    const from = CATEGORY_CANVAS[entry.category];
+    if (from && from !== view && viewButtons[from] && views[from]) viewButtons[from].dataset.badge = 'true';
     cashDelta.textContent = formatMoney(entry.amount, { sign: true });
     cashDelta.dataset.dir = entry.amount > 0 ? 'up' : 'down';
     cashDelta.classList.remove('flash');
@@ -167,6 +196,8 @@ export function createGameUI({ root, ledger, views = {}, onViewChange, initialVi
   function update(patch) {
     state = { ...state, ...patch };
     if (patch.quarter != null) ledger.setQuarter(patch.quarter);
+    ledgerRail?.setBoard({ target: state.boardTarget, progress: state.boardProgress ?? null });
+    ledgerChip.render();
     render();
   }
   render();
@@ -187,30 +218,7 @@ export function createGameUI({ root, ledger, views = {}, onViewChange, initialVi
     head.append(el('div', 'report-company', 'LAST RESORT HOLDINGS'), el('div', 'report-title', `QUARTER ${quarter} LEDGER`), el('div', 'report-sub', 'Confidential. For the board only.'));
     paper.append(head);
 
-    const table = el('table', 'report-table');
-    const addRow = (cls, label, amount, count) => {
-      const tr = el('tr', cls);
-      const l = el('td', 'r-label', label);
-      if (count > 1) l.append(el('span', 'r-count', ` x${count}`));
-      const a = el('td', 'r-amount', amount == null ? '' : formatMoney(amount, { sign: true }));
-      if (amount != null) a.dataset.dir = amount >= 0 ? 'up' : 'down';
-      tr.append(l, a);
-      table.append(tr);
-    };
-
-    addRow('r-opening', 'Opening cash', null);
-    table.lastChild.lastChild.textContent = formatMoney(s.opening);
-
-    if (!s.groups.length) addRow('r-empty', 'No transactions this quarter.', null);
-    for (const g of s.groups) {
-      addRow('r-group', `${g.icon} ${g.label.toUpperCase()}`, g.total);
-      for (const line of g.lines) addRow('r-line', line.label, line.amount, line.count);
-    }
-    addRow('r-total', 'Total income', s.income);
-    addRow('r-total', 'Total expenses', s.expenses);
-    addRow('r-net', 'NET THIS QUARTER', s.net);
-    addRow('r-closing', 'Closing cash', null);
-    table.lastChild.lastChild.textContent = formatMoney(s.closing);
+    const table = renderStatement(s);
     paper.append(table);
 
     const verdict = el('div', 'report-verdict');
@@ -261,8 +269,11 @@ export function createGameUI({ root, ledger, views = {}, onViewChange, initialVi
     setView,
     get view() { return view; },
     showQuarterReport,
+    ledgerRail,
+    ledgerScreen,
     destroy() {
       window.removeEventListener('keydown', onKey);
+      hudObserver?.disconnect();
       hud.remove();
     },
   };

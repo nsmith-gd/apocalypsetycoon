@@ -48,10 +48,12 @@ function showMainMenu() {
   const cont = el('button', null, 'CONTINUE');
   const sub = el('div', 'mm-sub', save ? describeSave(save) : 'No saved campaign');
   cont.disabled = !save;
+  const demos = el('a', 'mm-link', 'System demos');
+  demos.href = 'demos.html';
   start.onclick = () => startCampaign({ resume: false });
   cont.onclick = () => startCampaign({ resume: true });
   mm.append(sky, el('div', 'mm-title', 'APOCALYPSE TYCOON'), el('div', 'mm-tag', "You don't survive the apocalypse. You sell it."),
-    start, cont, sub, el('div', 'mm-foot', 'LAST RESORT HOLDINGS · 12 QUARTERS TO MIDNIGHT'));
+    start, cont, sub, demos, el('div', 'mm-foot', 'LAST RESORT HOLDINGS · 12 QUARTERS TO MIDNIGHT'));
   app.append(mm);
   start.focus();
 }
@@ -139,7 +141,7 @@ function startCampaign({ resume }) {
   const speeds = el('div', 'cb-group');
   const speedBtns = SPEEDS.map((s) => {
     const b = el('button', null, s === 0 ? 'II' : `x${s}`);
-    b.title = s === 0 ? 'Pause (Space)' : `Speed x${s} (${SPEEDS.indexOf(s)})`;
+    b.title = s === 0 ? 'Pause (Space)' : `Speed x${s} (, and . step speed)`;
     b.onclick = () => clock.setSpeed(s);
     speeds.append(b);
     return b;
@@ -228,9 +230,8 @@ function startCampaign({ resume }) {
   const onKey = (e) => {
     if (e.target?.tagName === 'INPUT' || e.target?.tagName === 'TEXTAREA') return;
     if (e.code === 'Space') { e.preventDefault(); clock.togglePause(); }
-    else if (e.key === '1') clock.setSpeed(1);
-    else if (e.key === '2') clock.setSpeed(2);
-    else if (e.key === '3') clock.setSpeed(4);
+    else if (e.key === '.' || e.key === '>') clock.setSpeed(SPEEDS[Math.min(SPEEDS.length - 1, SPEEDS.indexOf(clock.speed) + 1)] ?? 1);
+    else if (e.key === ',' || e.key === '<') clock.setSpeed(SPEEDS[Math.max(0, SPEEDS.indexOf(clock.speed) - 1)] ?? 1);
     else if (e.key === 'n' || e.key === 'N') { if (!modalOpen()) clock.skipQuarter(); }
   };
   addEventListener('keydown', onKey);

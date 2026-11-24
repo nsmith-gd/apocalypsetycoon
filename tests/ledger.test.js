@@ -47,3 +47,19 @@ test('formatMoney', () => {
   assert.equal(formatMoney(25000, { sign: true }), '+$25.0K');
   assert.equal(formatMoney(-3_200_000), '-$3.20M');
 });
+
+test('recent, totalsByCategory and history feed the ledger rail and screen', () => {
+  const l = new Ledger({ startingCash: 100 });
+  l.record('builds', 'Bunk', -20);
+  l.record('sales', 'Sale', 200);
+  l.record('builds', 'Pantry', -10);
+  assert.deepEqual(l.recent(2).map((e) => e.label), ['Pantry', 'Sale']);
+  assert.deepEqual(l.totalsByCategory(1), { builds: -30, sales: 200 });
+  l.setQuarter(2);
+  l.record('fines', 'Fine', -5);
+  const h = l.history();
+  assert.equal(h.length, 2);
+  assert.deepEqual(h[0], { quarter: 1, opening: 100, income: 200, expenses: -30, net: 170, closing: 270 });
+  assert.equal(h[1].opening, 270);
+  assert.equal(h[1].closing, 265);
+});

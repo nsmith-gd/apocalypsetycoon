@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Apocalypse Tycoon Prototype</title>
 <link rel="stylesheet" href="../src/ui/ui.css">
+<link rel="stylesheet" href="../src/worldmap/worldmap.css">
+<link rel="stylesheet" href="../src/crisis/breach.css">
 <style>
   html, body { margin: 0; height: 100%; background: #14110f; }
   #game { min-height: 100vh; display: flex; flex-direction: column; }
@@ -27,11 +29,14 @@
 </head>
 <body>
 <div id="game">
-  <main class="stage" id="grid-view">
-    <aside class="palette" id="palette"></aside>
-    <canvas id="grid" width="160" height="96"></canvas>
-  </main>
-  <main class="stage" id="map-view" hidden><canvas id="map" width="320" height="192"></canvas></main>
+  <div class="at-body">
+    <main class="stage" id="grid-view">
+      <aside class="palette" id="palette"></aside>
+      <canvas id="grid" width="160" height="96"></canvas>
+    </main>
+    <main id="map-view" hidden></main>
+    <div class="at-rail-host" id="rail"></div>
+  </div>
   <footer class="actions" id="actions"></footer>
 </div>
 <script type="module">
@@ -40,7 +45,12 @@ import { createGameUI } from '../src/ui/hud.js';
 import { ResearchTree } from '../src/research/research.js';
 import { createResearchPanel } from '../src/ui/researchPanel.js';
 import { drawShelter, nextFreeSlot } from '../src/art/shelterView.js';
-import { drawWorldMap } from '../src/art/worldmap.js';
+import { LeadMarket, attachCrisis } from '../src/demand/demand.js';
+import { CrisisSystem } from '../src/crisis/breach.js';
+import { createContainmentUI } from '../src/crisis/breach-ui.js';
+import { SchemeBoard, researchCrisis } from '../src/schemes/schemes.js';
+import { MapSales } from '../src/worldmap/sales.js';
+import { createWorldMapScreen } from '../src/worldmap/worldmap-ui.js';
 import { fitIntegerScale, drawSprite } from '../src/art/render.js';
 import { TILES, AMENITIES as AMENITY_SPRITES } from '../src/art/sprites-shelter.js';
 
@@ -52,6 +62,7 @@ const ui = createGameUI({
   root,
   ledger,
   views: { grid: document.getElementById('grid-view'), map: document.getElementById('map-view') },
+  rail: document.getElementById('rail'),
 });
 const state = { quarter: 1, totalQuarters: 12, heat: 8, tension: 22, boardTarget: 300_000 };
 const clamp = (v) => Math.max(0, Math.min(100, v));
@@ -106,6 +117,7 @@ tree.onUnlock((node) => {
   if (node.unlocks.type === 'amenity') fresh = node.unlocks.id;
   renderPalette();
   renderActions();
+  mapScreen.refresh(); // newly researched schemes show up on the map
 });
 
 // ---- pixel-art views (integer-scaled, pixel-perfect) ----
@@ -114,55 +126,63 @@ function drawGrid() {
   const cv = document.getElementById('grid');
   drawShelter(cv.getContext('2d'), { cols: 10, rows: 6, rooms, frame });
 }
-const MAP_OFFSETS = { na: -6, sa: -14, eu: 4, af: -2, as: 10, oc: -20 };
-const MAP_CRISIS = { na: 'unrest', sa: 'flood', eu: 'pandemic', af: 'fire', as: 'radiation', oc: 'crash' };
-function drawMap() {
-  const cv = document.getElementById('map');
-  const crisis = Object.fromEntries(Object.entries(MAP_OFFSETS).map(([k, o]) => [k, clamp(state.tension + o)]));
-  const bunkers = [[9, 4], [20, 4], [33, 4], [36, 17]].slice(0, sales);
-  drawWorldMap(cv.getContext('2d'), { crisis, crisisType: MAP_CRISIS, frame, bunkers });
-}
+// ---- world: five crisis tracks with hidden tipping points (#26), weekly leads (#27), ----
+// ---- sales on the world map (#3) and crisis-stoking schemes funded per region (#4) ----
+const crisis = new CrisisSystem({ seed: 11, ledger });
+const START_TENSION = { pandemic: 30, climate: 22, unrest: 18, markets: 26, war: 10 };
+for (const [id, v] of Object.entries(START_TENSION)) crisis.setTension(id, v);
+const tensions = () => Object.fromEntries(Object.values(crisis.tracks).map((t) => [t.id, t.tension]));
+const market = new LeadMarket({ seed: 7, reputation: () => crisis.reputation });
+market.ownSite('nam'); // HQ
+market.week({ tensions: Object.fromEntries(Object.keys(START_TENSION).map((k) => [k, Math.round(START_TENSION[k] / 2)])) });
+market.week({ tensions: tensions() }); // the world's unease so far
+attachCrisis(market, crisis); // from now on, a market week runs after every crisis week
+// Schemes add heat to the prototype's heat meter until Pushback joins the prototype.
+const heatOnly = { onScheme: ({ heat }) => { state.heat = clamp(state.heat + heat); } };
+const schemes = new SchemeBoard({ crisis, market, ledger, pushback: heatOnly, isUnlocked: (id) => tree.isUnlocked(id) });
+const mapSales = new MapSales({ market, ledger, getTensions: tensions, getBreachMultiplier: () => crisis.panicMultiplier, getEdgeBonus: (id) => schemes.edgeBonus(id), getQuarter: () => state.quarter });
+const mapScreen = createWorldMapScreen({ root: document.getElementById('map-view'), sales: mapSales, schemes, initial: 'lat', onScheme: () => redraw() });
+createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => { crisis.advanceWeek(); redraw(); } });
+crisis.on('week', () => mapScreen.refresh());
+// The HUD's world tension and research both read how close the hottest crisis is to ITS tipping point.
+const syncTension = () => { state.tension = researchCrisis(crisis); };
+syncTension();
+const WEEK_SECONDS = 30; // game-seconds per in-game week (13 weeks a quarter)
+let weekClock = 0;
 function fitCanvases() {
-  const avail = Math.min(window.innerWidth - 32, 1280);
+  const railW = window.innerWidth > 760 && !ui.ledgerRail?.collapsed ? 244 : 0;
+  const avail = Math.min(window.innerWidth - 32 - railW, 1280);
   const palW = window.innerWidth > 700 ? 240 : 0;
   fitIntegerScale(document.getElementById('grid'), avail - palW, window.innerHeight - 220);
-  fitIntegerScale(document.getElementById('map'), avail, window.innerHeight - 220);
 }
 window.addEventListener('resize', fitCanvases);
-setInterval(() => { frame++; drawGrid(); drawMap(); }, 500);
-const redraw = () => { drawGrid(); drawMap(); ui.update(state); research.render(); };
-let sales = 0;
+setInterval(() => { frame++; drawGrid(); }, 500);
+const redraw = () => { syncTension(); drawGrid(); mapScreen.refresh(); ui.update(state); research.render(); };
 
 // ---- actions (schemes etc.) ----
-const SCHEMES = [
-  { id: 'podcast', name: 'Fund doom podcast', cost: 15_000, tension: 7, heat: 4 },
-  { id: 'memo', name: 'Leak pandemic memo', cost: 30_000, tension: 14, heat: 12 },
-  { id: 'astroturf', name: 'Astroturf think tank', cost: 25_000, tension: 10, heat: 5, research: true },
-  { id: 'deepfake', name: 'Deepfake broadcast', cost: 60_000, tension: 20, heat: 18, research: true },
-  { id: 'shortage', name: 'Engineered shortage', cost: 90_000, tension: 26, heat: 20, research: true },
-  { id: 'blackout', name: 'Grid blackout', cost: 150_000, tension: 35, heat: 30, research: true },
-];
 let speed = 10;
 const bar = document.getElementById('actions');
 function renderActions() {
   bar.replaceChildren();
-  for (const s of SCHEMES) {
-    if (s.research && !tree.isUnlocked(s.id)) continue;
-    const b = document.createElement('button');
-    b.textContent = `Scheme: ${s.name}`;
-    b.onclick = () => {
-      ledger.record('schemes', s.name, -s.cost);
-      state.tension = clamp(state.tension + s.tension); state.heat = clamp(state.heat + s.heat);
-      redraw();
-    };
-    bar.append(b);
-  }
+  const go = document.createElement('button');
+  go.id = 'schemes';
+  go.textContent = 'Schemes: on the WORLD MAP';
+  go.title = 'Pick a region on the world map (2) and fund a scheme there';
+  go.onclick = () => ui.setView('map');
+  bar.append(go);
   const calm = document.createElement('button');
   calm.textContent = 'World calms down';
-  calm.onclick = () => { state.tension = clamp(state.tension - 15); redraw(); };
+  calm.onclick = () => { for (const t of Object.values(crisis.tracks)) crisis.addTension(t.id, -15, 'calm'); redraw(); };
   const sell = document.createElement('button');
-  sell.textContent = 'Sell shelter';
-  sell.onclick = () => { sales++; ledger.record('sales', `Shelter sold (tension ${state.tension})`, Math.round(180_000 * (1 + state.tension / 50))); redraw(); };
+  sell.id = 'finish-shelter';
+  sell.textContent = 'Finish shelter';
+  sell.title = 'Hand the shelter over: it goes into stock, ready to sell on the WORLD MAP (2)';
+  sell.onclick = () => {
+    if (!rooms.length) return;
+    mapSales.addFinished({ name: `Shelter #${mapSales.stock.length + mapSales.sold.length + 1}`, rooms: rooms.map((r) => r.amenity), occupants: Math.max(2, rooms.filter((r) => r.amenity === 'bunk').length * 3) });
+    rooms.length = 0;
+    redraw();
+  };
   const fine = document.createElement('button');
   fine.textContent = 'Regulator fine';
   fine.onclick = () => { ledger.record('fines', 'Regulator fine', -Math.round(20_000 + state.heat * 1_000)); state.heat = clamp(state.heat - 15); redraw(); };
@@ -195,14 +215,21 @@ setInterval(() => {
   const now = performance.now();
   const dt = (now - last) / 1000;
   last = now;
-  if (!paused) tree.tick(dt * speed, state.tension);
+  if (!paused) {
+    if (!crisis.researchBlocked) tree.tick(dt * speed, state.tension);
+    if (!crisis.paused) { // a breach pauses the world until the player deals with it
+      weekClock += dt * speed;
+      while (weekClock >= WEEK_SECONDS) { weekClock -= WEEK_SECONDS; crisis.advanceWeek(); syncTension(); }
+    }
+  }
 }, 250);
 
 renderPalette();
 renderActions();
 fitCanvases();
+document.querySelector('.lr-collapse')?.addEventListener('click', fitCanvases);
 redraw();
-window.__demo = { ledger, ui, state, tree, research, redraw };
+window.__demo = { ledger, ui, state, tree, research, redraw, market, mapSales, mapScreen, crisis, schemes };
 </script>
 </body>
 </html>
