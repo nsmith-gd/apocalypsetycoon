@@ -5,15 +5,16 @@
 import { Conversation, treeFor, ARCHETYPES } from '../dialogue/trees.js';
 import { createStubDialogue } from './dialogue-stub.js';
 
-export function createTreeDialogue(guest, { rng = Math.random } = {}) {
+export function createTreeDialogue(guest, { rng = Math.random, world = null } = {}) {
   const tree = treeFor(guest);
   if (!tree) return createStubDialogue(guest); // no tree for this guest: fall back to the placeholder
-  const conv = new Conversation({ guest, tree, rng });
+  const conv = new Conversation({ guest, tree, rng, world });
   const session = {
     tree: tree.id,
     archetype: ARCHETYPES[conv.archetype]?.label ?? conv.archetype,
     guest: conv.guest, // carries the archetype's traits, so trait plays score correctly
     effects: conv.effects,
+    world: conv.world, // the live crisis snapshot this conversation is reading (#57)
     transcript: [],
     get done() { return conv.done; },
     get ending() { return conv.done ? conv.node.ending : null; },
@@ -23,11 +24,12 @@ export function createTreeDialogue(guest, { rng = Math.random } = {}) {
         id: conv.nodeId,
         speaker: conv.speaker,
         text: conv.text,
-        choices: conv.node.choices.map((c, i) => {
+        choices: conv.choices.map(({ index: i, live }) => {
+          const c = conv.node.choices[i];
           const e = { ...(c.effects ?? {}) };
           if (e.fear === '$guest') e.fear = conv.fear;
           else if (e.fear === '$other') e.fear = conv.otherFear;
-          return { id: String(i), text: conv.fill(c.text), effects: e };
+          return { id: String(i), text: conv.fill(c.text), effects: e, live };
         }),
       };
     },

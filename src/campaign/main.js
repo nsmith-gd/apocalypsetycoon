@@ -34,6 +34,7 @@ import { EventCircuit } from '../events/attend.js';
 import { WeeklyDeck, applyChoice } from '../events/weekly.js';
 import { showWeeklyCard } from '../events/weekly-ui.js';
 import { SocialSession } from '../social/viewmodel.js';
+import { worldState } from '../dialogue/world-state.js';
 import { createSocialScreens } from '../social/text-screens.js';
 
 export const STARTING_CASH = 400_000;
@@ -193,7 +194,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
       addHeat: (n, why) => pb.addHeat(n, why), addReputation: (n) => { crisis.reputation = Math.max(0, Math.min(100, crisis.reputation + n)); } });
     slot.register('events', circuit);
     if (resume) { const saved = slot.peek(); if (saved?.parts?.events) circuit.load(saved.parts.events); }
-    social.session = new SocialSession({ circuit, leads, getQuarter: () => clock.quarter, getCash: () => ledger.cash,
+    social.session = new SocialSession({ circuit, leads, getQuarter: () => clock.quarter, getCash: () => ledger.cash, getWorld: () => worldState({ crisis, schemes }),
       addHeat: (n, why) => pb.addHeat(n, why), addReputation: (n) => { crisis.reputation = Math.max(0, Math.min(100, crisis.reputation + n)); } });
     social.screens = createSocialScreens({ root: document.body, social: social.session, onClose: () => { ui.update(hudState()); mapScreen.refresh(); } });
     social.session.onChange(() => ui.update(hudState()));
