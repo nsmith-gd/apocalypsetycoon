@@ -39,15 +39,19 @@ const VIEWPORTS = [{ w: 1440, h: 900 }, { w: 1920, h: 1080 }, { w: 1280, h: 720 
       const cells = {};
       for (let r = 0; r < MAP_ROWS; r++) for (let c = 0; c < MAP_COLS; c++) { const id = regionAtCell(c, r); if (id) (cells[id] ??= []).push([c, r]); }
       const hits = {};
+      let moved = false;
       for (const [id, list] of Object.entries(cells)) {
         const mx = list.reduce((s, [c]) => s + c, 0) / list.length, my = list.reduce((s, [, r]) => s + r, 0) / list.length;
         const [c, r] = list.reduce((best, cr) => (Math.hypot(cr[0] - mx, cr[1] - my) < Math.hypot(best[0] - mx, best[1] - my) ? cr : best));
-        const x = rect.left + bw + (c * CELL + CELL / 2) * scale;
-        const y = rect.top + bw + (r * CELL + CELL / 2) * scale;
+        const now = cv.getBoundingClientRect(); // where the map is right now (selecting can move the layout)
+        const s = (now.width - 2 * bw) / MAP_W;
+        const x = now.left + bw + (c * CELL + CELL / 2) * s;
+        const y = now.top + bw + (r * CELL + CELL / 2) * s;
+        moved = moved || Math.abs(now.top - rect.top) > 0.5 || Math.abs(now.left - rect.left) > 0.5;
         cv.dispatchEvent(new MouseEvent('click', { clientX: x, clientY: y, bubbles: true }));
         hits[id] = __game.mapScreen.selected;
       }
-      return { scale, shownW, shownH, aspectOk: Math.abs(shownW / shownH - MAP_W / MAP_H) < 0.01, rendering: cs.imageRendering, hits };
+      return { scale, shownW, shownH, aspectOk: Math.abs(shownW / shownH - MAP_W / MAP_H) < 0.01, rendering: cs.imageRendering, hits, layoutMovedOnSelect: moved };
     });
     r.integerScale = Math.abs(r.scale - Math.round(r.scale)) < 1e-6;
     r.hitAreasOk = Object.entries(r.hits).every(([id, sel]) => id === sel);

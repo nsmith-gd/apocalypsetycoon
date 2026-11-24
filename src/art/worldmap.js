@@ -1,14 +1,15 @@
-// Stylised world map renderer: 40x24 cells of 8px = a 320x192 native canvas.
-// Terrain comes from WORLD_LAYOUT; regions are rectangles over it. Crisis level per
+// Stylised world map renderer: a 320x192 native canvas. The base layer is painted per pixel from
+// WORLD_LAYOUT (src/art/map-base.js, #100); regions are rectangles over the 40x24 grid of 8px cells. Crisis level per
 // region (0..100) picks an overlay (uneasy / edge / tipping) and shows its icon.
 //
 //   drawWorldMap(ctx, { crisis: { na: 45, eu: 92 }, crisisType: { eu: 'pandemic' },
 //                       frame, selected: 'eu', bunkers: [[9,4]] });
 
-import { MAP_TILES, MAP_MARKERS, CRISIS_ICONS, CRISIS_OVERLAYS } from './sprites-map.js';
+import { MAP_MARKERS, CRISIS_ICONS, CRISIS_OVERLAYS } from './sprites-map.js';
 import { drawSprite } from './render.js';
 import { drawText, textWidth } from './font.js';
 import { HEX } from './palette.js';
+import { drawMapBase } from './map-base.js';
 
 export const CELL = 8;
 export const MAP_COLS = 40;
@@ -44,7 +45,6 @@ export const WORLD_LAYOUT = [
   'iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii',
 ];
 
-const TERRAIN = { '#': 'land', f: 'forest', d: 'desert', m: 'mountain', c: 'city', i: 'ice' };
 
 // Regions: rect = [col, row, cols, rows]; first match wins. label anchor in cells.
 export const MAP_REGIONS = [
@@ -69,32 +69,11 @@ export function crisisOverlay(level) {
   return null;
 }
 
-const isLand = (c, r) => { const t = WORLD_LAYOUT[r]?.[c]; return t != null && t !== '~'; };
 
 export function drawWorldMap(ctx, { crisis = {}, crisisType = {}, frame = 0, selected = null, bunkers = [], labels = true } = {}) {
   ctx.imageSmoothingEnabled = false;
-  // 1. terrain
-  for (let r = 0; r < MAP_ROWS; r++) {
-    for (let c = 0; c < MAP_COLS; c++) {
-      const t = WORLD_LAYOUT[r][c];
-      const x = c * CELL;
-      const y = r * CELL;
-      if (t === '~') {
-        const nearLand = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => isLand(c + dx, r + dy) && WORLD_LAYOUT[r + dy][c + dx] !== 'i');
-        drawSprite(ctx, nearLand ? MAP_TILES.shallows : MAP_TILES.ocean, x, y, { frame: frame + ((c + r) % 2) });
-      } else {
-        drawSprite(ctx, MAP_TILES[TERRAIN[t]], x, y);
-      }
-    }
-  }
-  // 2. coastline: 1px dark edge on the land side facing open water
-  ctx.fillStyle = HEX.g;
-  for (let r = 0; r < MAP_ROWS; r++) for (let c = 0; c < MAP_COLS; c++) {
-    if (!isLand(c, r) || WORLD_LAYOUT[r][c] === 'i') continue;
-    const x = c * CELL, y = r * CELL;
-    if (!isLand(c, r + 1)) ctx.fillRect(x, y + CELL - 1, CELL, 1);
-    if (!isLand(c + 1, r)) ctx.fillRect(x + CELL - 1, y, 1, CELL);
-  }
+  // 1-2. base layer: land, coasts, ocean and terrain painted per pixel (#100, style guide "World map")
+  drawMapBase(ctx);
   // 3. crisis overlays per region
   for (let r = 0; r < MAP_ROWS; r++) for (let c = 0; c < MAP_COLS; c++) {
     const reg = regionAt(c, r);

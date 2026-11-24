@@ -17,6 +17,7 @@
     "lat": "lat",
     "oce": "oce"
    },
+   "layoutMovedOnSelect": false,
    "integerScale": true,
    "hitAreasOk": true,
    "viewport": "1440x900",
@@ -42,6 +43,7 @@
     "lat": "lat",
     "oce": "oce"
    },
+   "layoutMovedOnSelect": false,
    "integerScale": true,
    "hitAreasOk": true,
    "viewport": "1920x1080",
@@ -67,6 +69,7 @@
     "lat": "lat",
     "oce": "oce"
    },
+   "layoutMovedOnSelect": false,
    "integerScale": true,
    "hitAreasOk": true,
    "viewport": "1280x720",
