@@ -22,6 +22,7 @@
 import { mulberry32 } from '../pushback/pushback.js';
 import { GDD_REGIONS, TRACKS } from '../world/tracks.js';
 import { PACING } from '../debug/pacing.js';
+import { rollGuest } from '../guests/guests.js';
 
 export const AGENDA = Object.freeze({ daysPerQuarter: 6 });
 
@@ -57,7 +58,7 @@ const hotTracksIn = (regionId) => TRACKS.filter((t) => t.exposure[regionId]).map
 
 export class EventCircuit {
   constructor({ catalog, ledger = null, seed = 1, clock = null, addHeat = null, addReputation = null,
-    daysPerQuarter = AGENDA.daysPerQuarter, quarterMinutes = PACING.quarterMinutes } = {}) {
+    daysPerQuarter = AGENDA.daysPerQuarter, quarterMinutes = PACING.quarterMinutes, guestRoster = null, world = null } = {}) {
     if (!catalog) throw new Error('EventCircuit needs a venue catalog');
     this.catalog = catalog;
     this.ledger = ledger;
@@ -67,6 +68,8 @@ export class EventCircuit {
     this.addReputation = addReputation;
     this.daysPerQuarter = daysPerQuarter;
     this.quarterMinutes = quarterMinutes;
+    this.guestRoster = guestRoster; // #53: when given, guests are rolled from its archetypes (traits, budget, fears)
+    this.world = world;             // the campaign's six threat tracks (fears follow the world's slots)
     this.daysUsed = {};        // quarter -> agenda days spent
     this.attended = {};        // quarter -> [venueId]
     this.met = {};             // venueId -> [guestId]
@@ -113,6 +116,11 @@ export class EventCircuit {
     const regionName = GDD_REGIONS.find((r) => r.id === venue.region)?.name ?? venue.region;
     const local = hotTracksIn(venue.region);
     return Array.from({ length: venue.guestPool.size }, (_, i) => {
+      if (this.guestRoster) {
+        const wealthClass = pickWeighted(rng, venue.guestPool.classes);
+        const g = rollGuest(this.guestRoster, rng, { wealthClass, region: venue.region, themes: venue.themes, ...(this.world ? { world: this.world } : {}), id: `${venue.id}#${i + 1}` });
+        return { ...g, regionName, venueId: venue.id };
+      }
       const fearsFrom = venue.themes.length ? venue.themes : local;
       const fears = fearsFrom.length ? [fearsFrom[Math.floor(rng() * fearsFrom.length)]] : [];
       return {
