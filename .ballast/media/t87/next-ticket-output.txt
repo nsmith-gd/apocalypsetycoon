@@ -1,0 +1,20 @@
+R32  L0 art      Art: strata and construction-stage tiles
+     section: Shelter grid, digging and construction flow
+     done when: Tiles for the five strata and dig / shell / fit-out stages in the tile bunker; captures.
+     start in: src/shelter/bunker-ui.js, src/art/
+R10  L0 gameplay Buy a second site
+     section: World map, regions, sites, Fear and lead demand
+     done when: A BUY SITE button on a region panel spends the region's siteCost, gives +0.5 leads a week there (market.ownSite) and shows a site marker; capped by the company tier's site count (#73).
+     start in: src/demand/demand.js, src/worldmap/worldmap-ui.js, src/company/company.js
+R27  L0 art      Art: site markers and region labels for the GDD regions
+     section: World map, regions, sites, Fear and lead demand
+     done when: Pixel site marker and fictional-region label plates on the map; captures.
+     start in: src/art/sprites-map.js, src/art/worldmap.js
+R14  L0 gameplay Band names and drift on each track
+     section: Threat tracks: bands, momentum, tipping points and sieges
+     done when: Each track in the threats panel and map shows its band (Calm/Simmer/Boil/Brink) and weekly drift; Brink costs +1 heat a week per track (TUNING.brinkCosts).
+     start in: src/world/momentum.js (BANDS, bandOf), src/world/world-ui.js, src/crisis/breach.js
+R15  L0 gameplay Sieges greybox
+     section: Threat tracks: bands, momentum, tipping points and sieges
+     done when: Once The Pitchforks opens, each week every site in its hot regions faces strength = tension ÷ 20 (+1 per visible feature) vs its security; a lost siege occupies the site (toast, heat +1 a week); tests.
+     start in: src/pushback/press.js (sieges), src/config/tuning.js (siegeStrength)

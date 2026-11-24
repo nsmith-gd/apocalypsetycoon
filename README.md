@@ -21,3 +21,13 @@ Pixel-art management sim. Plain ES modules, no build step.
 
 Controls: Space pause, , and . step speed, N end the quarter now, TAB shelter/world map, R research.
 `?qs=20` makes each quarter 20 seconds (testing); `?seed=N` fixes the pushback RNG.
+
+## Shelter interiors (src/shelter)
+- `bunker.js` — `BunkerSite`: tile-level dig/build/conduits plus layered objects (`rug`, `floor`, `wall`,
+  `ceiling`: a painting hangs over a sofa, a rug sits under it, a chandelier hangs from the slab),
+  `paint(kind, finish, x, y, { single })` for room-wide wall/floor/lighting finishes, `recolor` and `flip`.
+- `residents.js` — `ResidentSim` (`site.people`): one billionaire per bed slot, Sims-style needs, walking and
+  climbing the spine to use objects, admiring decor, chatting, complaining about broken or busy objects.
+  Residents run on their own clock (`RESIDENTS.hourSeconds`, a resident day is 2 min at 1x).
+- `bunker-sprites.js` — procedural pixel sprites for furniture (in its chosen colour) and residents (per pose).
+- `showcase.js` — `furnishedSuite(site)`; open `demo/bunker-demo.html?surveyed&suite&instant` to see it.

@@ -1,0 +1,1210 @@
+{
+ "pacing": {
+  "targetHours": [
+   5,
+   6.5
+  ],
+  "quarters": 12,
+  "clock": "fixed",
+  "quarterMinutes": 27,
+  "choiceCardMinutes": 0.5,
+  "quarterReportMinutes": 1.5,
+  "midnightMinutes": 3,
+  "introMinutes": 4,
+  "actionSeconds": {
+   "build": 25,
+   "sell": 45,
+   "scheme": 35,
+   "research": 20
+  },
+  "planningMinutes": 3
+ },
+ "checks": {
+  "allCompletedInTarget": true,
+  "hoursRange": [
+   5.84,
+   5.97
+  ],
+  "pacedHoursRange": [
+   2.1,
+   2.33
+  ],
+  "target": [
+   5,
+   6.5
+  ],
+  "engineeredReachable": true,
+  "failedReachable": true,
+  "ousted": 3,
+  "endings": [
+   "architect",
+   "managed",
+   "ousted",
+   "gilded",
+   "ashes",
+   "nobody"
+  ]
+ },
+ "gdd": [
+  {
+   "name": "Campaign length (median, full runs)",
+   "value": "5.88 h",
+   "target": "5 to 6.5 h",
+   "ok": true
+  },
+  {
+   "name": "Quarters with the quota hit",
+   "value": "72%",
+   "target": "about 75%",
+   "ok": true
+  },
+  {
+   "name": "Natural first breach by 2:30",
+   "value": "20%",
+   "target": "60%",
+   "ok": false
+  },
+  {
+   "name": "First breach lands in the 2:10-2:30 window",
+   "value": "80% of first breaches (25 runs breached)",
+   "target": "the signature moment",
+   "ok": true
+  },
+  {
+   "name": "First breaches contained",
+   "value": "80%",
+   "target": "70%",
+   "ok": true
+  },
+  {
+   "name": "Engineered vs uncontrolled Midnight",
+   "value": "55 / 45",
+   "target": "60 / 40",
+   "ok": true
+  },
+  {
+   "name": "Median grade",
+   "value": "Bronze",
+   "target": "Silver",
+   "ok": false
+  },
+  {
+   "name": "Research unlocks on the GDD schedule (median within 30 min)",
+   "value": "7/10 nodes",
+   "target": "every node",
+   "ok": false,
+   "unlocks": [
+    {
+     "node": "x1_suite",
+     "target": 10,
+     "median": 2,
+     "runs": 5,
+     "offBy": -8
+    },
+    {
+     "node": "s1_clay",
+     "target": 20,
+     "median": 23,
+     "runs": 10,
+     "offBy": 3
+    },
+    {
+     "node": "l1_med",
+     "target": 38,
+     "median": 66,
+     "runs": 5,
+     "offBy": 28
+    },
+    {
+     "node": "c_crew2",
+     "target": 50,
+     "median": 42,
+     "runs": 25,
+     "offBy": -8
+    },
+    {
+     "node": "a_scrubber",
+     "target": 55,
+     "median": 85,
+     "runs": 15,
+     "offBy": 30
+    },
+    {
+     "node": "a_cellar",
+     "target": 70,
+     "median": 50,
+     "runs": 5,
+     "offBy": -20
+    },
+    {
+     "node": "s_thinktank",
+     "target": 75,
+     "median": 42,
+     "runs": 25,
+     "offBy": -33
+    },
+    {
+     "node": "a_hydro",
+     "target": 105,
+     "median": 62,
+     "runs": 20,
+     "offBy": -43
+    },
+    {
+     "node": "x3_art",
+     "target": 135,
+     "median": 139,
+     "runs": 5,
+     "offBy": 4
+    },
+    {
+     "node": "a_water",
+     "target": 185,
+     "median": 139,
+     "runs": 5,
+     "offBy": -46
+    }
+   ]
+  }
+ ],
+ "runs": [
+  {
+   "bot": "cautious",
+   "seed": 1,
+   "label": "cautious #1",
+   "quarters": 12,
+   "hours": 5.84,
+   "pacedHours": 2.1,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "architect",
+    "type": "engineered",
+    "title": "ARCHITECT OF THE END",
+    "survivalRate": 0.99,
+    "control": 75,
+    "grade": "Platinum",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 50,
+   "finalCash": 17695000,
+   "peakCrisis": 17,
+   "peakHeat": 41,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 1,
+   "contained": 1,
+   "collapses": 0,
+   "quotasHit": 9,
+   "quotas": 12,
+   "unlocks": {
+    "s1_clay": 2,
+    "c_crew2": 15,
+    "a_hydro": 50,
+    "a_scrubber": 64,
+    "l1_med": 66,
+    "s_thinktank": 75,
+    "a_water": 139
+   },
+   "sold": 50
+  },
+  {
+   "bot": "cautious",
+   "seed": 2,
+   "label": "cautious #2",
+   "quarters": 12,
+   "hours": 5.84,
+   "pacedHours": 2.1,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "architect",
+    "type": "engineered",
+    "title": "ARCHITECT OF THE END",
+    "survivalRate": 0.99,
+    "control": 75,
+    "grade": "Platinum",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 50,
+   "finalCash": 17695000,
+   "peakCrisis": 17,
+   "peakHeat": 41,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 1,
+   "contained": 1,
+   "collapses": 0,
+   "quotasHit": 9,
+   "quotas": 12,
+   "unlocks": {
+    "s1_clay": 2,
+    "c_crew2": 15,
+    "a_hydro": 50,
+    "a_scrubber": 64,
+    "l1_med": 66,
+    "s_thinktank": 75,
+    "a_water": 139
+   },
+   "sold": 50
+  },
+  {
+   "bot": "cautious",
+   "seed": 3,
+   "label": "cautious #3",
+   "quarters": 12,
+   "hours": 5.84,
+   "pacedHours": 2.1,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "architect",
+    "type": "engineered",
+    "title": "ARCHITECT OF THE END",
+    "survivalRate": 0.99,
+    "control": 75,
+    "grade": "Platinum",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 50,
+   "finalCash": 17695000,
+   "peakCrisis": 17,
+   "peakHeat": 41,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 1,
+   "contained": 1,
+   "collapses": 0,
+   "quotasHit": 9,
+   "quotas": 12,
+   "unlocks": {
+    "s1_clay": 2,
+    "c_crew2": 15,
+    "a_hydro": 50,
+    "a_scrubber": 64,
+    "l1_med": 66,
+    "s_thinktank": 75,
+    "a_water": 139
+   },
+   "sold": 50
+  },
+  {
+   "bot": "cautious",
+   "seed": 4,
+   "label": "cautious #4",
+   "quarters": 12,
+   "hours": 5.84,
+   "pacedHours": 2.1,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "architect",
+    "type": "engineered",
+    "title": "ARCHITECT OF THE END",
+    "survivalRate": 0.99,
+    "control": 75,
+    "grade": "Platinum",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 50,
+   "finalCash": 17695000,
+   "peakCrisis": 17,
+   "peakHeat": 41,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 1,
+   "contained": 1,
+   "collapses": 0,
+   "quotasHit": 9,
+   "quotas": 12,
+   "unlocks": {
+    "s1_clay": 2,
+    "c_crew2": 15,
+    "a_hydro": 50,
+    "a_scrubber": 64,
+    "l1_med": 66,
+    "s_thinktank": 75,
+    "a_water": 139
+   },
+   "sold": 50
+  },
+  {
+   "bot": "cautious",
+   "seed": 5,
+   "label": "cautious #5",
+   "quarters": 12,
+   "hours": 5.84,
+   "pacedHours": 2.1,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "architect",
+    "type": "engineered",
+    "title": "ARCHITECT OF THE END",
+    "survivalRate": 0.99,
+    "control": 75,
+    "grade": "Platinum",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 50,
+   "finalCash": 17695000,
+   "peakCrisis": 17,
+   "peakHeat": 41,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 1,
+   "contained": 1,
+   "collapses": 0,
+   "quotasHit": 9,
+   "quotas": 12,
+   "unlocks": {
+    "s1_clay": 2,
+    "c_crew2": 15,
+    "a_hydro": 50,
+    "a_scrubber": 64,
+    "l1_med": 66,
+    "s_thinktank": 75,
+    "a_water": 139
+   },
+   "sold": 50
+  },
+  {
+   "bot": "edge",
+   "seed": 1,
+   "label": "edge #1",
+   "quarters": 12,
+   "hours": 5.97,
+   "pacedHours": 2.33,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "managed",
+    "type": "engineered",
+    "title": "MANAGED DECLINE",
+    "survivalRate": 0.68,
+    "control": 72,
+    "grade": "Silver",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 51,
+   "finalCash": 23132000,
+   "peakCrisis": 68,
+   "peakHeat": 57,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 1,
+   "contained": 1,
+   "collapses": 0,
+   "quotasHit": 9,
+   "quotas": 12,
+   "unlocks": {
+    "s_thinktank": 39,
+    "c_crew2": 42,
+    "s1_clay": 44,
+    "a_hydro": 62,
+    "s_deepfake": 79,
+    "a_scrubber": 87,
+    "s_spin": 89
+   },
+   "sold": 51
+  },
+  {
+   "bot": "edge",
+   "seed": 2,
+   "label": "edge #2",
+   "quarters": 11,
+   "hours": 5.49,
+   "pacedHours": 2.13,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ousted",
+    "type": "ousted",
+    "title": "OUSTED BY THE BOARD"
+   },
+   "totalSales": 45,
+   "finalCash": 17204000,
+   "peakCrisis": 68,
+   "peakHeat": 62,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 2,
+   "contained": 2,
+   "collapses": 0,
+   "quotasHit": 7,
+   "quotas": 11,
+   "unlocks": {
+    "s_thinktank": 39,
+    "c_crew2": 42,
+    "s1_clay": 44,
+    "a_hydro": 62,
+    "s_deepfake": 79,
+    "a_scrubber": 87,
+    "s_spin": 89
+   },
+   "sold": 45
+  },
+  {
+   "bot": "edge",
+   "seed": 3,
+   "label": "edge #3",
+   "quarters": 11,
+   "hours": 5.49,
+   "pacedHours": 2.11,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ousted",
+    "type": "ousted",
+    "title": "OUSTED BY THE BOARD"
+   },
+   "totalSales": 45,
+   "finalCash": 19963500,
+   "peakCrisis": 68,
+   "peakHeat": 57,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 1,
+   "contained": 1,
+   "collapses": 0,
+   "quotasHit": 7,
+   "quotas": 11,
+   "unlocks": {
+    "s_thinktank": 39,
+    "c_crew2": 42,
+    "s1_clay": 44,
+    "a_hydro": 62,
+    "s_deepfake": 79,
+    "a_scrubber": 87,
+    "s_spin": 89
+   },
+   "sold": 45
+  },
+  {
+   "bot": "edge",
+   "seed": 4,
+   "label": "edge #4",
+   "quarters": 12,
+   "hours": 5.97,
+   "pacedHours": 2.31,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "managed",
+    "type": "engineered",
+    "title": "MANAGED DECLINE",
+    "survivalRate": 0.68,
+    "control": 72,
+    "grade": "Silver",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 51,
+   "finalCash": 21243000,
+   "peakCrisis": 68,
+   "peakHeat": 57,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 1,
+   "contained": 1,
+   "collapses": 0,
+   "quotasHit": 9,
+   "quotas": 12,
+   "unlocks": {
+    "s_thinktank": 39,
+    "c_crew2": 42,
+    "s1_clay": 44,
+    "a_hydro": 62,
+    "s_deepfake": 79,
+    "a_scrubber": 87,
+    "s_spin": 89
+   },
+   "sold": 51
+  },
+  {
+   "bot": "edge",
+   "seed": 5,
+   "label": "edge #5",
+   "quarters": 11,
+   "hours": 5.49,
+   "pacedHours": 2.14,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ousted",
+    "type": "ousted",
+    "title": "OUSTED BY THE BOARD"
+   },
+   "totalSales": 45,
+   "finalCash": 16849000,
+   "peakCrisis": 68,
+   "peakHeat": 62,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 2,
+   "contained": 2,
+   "collapses": 0,
+   "quotasHit": 7,
+   "quotas": 11,
+   "unlocks": {
+    "s_thinktank": 39,
+    "c_crew2": 42,
+    "s1_clay": 44,
+    "a_hydro": 62,
+    "s_deepfake": 79,
+    "a_scrubber": 87,
+    "s_spin": 89
+   },
+   "sold": 45
+  },
+  {
+   "bot": "luxury",
+   "seed": 1,
+   "label": "luxury #1",
+   "quarters": 12,
+   "hours": 5.89,
+   "pacedHours": 2.2,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "gilded",
+    "type": "engineered",
+    "title": "GILDED TOMBS",
+    "survivalRate": 0.17,
+    "control": 75,
+    "grade": "The Gerald",
+    "apocalypse": "The Bloom"
+   },
+   "totalSales": 50,
+   "finalCash": 15859500,
+   "peakCrisis": 25,
+   "peakHeat": 40,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 1,
+   "contained": 1,
+   "collapses": 0,
+   "quotasHit": 9,
+   "quotas": 12,
+   "unlocks": {
+    "x1_suite": 2,
+    "c_crew2": 4,
+    "a_cellar": 50,
+    "s_thinktank": 62,
+    "a_hydro": 75,
+    "x3_art": 139
+   },
+   "sold": 50
+  },
+  {
+   "bot": "luxury",
+   "seed": 2,
+   "label": "luxury #2",
+   "quarters": 12,
+   "hours": 5.88,
+   "pacedHours": 2.18,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "gilded",
+    "type": "engineered",
+    "title": "GILDED TOMBS",
+    "survivalRate": 0.17,
+    "control": 75,
+    "grade": "The Gerald",
+    "apocalypse": "The Bloom"
+   },
+   "totalSales": 50,
+   "finalCash": 17756500,
+   "peakCrisis": 25,
+   "peakHeat": 40,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 1,
+   "contained": 1,
+   "collapses": 0,
+   "quotasHit": 9,
+   "quotas": 12,
+   "unlocks": {
+    "x1_suite": 2,
+    "c_crew2": 4,
+    "a_cellar": 50,
+    "s_thinktank": 62,
+    "a_hydro": 75,
+    "x3_art": 139
+   },
+   "sold": 50
+  },
+  {
+   "bot": "luxury",
+   "seed": 3,
+   "label": "luxury #3",
+   "quarters": 12,
+   "hours": 5.88,
+   "pacedHours": 2.18,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "gilded",
+    "type": "engineered",
+    "title": "GILDED TOMBS",
+    "survivalRate": 0.17,
+    "control": 75,
+    "grade": "The Gerald",
+    "apocalypse": "The Bloom"
+   },
+   "totalSales": 50,
+   "finalCash": 17751500,
+   "peakCrisis": 25,
+   "peakHeat": 40,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 1,
+   "contained": 1,
+   "collapses": 0,
+   "quotasHit": 9,
+   "quotas": 12,
+   "unlocks": {
+    "x1_suite": 2,
+    "c_crew2": 4,
+    "a_cellar": 50,
+    "s_thinktank": 62,
+    "a_hydro": 75,
+    "x3_art": 139
+   },
+   "sold": 50
+  },
+  {
+   "bot": "luxury",
+   "seed": 4,
+   "label": "luxury #4",
+   "quarters": 12,
+   "hours": 5.89,
+   "pacedHours": 2.2,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "gilded",
+    "type": "engineered",
+    "title": "GILDED TOMBS",
+    "survivalRate": 0.17,
+    "control": 75,
+    "grade": "The Gerald",
+    "apocalypse": "The Bloom"
+   },
+   "totalSales": 50,
+   "finalCash": 17761500,
+   "peakCrisis": 25,
+   "peakHeat": 40,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 1,
+   "contained": 1,
+   "collapses": 0,
+   "quotasHit": 9,
+   "quotas": 12,
+   "unlocks": {
+    "x1_suite": 2,
+    "c_crew2": 4,
+    "a_cellar": 50,
+    "s_thinktank": 62,
+    "a_hydro": 75,
+    "x3_art": 139
+   },
+   "sold": 50
+  },
+  {
+   "bot": "luxury",
+   "seed": 5,
+   "label": "luxury #5",
+   "quarters": 12,
+   "hours": 5.88,
+   "pacedHours": 2.18,
+   "inTarget": true,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "gilded",
+    "type": "engineered",
+    "title": "GILDED TOMBS",
+    "survivalRate": 0.17,
+    "control": 75,
+    "grade": "The Gerald",
+    "apocalypse": "The Bloom"
+   },
+   "totalSales": 50,
+   "finalCash": 17791500,
+   "peakCrisis": 25,
+   "peakHeat": 40,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 1,
+   "contained": 1,
+   "collapses": 0,
+   "quotasHit": 9,
+   "quotas": 12,
+   "unlocks": {
+    "x1_suite": 2,
+    "c_crew2": 4,
+    "a_cellar": 50,
+    "s_thinktank": 62,
+    "a_hydro": 75,
+    "x3_art": 139
+   },
+   "sold": 50
+  },
+  {
+   "bot": "arsonist",
+   "seed": 1,
+   "label": "arsonist #1",
+   "quarters": 10,
+   "hours": 5.03,
+   "pacedHours": 2.15,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ashes",
+    "type": "failed",
+    "title": "ASHES AND RECEIPTS",
+    "survivalRate": 0.5,
+    "control": 0,
+    "grade": "Bronze",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 41,
+   "finalCash": 12323250,
+   "peakCrisis": 99,
+   "peakHeat": 55,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 5,
+   "contained": 1,
+   "collapses": 2,
+   "quotasHit": 7,
+   "quotas": 10,
+   "unlocks": {
+    "s_thinktank": 39,
+    "c_crew2": 42,
+    "a_hydro": 62,
+    "s_deepfake": 77,
+    "a_scrubber": 85
+   },
+   "sold": 41
+  },
+  {
+   "bot": "arsonist",
+   "seed": 2,
+   "label": "arsonist #2",
+   "quarters": 10,
+   "hours": 5.03,
+   "pacedHours": 2.1,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ashes",
+    "type": "failed",
+    "title": "ASHES AND RECEIPTS",
+    "survivalRate": 0.5,
+    "control": 0,
+    "grade": "Bronze",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 41,
+   "finalCash": 10487937,
+   "peakCrisis": 96,
+   "peakHeat": 70,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 6,
+   "contained": 3,
+   "collapses": 3,
+   "quotasHit": 7,
+   "quotas": 10,
+   "unlocks": {
+    "s_thinktank": 39,
+    "c_crew2": 42,
+    "a_hydro": 62,
+    "s_deepfake": 77,
+    "a_scrubber": 85
+   },
+   "sold": 41
+  },
+  {
+   "bot": "arsonist",
+   "seed": 3,
+   "label": "arsonist #3",
+   "quarters": 10,
+   "hours": 5.01,
+   "pacedHours": 2.08,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ashes",
+    "type": "failed",
+    "title": "ASHES AND RECEIPTS",
+    "survivalRate": 0.5,
+    "control": 0,
+    "grade": "Bronze",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 41,
+   "finalCash": 12826500,
+   "peakCrisis": 99,
+   "peakHeat": 55,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 5,
+   "contained": 1,
+   "collapses": 3,
+   "quotasHit": 7,
+   "quotas": 10,
+   "unlocks": {
+    "s_thinktank": 39,
+    "c_crew2": 42,
+    "a_hydro": 62,
+    "s_deepfake": 77,
+    "a_scrubber": 85
+   },
+   "sold": 41
+  },
+  {
+   "bot": "arsonist",
+   "seed": 4,
+   "label": "arsonist #4",
+   "quarters": 10,
+   "hours": 5.02,
+   "pacedHours": 2.12,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ashes",
+    "type": "failed",
+    "title": "ASHES AND RECEIPTS",
+    "survivalRate": 0.5,
+    "control": 0,
+    "grade": "Bronze",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 41,
+   "finalCash": 13006250,
+   "peakCrisis": 99,
+   "peakHeat": 55,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 5,
+   "contained": 1,
+   "collapses": 2,
+   "quotasHit": 7,
+   "quotas": 10,
+   "unlocks": {
+    "s_thinktank": 39,
+    "c_crew2": 42,
+    "a_hydro": 62,
+    "s_deepfake": 77,
+    "a_scrubber": 85
+   },
+   "sold": 41
+  },
+  {
+   "bot": "arsonist",
+   "seed": 5,
+   "label": "arsonist #5",
+   "quarters": 10,
+   "hours": 5.03,
+   "pacedHours": 2.12,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "ashes",
+    "type": "failed",
+    "title": "ASHES AND RECEIPTS",
+    "survivalRate": 0.5,
+    "control": 0,
+    "grade": "Bronze",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 41,
+   "finalCash": 9743937,
+   "peakCrisis": 71,
+   "peakHeat": 70,
+   "firstBreach": {
+    "minute": 152,
+    "track": "atomic",
+    "how": "wildcard"
+   },
+   "breaches": 6,
+   "contained": 3,
+   "collapses": 3,
+   "quotasHit": 7,
+   "quotas": 10,
+   "unlocks": {
+    "s_thinktank": 39,
+    "c_crew2": 42,
+    "a_hydro": 62,
+    "s_deepfake": 77,
+    "a_scrubber": 85
+   },
+   "sold": 41
+  },
+  {
+   "bot": "reckless",
+   "seed": 1,
+   "label": "reckless #1",
+   "quarters": 4,
+   "hours": 2.11,
+   "pacedHours": 0.92,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "nobody",
+    "type": "failed",
+    "title": "NOBODY LEFT TO BILL",
+    "survivalRate": 0.05,
+    "control": 4,
+    "grade": "The Gerald",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 15,
+   "finalCash": 4166500,
+   "peakCrisis": 99,
+   "peakHeat": 80,
+   "firstBreach": {
+    "minute": 66,
+    "track": "atomic",
+    "how": "natural"
+   },
+   "breaches": 2,
+   "contained": 0,
+   "collapses": 2,
+   "quotasHit": 3,
+   "quotas": 4,
+   "unlocks": {
+    "s_thinktank": 42,
+    "s_deepfake": 62,
+    "s_shortage": 75,
+    "c_crew2": 77,
+    "s_blackout": 87
+   },
+   "sold": 15
+  },
+  {
+   "bot": "reckless",
+   "seed": 2,
+   "label": "reckless #2",
+   "quarters": 4,
+   "hours": 2.11,
+   "pacedHours": 0.92,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "nobody",
+    "type": "failed",
+    "title": "NOBODY LEFT TO BILL",
+    "survivalRate": 0.05,
+    "control": 4,
+    "grade": "The Gerald",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 15,
+   "finalCash": 4219500,
+   "peakCrisis": 99,
+   "peakHeat": 80,
+   "firstBreach": {
+    "minute": 66,
+    "track": "atomic",
+    "how": "natural"
+   },
+   "breaches": 2,
+   "contained": 0,
+   "collapses": 2,
+   "quotasHit": 3,
+   "quotas": 4,
+   "unlocks": {
+    "s_thinktank": 42,
+    "s_deepfake": 62,
+    "s_shortage": 75,
+    "c_crew2": 77,
+    "s_blackout": 87
+   },
+   "sold": 15
+  },
+  {
+   "bot": "reckless",
+   "seed": 3,
+   "label": "reckless #3",
+   "quarters": 4,
+   "hours": 2.11,
+   "pacedHours": 0.92,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "nobody",
+    "type": "failed",
+    "title": "NOBODY LEFT TO BILL",
+    "survivalRate": 0.05,
+    "control": 4,
+    "grade": "The Gerald",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 15,
+   "finalCash": 4219500,
+   "peakCrisis": 99,
+   "peakHeat": 80,
+   "firstBreach": {
+    "minute": 66,
+    "track": "atomic",
+    "how": "natural"
+   },
+   "breaches": 2,
+   "contained": 0,
+   "collapses": 2,
+   "quotasHit": 3,
+   "quotas": 4,
+   "unlocks": {
+    "s_thinktank": 42,
+    "s_deepfake": 62,
+    "s_shortage": 75,
+    "c_crew2": 77,
+    "s_blackout": 87
+   },
+   "sold": 15
+  },
+  {
+   "bot": "reckless",
+   "seed": 4,
+   "label": "reckless #4",
+   "quarters": 4,
+   "hours": 2.11,
+   "pacedHours": 0.92,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "nobody",
+    "type": "failed",
+    "title": "NOBODY LEFT TO BILL",
+    "survivalRate": 0.05,
+    "control": 4,
+    "grade": "The Gerald",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 15,
+   "finalCash": 4166500,
+   "peakCrisis": 99,
+   "peakHeat": 80,
+   "firstBreach": {
+    "minute": 66,
+    "track": "atomic",
+    "how": "natural"
+   },
+   "breaches": 2,
+   "contained": 0,
+   "collapses": 2,
+   "quotasHit": 3,
+   "quotas": 4,
+   "unlocks": {
+    "s_thinktank": 42,
+    "s_deepfake": 62,
+    "s_shortage": 75,
+    "c_crew2": 77,
+    "s_blackout": 87
+   },
+   "sold": 15
+  },
+  {
+   "bot": "reckless",
+   "seed": 5,
+   "label": "reckless #5",
+   "quarters": 4,
+   "hours": 2.11,
+   "pacedHours": 0.92,
+   "inTarget": false,
+   "pacedInTarget": false,
+   "ending": {
+    "id": "nobody",
+    "type": "failed",
+    "title": "NOBODY LEFT TO BILL",
+    "survivalRate": 0.05,
+    "control": 4,
+    "grade": "The Gerald",
+    "apocalypse": "Atomic Standoff"
+   },
+   "totalSales": 15,
+   "finalCash": 4166500,
+   "peakCrisis": 99,
+   "peakHeat": 80,
+   "firstBreach": {
+    "minute": 66,
+    "track": "atomic",
+    "how": "natural"
+   },
+   "breaches": 2,
+   "contained": 0,
+   "collapses": 2,
+   "quotasHit": 3,
+   "quotas": 4,
+   "unlocks": {
+    "s_thinktank": 42,
+    "s_deepfake": 62,
+    "s_shortage": 75,
+    "c_crew2": 77,
+    "s_blackout": 87
+   },
+   "sold": 15
+  }
+ ]
+}

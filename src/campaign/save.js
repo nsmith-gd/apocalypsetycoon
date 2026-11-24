@@ -20,11 +20,16 @@ export function createSaveSlot({ storage = globalThis.localStorage, key = SAVE_K
         return data?.version === SAVE_VERSION ? data : null;
       } catch { return null; }
     },
-    save() {
+    /** Everything a save would write, without writing it (round-trip checks, #80). */
+    snapshot() {
       const data = { version: SAVE_VERSION, savedAt: Date.now(), parts: {} };
       for (const [name, part] of parts) {
-        try { data.parts[name] = part.toJSON(); } catch { /* skip a part that can't serialise */ }
+        try { data.parts[name] = JSON.parse(JSON.stringify(part.toJSON())); } catch { /* skip a part that can't serialise */ }
       }
+      return data;
+    },
+    save() {
+      const data = this.snapshot();
       try { storage.setItem(key, JSON.stringify(data)); return true; } catch { return false; }
     },
     load() {

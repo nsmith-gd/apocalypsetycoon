@@ -18,6 +18,7 @@
 // addTension(trackId, n) for Gil's random track shove and Distraction.
 
 import { mulberry32 } from './pushback.js';
+import { PRESS_REPUTATION } from '../config/tuning.js';
 
 // Numbers the ticket states are marked (ticket). The rest are provisional until the GDD text
 // is readable from agent sessions; all of them live here.
@@ -62,7 +63,7 @@ export const PRESS = Object.freeze({
       blurb: 'Sit down on the record. With Iris and a cool head: trust +1, story -15%. Too hot, or with Gil: it feeds the story.',
     },
   },
-  reputation: { start: 40, min: 0, max: 100 },
+  reputation: PRESS_REPUTATION, // GDD row: Reputation 0-100, starting at 40 (#77 tuning table)
   inspector: { cost: 200_000, passSecurity: 3, maxVisible: 2, pass: { reputation: 6 }, onceEveryWeeks: 13 },
   pitchforks: {
     openAtTension: 60, // The Pitchforks opens when world tension first reaches 60 (or openPitchforks())
@@ -167,6 +168,25 @@ export class Press {
     this.reputation = clamp(this.reputation + n, PRESS.reputation.min, PRESS.reputation.max);
     if (why && this.reputation !== before) this._note('reputation', `${why}: reputation ${n > 0 ? '+' : ''}${n}`);
     return this.reputation - before;
+  }
+
+  /**
+   * A tip-off (#55: a slip at an event): the journalist starts a story with this angle if they have none
+   * (even while resting), and the story grows by `progress` %. It can run at once if it reaches 100.
+   */
+  tipOff(id, progress, angle = 'A source says Last Resort is feeding the panic it sells') {
+    const j = this.journalists[id];
+    if (!j || !(progress > 0)) return null;
+    if (!j.story) {
+      j.story = { id: ++this._ids, angle, progress: 0, buries: 0 };
+      j.restWeeks = 0;
+      this._emit('storyStarted', { journalist: id, story: j.story });
+    }
+    j.story.progress = Math.min(100, j.story.progress + progress);
+    this._note('story', `Tip-off to ${PRESS.journalists[id].name}: story +${progress}% ("${j.story.angle}")`, { journalist: id });
+    const aired = j.story.progress >= PRESS.story.airAt ? this._air(id) : null;
+    this._changed();
+    return { journalist: id, progress: aired ? 100 : j.story.progress, aired };
   }
 
   _shoveRandomTrack(n, why) {

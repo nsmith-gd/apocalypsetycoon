@@ -63,7 +63,13 @@ export const APOCALYPSES = Object.freeze({
 export const TRACK_APOCALYPSE = Object.freeze({ war: 'atomic', pandemic: 'bloom', climate: 'superstorm', unrest: 'pitchforks', markets: 'hush' });
 export const UNUSED_APOCALYPSES = Object.freeze(Object.keys(APOCALYPSES).filter((k) => !Object.values(TRACK_APOCALYPSE).includes(k)));
 
-const apoc = (id) => APOCALYPSES[TRACK_APOCALYPSE[id] ?? id];
+// Roster track ids whose apocalypse is keyed differently in the GDD apocalypse table.
+const ROSTER_APOCALYPSE = Object.freeze({ greygoo: 'goo', longshade: 'long_shade', cloudstrike: 'cloud' });
+/** The apocalypse id for any track id: the old five, the roster's ten, or an apocalypse id itself. */
+export const apocalypseIdFor = (id) => TRACK_APOCALYPSE[id] ?? ROSTER_APOCALYPSE[id] ?? id;
+/** The apocalypse a track brings (required Days Sealed, critical ratings, named needs), or null. */
+export const apocalypseFor = (id) => APOCALYPSES[apocalypseIdFor(id)] ?? null;
+const apoc = (id) => APOCALYPSES[apocalypseIdFor(id)];
 
 /** A linked pair: the longer duration plus 180 days, and both sets of requirements. */
 export function combinedRequirement(a, b) {

@@ -23,6 +23,8 @@
 
 import { EXPOSURE } from '../demand/demand.js';
 import { TIPPING_POINT as RESEARCH_TIP } from '../research/research.js';
+import { TRACK_APOCALYPSE } from '../midnight/engineered.js';
+import { TRACK_BY_ID } from '../world/tracks.js';
 
 export const SCHEME_RULES = Object.freeze({
   reach: { high: 1, medium: 0.7, low: 0.4 },
@@ -56,13 +58,14 @@ export function researchCrisis(crisis) {
 }
 
 export class SchemeBoard {
-  constructor({ crisis, market = null, ledger = null, pushback = null, regions = market?.regions ?? [], isUnlocked = () => true, schemes = SCHEMES, rules = {} } = {}) {
+  constructor({ crisis, market = null, ledger = null, pushback = null, regions = market?.regions ?? [], isUnlocked = () => true, getHeatMultiplier = () => 1, schemes = SCHEMES, rules = {} } = {}) {
     this.crisis = crisis;
     this.market = market;
     this.ledger = ledger;
     this.pb = pushback;
     this.regions = regions;
     this.isUnlocked = isUnlocked;
+    this.getHeatMultiplier = getHeatMultiplier; // research (#16): Spin doctors cut scheme heat
     this.schemes = schemes;
     this.rules = { ...SCHEME_RULES, ...rules };
     this.runsThisWeek = {}; // schemeId -> count, reset each crisis week
@@ -74,12 +77,27 @@ export class SchemeBoard {
   onChange(fn) { this._listeners.add(fn); return () => this._listeners.delete(fn); }
   _emit(e) { for (const fn of this._listeners) fn(e, this); }
 
+  /** Save slot (#80). */
+  toJSON() { return { runsThisWeek: { ...this.runsThisWeek }, log: this.log.map((x) => ({ ...x })) }; }
+  load(d = {}) { this.runsThisWeek = { ...(d.runsThisWeek ?? {}) }; this.log = (d.log ?? []).map((x) => ({ ...x })); this._emit({ type: 'load' }); }
+
   region(id) { return this.regions.find((r) => r.id === id) ?? null; }
   scheme(id) { return this.schemes.find((s) => s.id === id) ?? null; }
 
+  /**
+   * The crisis track a scheme pushes in this world. Schemes name the old five crises; in a world running
+   * the GDD roster (#69) each maps to the roster track in the same slot (war -> slot 1, pandemic -> 2...).
+   */
+  trackOf(scheme) {
+    const direct = this.crisis.tracks[scheme.track];
+    if (direct) return direct;
+    const slot = TRACK_BY_ID[TRACK_APOCALYPSE[scheme.track]]?.slot;
+    return Object.values(this.crisis.tracks).find((t) => TRACK_BY_ID[t.id]?.slot === slot) ?? null;
+  }
+
   /** Tension this scheme adds to its track when run in this region. */
   gainIn(scheme, region) {
-    const level = region?.exposure?.[scheme.track] ?? 'low';
+    const level = region?.exposure?.[this.trackOf(scheme)?.id ?? scheme.track] ?? 'low';
     return r1(scheme.tension * (this.rules.reach[level] ?? 0.4));
   }
 
@@ -91,18 +109,20 @@ export class SchemeBoard {
   available(regionId) {
     const region = this.region(regionId);
     return this.schemes.map((s) => {
-      const t = this.crisis.tracks[s.track];
+      const t = this.trackOf(s);
+      if (!t) return null; // no such crisis in this world
       const locked = !!s.research && !this.isUnlocked(s.id);
       let reason = null;
       if (locked) reason = 'Research it in R&D';
+      else if (!t.open) reason = `${t.name} hasn't opened yet`;
       else if (t.state === 'locked') reason = `${t.name} is recovering (${t.lockWeeks}wk)`;
       else if (t.state === 'collapsed') reason = `${t.name} has collapsed`;
       else if (t.state === 'breach') reason = `${t.name} has breached`;
       else if (this.crisis.paused) reason = 'World paused';
       const cost = this.costOf(s);
       if (!reason && this.ledger && this.ledger.cash < cost) reason = 'Not enough cash';
-      return { scheme: s, gain: this.gainIn(s, region), exposure: region?.exposure?.[s.track] ?? 'low', cost, heat: s.heat, locked, reason, track: this.trackView(s.track) };
-    });
+      return { scheme: s, gain: this.gainIn(s, region), exposure: region?.exposure?.[t.id] ?? 'low', cost, heat: Math.round(s.heat * this.getHeatMultiplier()), locked, reason, track: this.trackView(t.id) };
+    }).filter(Boolean);
   }
 
   /** Fund a scheme in a region. Throws if it can't run. */
@@ -111,14 +131,15 @@ export class SchemeBoard {
     const region = this.region(regionId);
     if (!s || !region) throw new Error('Unknown scheme or region.');
     const offer = this.available(regionId).find((o) => o.scheme === s);
+    if (!offer) throw new Error(`No ${s.name} in this world.`);
     if (offer.reason) throw new Error(offer.reason);
-    const t = this.crisis.tracks[s.track];
+    const t = this.trackOf(s);
     const before = t.tension;
     const wasBrink = t.state === 'brink';
     this.ledger?.record('schemes', `${s.name} (${region.name})`, -offer.cost);
     this.runsThisWeek[s.id] = (this.runsThisWeek[s.id] ?? 0) + 1;
-    this.pb?.onScheme?.({ label: `${s.name} (${region.name})`, heat: s.heat, tension: offer.gain });
-    this.crisis.addTension(s.track, offer.gain, `${s.name} in ${region.name}`);
+    this.pb?.onScheme?.({ label: `${s.name} (${region.name})`, heat: offer.heat, tension: offer.gain });
+    this.crisis.addTension(t.id, offer.gain, `${s.name} in ${region.name}`);
     // local panic: buyers appear in the target region right away
     const leads = r1(s.leads * (this.rules.reach[offer.exposure] ?? 0.4));
     this.market?.addLeads?.(regionId, leads);
@@ -148,8 +169,8 @@ export class SchemeBoard {
   trackView(trackId) {
     const t = this.crisis.tracks[trackId];
     const vis = this.crisis.visibleTip(trackId);
-    const lo = vis.exact ?? vis.range[0];
-    const hi = vis.exact ?? vis.range[1];
+    const lo = Math.round(vis.exact ?? vis.range[0]); // fragility moves tips in quarter minutes; show whole points
+    const hi = Math.round(vis.exact ?? vis.range[1]);
     const margin = this.crisis.cfg.brinkMargin;
     let zone = 'calm';
     if (t.state === 'collapsed') zone = 'collapsed';

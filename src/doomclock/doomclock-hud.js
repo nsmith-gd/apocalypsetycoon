@@ -67,23 +67,54 @@ function drawFace(ctx, clock, t) {
   ctx.fillRect(c - 1, c - 1, 2, 2);
 }
 
-export function createDoomClockHud({ clock, hud, before = '.view-toggle' }) {
-  const box = el('div', 'hud-stat dc-hud');
-  box.title = 'The Doom Clock: minutes to Midnight. The red wedge is the floor — time you can never win back.';
-  box.append(el('span', 'hud-label', 'DOOM CLOCK'));
-  const row = el('div', 'dc-row');
+// The clock lives in the CENTRE of the top bar: a full-width crown strip at the top of the HUD (created on
+// first use, the company name moves into its left end). It stays put however the stat chips wrap below.
+function crownOf(hud) {
+  let crown = hud.querySelector(':scope > .hud-crown');
+  if (crown) return crown;
+  crown = el('div', 'hud-crown');
+  const brand = hud.querySelector(':scope > .hud-brand');
+  if (brand) crown.append(brand);
+  hud.prepend(crown);
+  return crown;
+}
+
+const fmtMin = (m) => (Math.round(m * 100) / 100).toFixed(2).replace(/\.?0+$/, '') || '0';
+
+export function createDoomClockHud({ clock, hud, center = true, before = '.view-toggle' }) {
+  const box = el('div', `hud-stat dc-hud${center ? ' dc-center' : ''}`);
+  box.title = 'The Doom Clock: minutes to Midnight = the lower of the floor and 15 minus total track tension / 40. The red wedge is the floor: time you can never win back.';
   const canvas = el('canvas', 'dc-face');
   canvas.width = S;
   canvas.height = S;
   const text = el('div', 'dc-text');
+  const label = el('span', 'hud-label', 'DOOM CLOCK');
   const time = el('span', 'hud-value dc-time');
   const sub = el('span', 'dc-sub');
-  text.append(time, sub);
+  text.append(label, time, sub);
+  // Minutes track: 15 on the left, Midnight on the right. Red = lost to the floor; the pin = now.
+  const track = el('div', 'dc-track');
+  const lost = el('i', 'dc-lost');
+  const pin = el('b', 'dc-pin');
+  track.append(lost, pin);
+  const scale = el('div', 'dc-scale');
+  scale.append(el('span', null, '15'), el('span', null, '10'), el('span', null, '5'), el('span', null, '0'));
+  const trackBox = el('div', 'dc-trackbox');
+  trackBox.append(track, scale);
+  const countdown = el('div', 'dc-countdown');
+  const cdWeeks = el('span', 'dc-cd-weeks');
+  countdown.append(el('span', 'dc-cd-label', 'FINAL COUNTDOWN'), cdWeeks);
+  const row = el('div', 'dc-row');
   row.append(canvas, text);
+  if (center) row.append(trackBox, countdown);
   box.append(row);
-  const anchor = hud.querySelector(before);
-  if (anchor) hud.insertBefore(box, anchor);
-  else hud.append(box);
+  if (center) crownOf(hud).append(box);
+  else {
+    box.prepend(label);
+    const anchor = hud.querySelector(before);
+    if (anchor) hud.insertBefore(box, anchor);
+    else hud.append(box);
+  }
 
   const ctx = canvas.getContext('2d');
   let lastFloor = clock.floor;
@@ -91,9 +122,14 @@ export function createDoomClockHud({ clock, hud, before = '.view-toggle' }) {
     const s = clock.snapshot();
     time.textContent = s.midnight ? '12:00' : s.time.slice(0, 5);
     if (s.midnight) sub.textContent = 'MIDNIGHT';
-    else if (s.finalCountdown) sub.textContent = `FINAL COUNTDOWN ${s.countdownWeeks} WK${s.countdownWeeks === 1 ? '' : 'S'}`;
-    else sub.textContent = `${s.minutes.toFixed(2).replace(/\.?0+$/, '')} MIN · FLOOR ${s.floor}`;
+    else if (s.finalCountdown && !center) sub.textContent = `FINAL COUNTDOWN ${s.countdownWeeks} WK${s.countdownWeeks === 1 ? '' : 'S'}`;
+    else sub.textContent = `${fmtMin(s.minutes)} MIN TO MIDNIGHT · FLOOR ${fmtMin(s.floor)}`;
     box.dataset.zone = s.midnight || s.finalCountdown ? 'countdown' : s.minutes <= 5 ? 'danger' : s.minutes <= 10 ? 'uneasy' : 'calm';
+    lost.style.width = `${((15 - Math.min(15, s.floor)) / 15) * 100}%`;
+    pin.style.left = `${((15 - Math.max(0, Math.min(15, s.minutes))) / 15) * 100}%`;
+    track.title = `Floor ${fmtMin(s.floor)} min (the hand can never go back past it). Track tension alone would put it at ${fmtMin(15 - s.tensionSum / 40)} min.`;
+    countdown.dataset.on = String(!!s.finalCountdown);
+    cdWeeks.textContent = s.finalCountdown ? `${s.countdownWeeks} WK${s.countdownWeeks === 1 ? '' : 'S'}` : '';
     if (clock.floor < lastFloor) {
       box.classList.remove('dc-drop');
       void box.offsetWidth;

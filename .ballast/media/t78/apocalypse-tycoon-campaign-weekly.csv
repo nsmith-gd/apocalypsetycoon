@@ -1,0 +1,15 @@
+quarter,week,minutes,tension_atomic,momentum_atomic,state_atomic,tension_bloom,momentum_bloom,state_bloom,tension_superstorm,momentum_superstorm,state_superstorm,tension_optimizer,momentum_optimizer,state_optimizer,tension_hush,momentum_hush,state_hush,tension_pitchforks,momentum_pitchforks,state_pitchforks,heat,world_tension,cash,rp_bank,rp_earned,rp_last_week,board_confidence,board_strikes,reputation,clients,leverage_max,leverage_by_client
+1,1,2.07,40,0,calm,0,0,closed,0,0,closed,0,0,closed,0,0,closed,0,0,closed,5,20,400000,2,2,2,60,0,40,1,10,Lady Okafor:10
+1,2,4.14,40,0,calm,0,0,closed,0,0,closed,0,0,closed,0,0,closed,0,0,closed,5,26,200000,4,4,2,60,0,40,1,10,Lady Okafor:10
+1,3,6.21,40,0,calm,0,0,closed,0,0,closed,0,0,closed,0,0,closed,0,0,closed,7,26,140000,6,6,2,60,0,40,1,10,Lady Okafor:10
+1,4,8.28,40,0,calm,0,0,closed,0,0,closed,0,0,closed,0,0,closed,0,0,closed,7,28,130000,8,8,2,60,0,42,1,10,Lady Okafor:10
+1,5,10.35,40,0,calm,0,0,closed,0,0,closed,0,0,closed,0,0,closed,0,0,closed,5,28,110000,10,10,2,60,0,42,1,10,Lady Okafor:10
+1,6,12.42,40,0,calm,0,0,closed,0,0,closed,0,0,closed,0,0,closed,0,0,closed,5,28,110000,12,12,2,60,0,42,1,10,Lady Okafor:10
+1,7,14.49,40,0,calm,0,0,closed,0,0,closed,0,0,closed,0,0,closed,0,0,closed,7,28,50000,14,14,2,60,0,42,1,10,Lady Okafor:10
+1,8,16.56,40,0,calm,0,0,closed,0,0,closed,0,0,closed,0,0,closed,0,0,closed,7,30,40000,16,16,2,60,0,44,1,10,Lady Okafor:10
+1,9,18.63,40,0,calm,0,0,closed,0,0,closed,0,0,closed,0,0,closed,0,0,closed,1,30,24000,18,18,2,60,0,44,1,10,Lady Okafor:10
+1,10,20.7,40,0,calm,0,0,closed,0,0,closed,0,0,closed,0,0,closed,0,0,closed,3,30,24000,20,20,2,60,0,44,1,10,Lady Okafor:10
+1,11,22.77,40,0,calm,0,0,closed,0,0,closed,0,0,closed,0,0,closed,0,0,closed,6,38,54000,22,22,2,60,0,44,1,10,Lady Okafor:10
+1,12,24.84,40,0,calm,0,0,closed,0,0,closed,0,0,closed,0,0,closed,0,0,closed,6,38,54000,24,24,2,60,0,44,1,10,Lady Okafor:10
+2,13,27,40,0,calm,0,0,closed,0,0,closed,0,0,closed,0,0,closed,0,0,closed,0,35,-81000,26,26,2,60,1,44,1,10,Lady Okafor:10
+2,14,29.07,40,0,calm,0,0,closed,0,0,closed,0,0,closed,0,0,closed,0,0,closed,4,40,19000,28,28,2,60,1,44,1,10,Lady Okafor:10

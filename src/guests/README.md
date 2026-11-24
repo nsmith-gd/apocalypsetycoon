@@ -11,6 +11,6 @@
   `generateGuestList(roster, { seed, count, classes, region, world, tension, themes })` (seeded, no repeated archetype
   in a list while others fit). Fears move to the track running in the same slot of this world; hot tracks and venue
   themes raise a fear's weight.
-- Events: `new EventCircuit({ ..., guestRoster, world })` rolls each venue's crowd from the archetypes (falls back to
+- Events: `new EventCircuit({ ..., guestRoster, roster })` rolls each venue's crowd from the archetypes (falls back to
   the old name-only guests without a roster). Guests keep `{ id, name, wealthClass, region, fears, venueId }` for the
   lead pipeline and add `archetype, title, wealthTier, budget, dominantFear, traits, hiddenTraits`.

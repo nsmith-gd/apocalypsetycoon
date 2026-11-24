@@ -158,3 +158,51 @@ export function openTracks(roster, minutes) {
 export function unusedTracks(roster) {
   return TRACKS.filter((t) => !roster.includes(t.id)).map((t) => t.id);
 }
+
+// ---------------- Slot keys (#75) ----------------
+// Everything that "fears", "favours" or "targets" a crisis is written by SLOT, so an alternate world
+// (The Grey Goo in slot 2, ...) inherits it. Data may still name the Classic track for readability:
+// resolveTrack(roster, 'bloom') gives whatever fills slot 2 in this campaign.
+
+export const slotOf = (trackId) => TRACK_BY_ID[trackId]?.slot ?? null;
+export const trackInSlot = (roster, slot) => roster.find((id) => TRACK_BY_ID[id]?.slot === slot) ?? null;
+/** The roster's track in the same slot as `trackId` (a Classic or alternate id); null if unknown. */
+export const resolveTrack = (roster, trackId) => (trackId == null ? null : trackInSlot(roster, slotOf(trackId)));
+export const resolveTracks = (roster, ids = []) => [...new Set(ids.map((id) => resolveTrack(roster, id)).filter(Boolean))];
+
+/** Debug / URL roster swaps: { 2: 'greygoo' } from '?greygoo' or '?slot2=greygoo&slot4=kessler'. */
+export function rosterPicksFromParams(params) {
+  const picks = {};
+  for (const t of TRACKS.filter((x) => !x.classic)) if (params.has(t.id)) picks[t.slot] = t.id;
+  for (const s of SWAPPABLE_SLOTS) { const v = params.get(`slot${s}`); if (v && TRACK_BY_ID[v]?.slot === s) picks[s] = v; }
+  return picks;
+}
+
+// Rival companies (GDD: Characters > Rivals). Their favourite crises are slots.
+export const RIVALS = Object.freeze({
+  halcyon: { name: 'Halcyon Vaults', ceo: 'Seraphine Ash', style: 'Old money, Gilded', favouriteSlots: [3, 1] },
+  bunkr: { name: 'Bunkr', ceo: 'Kai Rook', style: 'App-based bunker subscriptions', favouriteSlots: [4] },
+});
+export const rivalFavourites = (rivalId, roster) => (RIVALS[rivalId]?.favouriteSlots ?? []).map((s) => trackInSlot(roster, s)).filter(Boolean);
+
+// Hero clients (GDD: Characters > Hero clients). "Every fear is written by slot": the Fears column names
+// the Classic track; in an alternate world the client fears whatever fills that slot. 'all' = every track.
+export const HERO_CLIENTS = Object.freeze([
+  { id: 'gerald', name: 'Gerald Pemberton-Wick', class: 'C1', fearSlots: [1] },
+  { id: 'fairweathers', name: 'Dana and Doug Fairweather', class: 'C1', fearSlots: [2] },
+  { id: 'marla', name: 'Marla Quist', class: 'C1', fearSlots: 'all' },
+  { id: 'skyler', name: 'Skyler Thorne', class: 'C2', fearSlots: [4] },
+  { id: 'lexi', name: 'Lexi Monroe', class: 'C2', fearSlots: [2] },
+  { id: 'ravi', name: 'Ravi Castellanos', class: 'C2', fearSlots: [4] },
+  { id: 'juno', name: 'Juno Achterberg', class: 'C2', fearSlots: [3] },
+  { id: 'ashcombe', name: 'Lady Eleanor Ashcombe', class: 'C3', fearSlots: [1, 6] },
+  { id: 'strelitz', name: 'Baron Felix von Strelitz', class: 'C3', fearSlots: [1] },
+  { id: 'whitlocks', name: 'Harold and Bunny Whitlock', class: 'C3', fearSlots: [6] },
+  { id: 'calloway', name: 'Rex Calloway', class: 'C4', fearSlots: [6] },
+  { id: 'sorrentino', name: 'Imelda Sorrentino', class: 'C4', fearSlots: [3] },
+  { id: 'drummonds', name: 'Castor and Pollux Drummond', class: 'C4', fearSlots: [5] },
+  { id: 'lamarr', name: 'Odette Lamarr', class: 'C4', fearSlots: [1] },
+  { id: 'admiral', name: 'The Admiral', class: 'C5', fearSlots: [1] },
+  { id: 'philanthropist', name: 'The Philanthropist', class: 'C5', fearSlots: [5] },
+]);
+export const heroFears = (hero, roster) => (hero.fearSlots === 'all' ? [...roster] : hero.fearSlots.map((s) => trackInSlot(roster, s)).filter(Boolean));

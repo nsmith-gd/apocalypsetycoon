@@ -21,16 +21,8 @@
 //   clock.tippingPoint(90)           // a track's base tipping point after fragility
 //   clock.on('tick' | 'floor' | 'brink' | 'countdown' | 'midnight', fn)
 
-export const DOOM_CLOCK = Object.freeze({
-  startMinutes: 15,
-  tensionDivisor: 40,
-  floorDrops: { brink: 0.25, chapter: 0.5, breachContained: 1, collapse: 4 },
-  fragilityPerMinute: 1, // tipping points fall 1 per floor minute lost
-  tippingFloor: 72, // ...but never below 72
-  collapsesForCountdown: 2,
-  countdownWeeks: 4,
-  brinkMargin: 10, // auto-detect: a track is at its Brink within 10 of its (fragile) tipping point
-});
+import { DOOM_CLOCK } from '../config/tuning.js';
+export { DOOM_CLOCK }; // lives in the single tuning table (#77)
 
 const round2 = (n) => Math.round(n * 100) / 100;
 

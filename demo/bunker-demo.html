@@ -30,9 +30,10 @@
 import { Ledger } from '../src/ledger/ledger.js';
 import { BunkerSite } from '../src/shelter/bunker.js';
 import { createBunkerUI } from '../src/shelter/bunker-ui.js';
+import { furnishedSuite } from '../src/shelter/showcase.js';
 
 const params = new URLSearchParams(location.search);
-const ledger = new Ledger({ startingCash: 2_000_000 });
+const ledger = new Ledger({ startingCash: params.has('suite') ? 10_000_000 : 2_000_000 });
 let crews = 2;
 let speed = 16;
 let frame = 0;
@@ -59,7 +60,9 @@ function starter() {
   site.conduitLine('power', 2, 7, 6, 7);
   site.conduitLine('power', 1, 9, 1, 9); // (the spine carries power between floors)
 }
+function suite() { furnishedSuite(site, { instant: params.has('instant') }); }
 if (params.has('starter')) starter();
+if (params.has('suite')) suite();
 document.getElementById('starter').onclick = () => { starter(); ui.refresh(); };
 
 for (const b of document.querySelectorAll('[data-speed]')) b.onclick = () => { speed = Number(b.dataset.speed); document.querySelectorAll('[data-speed]').forEach((x) => x.classList.toggle('on', x === b)); };
@@ -84,7 +87,7 @@ function loop(now) {
 ui.fit(innerWidth - 520, innerHeight - 160);
 addEventListener('resize', () => ui.fit(innerWidth - 520, innerHeight - 160));
 requestAnimationFrame(loop);
-window.__demo = { site, ui, ledger, starter, setSpeed: (s) => { speed = s; } };
+window.__demo = { site, ui, ledger, starter, suite, setSpeed: (s) => { speed = s; } };
 </script>
 </body>
 </html>
