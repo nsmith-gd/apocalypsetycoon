@@ -38,13 +38,17 @@ const BIT = { air: 1, water: 2, power: 4 };
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 export class BunkerSite {
-  constructor({ ledger = null, crews = () => 1, costMultiplier = () => 1, cfg = {}, surveyed = false, name = 'Last Resort HQ' } = {}) {
+  // research (#16): canBuild(objectId), canBuildStructure(id), canDig(stratumId), lockedReason(type, id).
+  // All default to open, so demos and tests without a research tree are unaffected.
+  constructor({ ledger = null, crews = () => 1, crewSpeed = () => 1, costMultiplier = () => 1, cfg = {}, surveyed = false, name = 'Last Resort HQ', research = null } = {}) {
+    this.research = research;
     this.cfg = { ...BUNKER, ...cfg };
     this.W = this.cfg.width;
     this.H = this.cfg.depth;
     this.S = this.cfg.sky;
     this.ledger = ledger;
     this.crews = crews;
+    this.crewSpeed = crewSpeed; // #73: Engineering levels speed every crew (+15% each)
     this.costMultiplier = costMultiplier;
     this.name = name;
     this.listeners = new Set();
@@ -117,6 +121,7 @@ export class BunkerSite {
     if (!this.inside(x, y) || y < 0) return { ok: false, reason: 'Nothing to dig there' };
     if (this._willBeDug(x, y)) return { ok: false, reason: 'Already dug or ordered' };
     const s = this.stratum(y);
+    if (this.research && !this.research.canDig(s.id)) return { ok: false, reason: this.research.lockedReason?.('stratum', s.id) ?? `Research ${s.name} digging first` };
     const paid = this._charge(`Dig ${s.name} at ${y} m`, s.digCost);
     return { ok: true, job: this._queue({ type: 'dig', x, y, days: 1 / s.speed, paid, label: `Dig (${s.name})` }) };
   }
@@ -131,6 +136,7 @@ export class BunkerSite {
   build(kind, x, y) {
     const def = STRUCTURES[kind];
     if (!def || !this.inside(x, y) || y < 0) return { ok: false, reason: 'Cannot build there' };
+    if (this.research && !this.research.canBuildStructure(kind)) return { ok: false, reason: this.research.lockedReason?.('structure', kind) ?? `Research ${def.name} first` };
     if (!this._willBeDug(x, y)) return { ok: false, reason: 'Dig the tile first' };
     if (this.structure[this.idx(x, y)] || this.jobs.some((j) => j.type === 'build' && j.x === x && j.y === y)) return { ok: false, reason: 'Already built' };
     if (LAYERS.some((l) => this.layers[l][this.idx(x, y)]) || this._plannedObjectAt(x, y)) return { ok: false, reason: 'Something is in the way' };
@@ -180,6 +186,7 @@ export class BunkerSite {
   canPlace(kind, x, y) {
     const o = OBJECTS[kind];
     if (!o) return { ok: false, reason: 'Unknown object' };
+    if (this.research && !this.research.canBuild(kind)) return { ok: false, reason: this.research.lockedReason?.('object', kind) ?? `Research ${o.name} first` };
     const top = y - o.h + 1;
     if (!this.inside(x, top) || !this.inside(x + o.w - 1, y)) return { ok: false, reason: 'Off the plot' };
     if (o.surface) { if (y !== -1) return { ok: false, reason: `${o.name} goes on the surface` }; }
@@ -339,6 +346,12 @@ export class BunkerSite {
       this.pressureTest.daysLeft -= days;
       if (this.pressureTest.daysLeft <= 0) { this.pressureTest.result = this.simulate(); this._changed({ type: 'pressureTest' }); }
     }
+    if (this.stallDays > 0) { // a breach sent the crew home (shelter-in-place)
+      const use = Math.min(days, this.stallDays);
+      this.stallDays -= use;
+      days -= use;
+      if (days <= 1e-9) return;
+    }
     if (!this.surveyed) {
       const use = Math.min(days, this.surveyLeft);
       this.surveyLeft -= use;
@@ -349,8 +362,9 @@ export class BunkerSite {
     const crews = Math.max(1, this.crews());
     this.crewAt = [];
     const taken = new Set();
+    const speed = Math.max(0, this.crewSpeed());
     for (let c = 0; c < crews; c++) {
-      let budget = days;
+      let budget = days * speed;
       let guard = 0;
       while (budget > 1e-9 && guard++ < 500) {
         const reach = this.reachable();
@@ -364,6 +378,12 @@ export class BunkerSite {
         else taken.add(j); // another crew picks a different job
       }
     }
+  }
+
+  /** Construction stops for `days` (a breach's shelter-in-place sends the crews home). */
+  delay(days = 7) {
+    this.stallDays = (this.stallDays ?? 0) + days;
+    this._changed({ type: 'delay', days });
   }
 
   /** Finish everything instantly (debug / tests). */
@@ -733,7 +753,7 @@ export class BunkerSite {
       v: 2, W: this.W, H: this.H, S: this.S,
       dug: Array.from(this.dug), structure: this.structure, conduit: Array.from(this.conduits),
       objects: [...this.objects.values()], jobs: this.jobs, id: this._id, finish: this.finish,
-      surveyed: this.surveyed, surveyLeft: this.surveyLeft, pressureTest: this.pressureTest, day: this.day, handedOver: this.handedOver,
+      surveyed: this.surveyed, surveyLeft: this.surveyLeft, pressureTest: this.pressureTest, day: this.day, handedOver: this.handedOver, stallDays: this.stallDays ?? 0,
     };
   }
 
@@ -752,6 +772,7 @@ export class BunkerSite {
     this.surveyed = d.surveyed;
     this.surveyLeft = d.surveyLeft;
     this.pressureTest = d.pressureTest;
+    this.stallDays = d.stallDays ?? 0;
     this.day = d.day;
     this.handedOver = d.handedOver ?? 0;
     this._changed({ type: 'load' });

@@ -1,0 +1,11 @@
+quarter,hours,pacedHours,wallMinutes,cash,net,crisis,heat,sales,salesRevenue,builds,schemes,fines,events,boardTarget,boardMet,strikes,runaways,unlocks,tension,breaches
+1,0.54,0.2,0,1232000,832000,17,0,3,1514000,3,0,0,,50000,true,0,0,,20,0
+2,1.02,0.36,0,2929000,1697000,14,0,4,2742000,4,0,0,,255000,true,0,0,"Think Tank Grant, A second crew",20,0
+3,1.5,0.57,0,3766000,837000,71,21,4,2450000,4,3,332000,investigation,645000,true,0,0,"Hydroponics Bay, Deepfake broadcast",80,0
+4,1.98,0.72,0,7893000,4127000,68,13,4,4756000,4,0,0,,740000,true,0,0,HEPA Scrubber Bay,80,0
+5,2.45,0.88,0,10802000,2909000,65,5,4,3596000,4,0,0,,1660000,true,0,0,,80,0
+6,2.96,1.16,0,12282000,1480000,48,21,6,4254000,8,5,1185000,investigation board demand demand,2095000,false,1,0,,60,1
+7,3.45,1.36,0,15599000,3317000,65,31,4,4126000,6,1,0,demand demand,1935000,true,0,0,,80,1
+8,3.95,1.55,0,16799000,1200000,62,23,4,2346000,6,0,200000,board demand demand,2440000,false,1,0,,80,1
+9,4.44,1.73,0,20237000,3438000,59,15,4,4176000,6,0,0,demand demand,1980000,true,0,0,,80,1
+10,4.98,2.1,0,12323250,-7913750,99,55,4,5596000,4,15,12275000,runaway investigation raid raid board blackmail blackmail raid,2510000,false,1,1,,100,5

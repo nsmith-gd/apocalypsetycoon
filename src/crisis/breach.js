@@ -22,29 +22,13 @@
 // and a shelter tester (default: Midnight's air/water/food check).
 
 import { gradeShelter } from '../midnight/midnight.js';
+import { apocalypseFor } from '../midnight/engineered.js';
+import { survival } from '../shelter/life.js';
+import { REGIONS as SALES_REGIONS } from '../demand/demand.js';
+import { BREACH, TUNING } from '../config/tuning.js';
+import { seededRng } from '../campaign/rng.js';
 
-export const BREACH = Object.freeze({
-  tipBase: 90,
-  tipOffset: [-8, 4], // hidden roll, inclusive
-  tipMin: 72,
-  scar: 3,
-  windowWeeks: [6, 4, 3], // by the track's breach number (1st, 2nd, 3rd+)
-  perBreachWeek: { heat: 2, boardConfidence: -2, panicMultiplier: 2 },
-  recovery: { tension: 60, lockWeeks: 3 },
-  collapseTension: 100,
-  shove: { strong: 15, medium: 8, weak: 4 },
-  shelterTest: { pass: { reputation: 2 }, fail: { reputation: -5, leverage: 15 } },
-  brinkMargin: 10,
-  // The five containment sources. Points and costs not given in the ticket are provisional
-  // (marked) until the GDD text is in the repo.
-  sources: {
-    op: { label: 'Containment op', points: 40, costPerBreach: 10_000_000, uses: 1 }, // $10M x breach count (ticket); 40 pts provisional
-    research: { label: 'Crash research program', points: 25, uses: 1, blocksResearch: true }, // provisional
-    calming: { label: 'Calming scheme', points: 10, uses: 3 }, // per scheme, provisional
-    government: { label: 'Government partnership', points: 30, uses: 1, heat: 10 }, // provisional
-    heroics: { label: 'Executive heroics', points: 15, uses: 1, boardConfidence: -5 }, // provisional
-  },
-});
+export { BREACH }; // lives in the single tuning table (#77)
 
 /** The domino map: 10 links over the five crisis tracks (every pair once). Provisional pairing. */
 export const DOMINO_LINKS = Object.freeze([
@@ -68,27 +52,41 @@ export const TRACKS = Object.freeze([
   { id: 'war', name: 'War' },
 ]);
 
-function rngFrom(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+const rngFrom = seededRng; // saveable state (#80)
 
 const clamp = (v, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
 
-/** Default shelter-in-place test: the shelter's air, water and food all cover its occupants. */
-export function defaultShelterTest(shelter) {
+/**
+ * Shelter-in-place test (GDD: Crises and tipping points > Shelter-in-place tests): a handed-over shelter is
+ * checked against its contract's Days Sealed and the breached track's critical ratings. A shelter built on the
+ * life-systems grid carries `sealed: { daysSealed, ratings }`; its contract's requirement is
+ * `contract.daysSealed`, or the track's apocalypse duration when there is no contract yet. Returns
+ * { pass, p (0-1 survival odds), need, why }. Shelters without a sealed simulation fall back to the old check:
+ * air, water and food all cover the occupants.
+ */
+export function defaultShelterTest(shelter, trackId) {
+  const apoc = apocalypseFor(trackId);
+  if (shelter.sealed && apoc) {
+    const need = { days: shelter.contract?.daysSealed ?? apoc.days, ...apoc.critical };
+    const sv = survival({ daysSealed: shelter.sealed.daysSealed, ratings: shelter.sealed.ratings ?? {} }, need);
+    const why = [];
+    if (shelter.sealed.daysSealed < need.days) why.push(`${Math.round(shelter.sealed.daysSealed)} of ${need.days} days sealed`);
+    for (const [k, v] of Object.entries(apoc.critical)) if ((shelter.sealed.ratings?.[k] ?? 0) < v) why.push(`${k} ${shelter.sealed.ratings?.[k] ?? 0}/${v}`);
+    return { pass: sv.p >= 1, p: sv.p, need, why };
+  }
   const g = gradeShelter(shelter);
-  return Math.min(g.ratios.air, g.ratios.water, g.ratios.food) >= 1;
+  const worst = Math.min(g.ratios.air, g.ratios.water, g.ratios.food);
+  return { pass: worst >= 1, p: Math.min(1, worst), need: null, why: worst >= 1 ? [] : [`${g.weakest} runs short`] };
+}
+
+/** Is a sales region highly exposed to this track? (Shelters with no region count as exposed.) */
+export function highlyExposed(regionId, trackId, regions = SALES_REGIONS) {
+  if (!regionId) return true;
+  return regions.find((r) => r.id === regionId)?.exposure?.[trackId] === 'high';
 }
 
 export class CrisisSystem {
-  constructor({ seed = 1, tracks = TRACKS, links = DOMINO_LINKS, config = {}, pushback = null, doomClock = null, ledger = null, shelters = () => [], shelterTest = defaultShelterTest, tips = null, clockWeeks = false } = {}) {
+  constructor({ seed = 1, tracks = TRACKS, links = DOMINO_LINKS, config = {}, pushback = null, doomClock = null, ledger = null, shelters = () => [], shelterTest = defaultShelterTest, tips = null, clockWeeks = false, construction = () => [] } = {}) {
     this.cfg = { ...BREACH, ...config, sources: { ...BREACH.sources, ...(config.sources ?? {}) } };
     this.rng = rngFrom(seed);
     this.links = links;
@@ -98,8 +96,9 @@ export class CrisisSystem {
     this.ledger = ledger;
     this.getShelters = shelters;
     this.shelterTest = shelterTest;
+    this.getConstruction = construction; // [{ id, name, region, delay(days) }]: sites still being built
     this.week = 0;
-    this.reputation = 50;
+    this.reputation = TUNING.reputation.start; // GDD: 0-100, starting at 40 (#77)
     this.boardConfidence = 60;
     this.breachCount = 0; // across the whole game: the containment op costs $10M x this
     this.researchBlocked = false;
@@ -224,9 +223,9 @@ export class CrisisSystem {
     t.window = { weeksLeft: weeks, total: weeks, bar: 0, used: {}, breachNo: this.breachCount };
     this.paused = true;
     this._note(`${t.name} BREACHED${source ? ` (${source})` : ''}. Containment window: ${weeks} weeks.`, { type: 'breach', track: t.id });
+    t.window.shelterTests = this._shelterInPlace(t); // clients move in at once; shown on the breach card
     this._emit('breach', { track: t.id, weeks, breachNo: this.breachCount });
     this._emit('pause', { reason: 'breach', track: t.id });
-    this._shelterInPlace(t);
   }
 
   /** Cost and points of a containment source for this breach (null if used up). */
@@ -300,20 +299,46 @@ export class CrisisSystem {
     }
   }
 
+  /**
+   * Shelter-in-place: clients in the breached track's high-exposure regions move into their shelters. Each
+   * handed-over shelter there is tested: pass +2 reputation; fail -5 reputation and +15 leverage for its client,
+   * and a badly failed one (survival odds under 50%) loses occupants. Sites still under construction in those
+   * regions lose a week of work instead.
+   */
   _shelterInPlace(t) {
     const T = this.cfg.shelterTest;
+    const results = [];
     for (const s of this.getShelters()) {
-      if (!s.sold) continue;
-      const pass = this.shelterTest(s, t.id);
-      if (pass) this.reputation = clamp(this.reputation + T.pass.reputation);
+      if (!s.sold || !highlyExposed(s.region, t.id)) continue;
+      const raw = this.shelterTest(s, t.id);
+      const r = typeof raw === 'boolean' ? { pass: raw, p: raw ? 1 : 0, why: [] } : raw;
+      let lost = 0;
+      if (r.pass) this.reputation = clamp(this.reputation + T.pass.reputation);
       else {
         this.reputation = clamp(this.reputation + T.fail.reputation);
         const client = this.pb?.clients?.find((c) => c.name === s.owner);
         if (client) client.leverage += T.fail.leverage;
+        if (r.p < T.badlyBelow && (s.occupants ?? 0) > 0) {
+          lost = Math.max(1, Math.round(s.occupants * (T.badlyBelow - r.p)));
+          lost = Math.min(lost, s.occupants);
+          s.occupants -= lost;
+          s.lostInBreaches = (s.lostInBreaches ?? 0) + lost;
+        }
       }
-      this._note(`Shelter-in-place test, ${s.name}: ${pass ? 'PASSED (+2 reputation)' : 'FAILED (-5 reputation, +15 leverage)'}.`, { type: 'shelter', shelter: s.id, pass });
-      this._emit('shelterTest', { shelter: s.id, pass, track: t.id });
+      const verdict = r.pass ? 'PASSED (+2 reputation)' : `FAILED (-5 reputation, +15 leverage${lost ? `, ${lost} occupant${lost === 1 ? '' : 's'} lost` : ''})`;
+      this._note(`Shelter-in-place, ${t.name}: ${s.name}${s.owner ? ` (${s.owner})` : ''} ${verdict}${r.why?.length ? `: ${r.why.join(', ')}` : ''}.`, { type: 'shelter', shelter: s.id, pass: r.pass, lost });
+      const result = { shelter: s.id, name: s.name, owner: s.owner, region: s.region, pass: r.pass, p: r.p, why: r.why ?? [], lost, track: t.id };
+      results.push(result);
+      this._emit('shelterTest', result);
     }
+    for (const site of this.getConstruction()) {
+      if (!highlyExposed(site.region, t.id)) continue;
+      site.delay?.(T.constructionDelayDays);
+      this._note(`Shelter-in-place, ${t.name}: construction at ${site.name} stops for a week.`, { type: 'construction', site: site.id });
+      results.push({ site: site.id, name: site.name, delayedDays: T.constructionDelayDays, track: t.id });
+      this._emit('constructionDelay', { site: site.id, days: T.constructionDelayDays, track: t.id });
+    }
+    return results;
   }
 
   // ---------- time ----------

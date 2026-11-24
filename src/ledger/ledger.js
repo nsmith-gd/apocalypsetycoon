@@ -12,6 +12,7 @@ export const CATEGORIES = Object.freeze({
   schemes: { label: 'Schemes', icon: '!' },
   fines: { label: 'Fines & settlements', icon: 'X' },
   upkeep: { label: 'Upkeep & payroll', icon: '~' },
+  research: { label: 'Research & development', icon: '?' },
   other: { label: 'Other', icon: '.' },
 });
 

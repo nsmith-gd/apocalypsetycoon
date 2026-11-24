@@ -206,7 +206,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     const shown = schemes ? 3 : 5;
     for (const [i, l] of v.buyerList.slice(0, shown).entries()) {
       const li = el('li');
-      const weeksLeft = 4 - (sales.market.weekNo - l.week);
+      const weeksLeft = sales.market.cfg.rivalAfterWeeks - (sales.market.weekNo - l.week);
       li.innerHTML = `<span>${i === 0 ? '▶ ' : ''}${CLIENT_TYPES[l.type]?.label ?? l.type} <em class="wm-w-${l.wealth}">${l.wealth}</em></span><small data-late="${weeksLeft <= 1}">${weeksLeft}wk</small>`;
       buyers.append(li);
     }

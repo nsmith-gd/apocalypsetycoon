@@ -23,70 +23,15 @@
 //   pb.pending / pb.resolve(eventId, optionId) — choice events for the UI
 //   pb.on('event' | 'change' | 'resolved' | 'ousted' | 'runaway', fn)
 
-export const PUSHBACK_DEFAULTS = Object.freeze({
-  heat: {
-    start: 5,
-    decayPerQuarter: 8, // heat cools off on its own when you lay low
-    investigationAt: 50, // crossing this mid-quarter opens an investigation (once per quarter)
-    fineAt: 65, // ending a quarter at or above this draws a regulator fine
-    finePerPoint: 1_500, // fine = (heat - fineAt + 10) * finePerPoint
-    raidAt: 100, // maxing heat triggers a federal raid
-    raidFine: 150_000,
-    raidHeatAfter: 55,
-  },
-  tension: {
-    start: 20,
-    decayPerQuarter: 3,
-    momentumAt: 75, // above this, tension feeds itself every quarter
-    momentumGain: 6,
-    runawayAt: 100,
-    runawayDamagePct: 0.15, // runaway costs 15% of cash (min floor below) in damages
-    runawayDamageMin: 60_000,
-    runawayDamageMax: 600_000, // cap: uncapped, a rich late game lost millions per runaway (pacing harness)
-    runawayResetTo: 70,
-  },
-  leverage: {
-    perSale: 10, // starting leverage of a new client
-    heatFactor: 0.15, // leverage gained per quarter = heat * heatFactor
-    demandAt: 30,
-    blackmailAt: 55,
-    maxEventsPerQuarter: 2,
-  },
-  board: {
-    enabled: true, // the campaign turns this off and runs the GDD board (src/board/board.js) instead
-    firstTarget: 50_000, // quarterly profit expected in Q1
-    growth: 0.08, // each target is 8% above the previous one (pacing harness: 25% ousted every bot by Q7)
-    ratchet: 0.25, // a beaten target also moves 25% of the way toward the profit that beat it
-    strikesToOust: 3,
-    missClawbackPct: 0.10, // executive clawback: 10% of cash (min floor)
-    missClawbackMin: 25_000,
-    missClawbackMax: 200_000, // cap: uncapped, one miss snowballed into three (pacing harness)
-    freezeMultiplier: 1.25, // second strike: builds cost 25% more next quarter
-    beatBonusPct: 0.05, // beating the target pays a bonus of 5% of profit
-  },
-  // Relief valves: paid ways to push back on the pushback. Each use in the same quarter costs
-  // 50% more than the last ("nothing is free"), and each has a side effect.
-  relief: {
-    layLow: { cost: 40_000, heat: -15, label: 'Lay low', blurb: 'Lawyers, shredders, a quiet quarter. Heat -15.' },
-    fundRelief: { cost: 50_000, tension: -14, heat: 3, label: 'Fund disaster relief', blurb: 'Calm the world a little. Tension -14, but the press asks where the money came from (heat +3).' },
-    repeatMarkup: 0.5,
-  },
-});
+import { PUSHBACK_DEFAULTS } from '../config/tuning.js';
+import { seededRng } from '../campaign/rng.js';
+export { PUSHBACK_DEFAULTS }; // lives in the single tuning table (#77)
 
 const clamp = (v, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
 const round = (n, to = 1_000) => Math.round(n / to) * to;
 
 /** Small seeded RNG so playthroughs and tests are reproducible. */
-export function mulberry32(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+export function mulberry32(seed) { return seededRng(seed); } // saveable state (#80)
 
 function deepMerge(base, over = {}) {
   const out = {};

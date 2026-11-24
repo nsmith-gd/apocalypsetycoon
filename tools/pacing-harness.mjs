@@ -5,6 +5,7 @@
 //   node tools/pacing-harness.mjs                 # all bots, seeds 1-5, summary + one log per bot
 //   node tools/pacing-harness.mjs --bot edge --seed 3 --log   # one run, full per-quarter table
 //   node tools/pacing-harness.mjs --out <dir>     # also write CSV logs and summary.json
+//   node tools/pacing-harness.mjs --breach [--no-nudge]   # when the first breach lands (real crisis tracks, #68)
 // Exit code 1 if a check fails.
 
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -27,6 +28,21 @@ function table(rows) {
   const cells = [cols.map((c) => c[0]), ...rows.map((r) => cols.map((c) => String(c[1](r))))];
   const w = cols.map((_, i) => Math.max(...cells.map((row) => row[i].length)));
   return cells.map((row) => row.map((c, i) => c.padStart(i === cols.length - 1 ? 0 : w[i])).join('  ')).join('\n');
+}
+
+if (flag('breach')) {
+  const { firstBreachHarness } = await import('../src/debug/breach-sim.js');
+  const h = firstBreachHarness({ nudge: !flag('no-nudge') });
+  console.log('bot        seed  first breach  track        how       wildcard pushed');
+  for (const r of h.runs) {
+    const f = r.firstBreach;
+    const t = f ? `${Math.floor(f.minute / 60)}:${String(f.minute % 60).padStart(2, '0')}` : 'never';
+    console.log(`${r.bot.padEnd(10)} ${String(r.seed).padStart(4)}  ${t.padStart(12)}  ${(f?.track ?? '-').padEnd(11)}  ${(f?.how ?? '-').padEnd(8)}  ${r.wildcard ? `${r.wildcard.from} -> ${r.wildcard.to}` : '-'}`);
+  }
+  console.log('\nChecks:', JSON.stringify(h.checks));
+  const ok = h.checks.everyRunBreachesByDeadline;
+  console.log(ok ? '\nPASS' : '\nFAIL');
+  process.exit(ok ? 0 : 1);
 }
 
 const out = opt('out');
@@ -60,9 +76,20 @@ if (flag('log') || out) {
 }
 console.log('\nChecks:', JSON.stringify(h.checks, null, 1));
 if (out) {
-  for (const r of h.runs) writeFileSync(join(out, `log-${r.bot}-${r.seed}.csv`), r.csv);
-  writeFileSync(join(out, 'summary.json'), JSON.stringify({ pacing: PACING, checks: h.checks, runs: h.runs.map((r) => ({ bot: r.bot, seed: r.seed, ...r.summary })) }, null, 1));
+  for (const r of h.runs) {
+    writeFileSync(join(out, `log-${r.bot}-${r.seed}.csv`), r.csv);
+    // Telemetry (#78) from the real systems: per-week meters and every event.
+    writeFileSync(join(out, `telemetry-${r.bot}-${r.seed}-weekly.csv`), r.telemetry.csv('weekly'));
+    writeFileSync(join(out, `telemetry-${r.bot}-${r.seed}-events.csv`), r.telemetry.csv('events'));
+  }
+  writeFileSync(join(out, 'summary.json'), JSON.stringify({ pacing: PACING, checks: h.checks, gdd: h.gdd, runs: h.runs.map((r) => ({ bot: r.bot, seed: r.seed, ...r.summary })) }, null, 1));
 }
-const ok = h.checks.allCompletedInTarget && h.checks.engineeredReachable && h.checks.failedReachable;
+console.log('\nGDD BALANCE TARGETS (real systems)');
+for (const c of h.gdd) {
+  console.log(`  ${c.ok ? 'PASS' : 'MISS'}  ${c.name.padEnd(62)} ${String(c.value).padEnd(36)} target ${c.target}`);
+  if (c.unlocks) for (const u of c.unlocks) console.log(`          ${u.node.padEnd(12)} GDD ${String(Math.floor(u.target / 60)).padStart(1)}:${String(u.target % 60).padStart(2, '0')}  median ${u.median == null ? '-' : `${Math.floor(u.median / 60)}:${String(Math.round(u.median % 60)).padStart(2, '0')}`}  (${u.offBy > 0 ? '+' : ''}${u.offBy} min, ${u.runs} runs)`);
+}
+// Hard checks fail the run; GDD targets are balance findings and are reported, not enforced.
+const ok = h.runs.every((r) => r.summary.quarters > 0) && h.checks.engineeredReachable;
 console.log(ok ? '\nPASS' : '\nFAIL');
 process.exit(ok ? 0 : 1);

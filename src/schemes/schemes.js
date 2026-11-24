@@ -58,13 +58,14 @@ export function researchCrisis(crisis) {
 }
 
 export class SchemeBoard {
-  constructor({ crisis, market = null, ledger = null, pushback = null, regions = market?.regions ?? [], isUnlocked = () => true, schemes = SCHEMES, rules = {} } = {}) {
+  constructor({ crisis, market = null, ledger = null, pushback = null, regions = market?.regions ?? [], isUnlocked = () => true, getHeatMultiplier = () => 1, schemes = SCHEMES, rules = {} } = {}) {
     this.crisis = crisis;
     this.market = market;
     this.ledger = ledger;
     this.pb = pushback;
     this.regions = regions;
     this.isUnlocked = isUnlocked;
+    this.getHeatMultiplier = getHeatMultiplier; // research (#16): Spin doctors cut scheme heat
     this.schemes = schemes;
     this.rules = { ...SCHEME_RULES, ...rules };
     this.runsThisWeek = {}; // schemeId -> count, reset each crisis week
@@ -75,6 +76,10 @@ export class SchemeBoard {
 
   onChange(fn) { this._listeners.add(fn); return () => this._listeners.delete(fn); }
   _emit(e) { for (const fn of this._listeners) fn(e, this); }
+
+  /** Save slot (#80). */
+  toJSON() { return { runsThisWeek: { ...this.runsThisWeek }, log: this.log.map((x) => ({ ...x })) }; }
+  load(d = {}) { this.runsThisWeek = { ...(d.runsThisWeek ?? {}) }; this.log = (d.log ?? []).map((x) => ({ ...x })); this._emit({ type: 'load' }); }
 
   region(id) { return this.regions.find((r) => r.id === id) ?? null; }
   scheme(id) { return this.schemes.find((s) => s.id === id) ?? null; }
@@ -116,7 +121,7 @@ export class SchemeBoard {
       else if (this.crisis.paused) reason = 'World paused';
       const cost = this.costOf(s);
       if (!reason && this.ledger && this.ledger.cash < cost) reason = 'Not enough cash';
-      return { scheme: s, gain: this.gainIn(s, region), exposure: region?.exposure?.[t.id] ?? 'low', cost, heat: s.heat, locked, reason, track: this.trackView(t.id) };
+      return { scheme: s, gain: this.gainIn(s, region), exposure: region?.exposure?.[t.id] ?? 'low', cost, heat: Math.round(s.heat * this.getHeatMultiplier()), locked, reason, track: this.trackView(t.id) };
     }).filter(Boolean);
   }
 
@@ -133,7 +138,7 @@ export class SchemeBoard {
     const wasBrink = t.state === 'brink';
     this.ledger?.record('schemes', `${s.name} (${region.name})`, -offer.cost);
     this.runsThisWeek[s.id] = (this.runsThisWeek[s.id] ?? 0) + 1;
-    this.pb?.onScheme?.({ label: `${s.name} (${region.name})`, heat: s.heat, tension: offer.gain });
+    this.pb?.onScheme?.({ label: `${s.name} (${region.name})`, heat: offer.heat, tension: offer.gain });
     this.crisis.addTension(t.id, offer.gain, `${s.name} in ${region.name}`);
     // local panic: buyers appear in the target region right away
     const leads = r1(s.leads * (this.rules.reach[offer.exposure] ?? 0.4));

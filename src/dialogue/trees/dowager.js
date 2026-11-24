@@ -6,6 +6,9 @@ export default {
   start: 'open',
   nodes: {
     open: {
+      alt: [
+        { when: { breach: true }, text: "{name} has stopped pretending not to read the papers. \"{fear}. In breach, they say. Grandfather would have built something. Well?\"" },
+      ],
       speaker: 'guest',
       text: '{name} regards you through a lorgnette. "Last Resort. My grandson says you dig holes for people with new money. We have old money, young man. It prefers to stay above ground."',
       choices: [
@@ -30,6 +33,7 @@ export default {
         { text: 'All six, plus the portraits. Air, water and food for a full year, in writing.', next: 'won_fear', effects: { trait: 'family', trust: 8 } },
         { text: "The family chapel, rebuilt underground. Stone for stone. Same pews.", next: 'won_dream', effects: { promise: 'chapel', trait: 'traditional' } },
         { text: 'The four you like. We can be discreet about the other two.', next: 'exit', effects: { trait: 'discreet', trust: -3 } },
+        { when: { band: 'boil' }, text: "With {fear} {level}, madam, I'd move the grandchildren down this season, not next.", next: 'won_fear', effects: { fear: '$guest', trait: 'family' } },
       ],
     },
     frost: {

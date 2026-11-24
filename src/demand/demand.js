@@ -17,21 +17,13 @@
 // Feed tensions weekly with `week({ tensions, breaching })`, or `attachCrisis(market, crisisSystem)`.
 
 import { TRACKS as GDD_TRACKS } from '../world/tracks.js';
+import { DEMAND } from '../config/tuning.js';
+import { seededRng } from '../campaign/rng.js';
 
 export const EXPOSURE = Object.freeze({ high: 1, medium: 0.5, low: 0.25 });
 export const WEALTH = Object.freeze(['comfortable', 'rich', 'ultra', 'apex']);
 
-export const DEMAND = Object.freeze({
-  fearPerTension: 2,
-  fearBreachWeek: 10,
-  fearDecay: 0.15,
-  baseLeadsWithSite: 0.5,
-  fearDivisor: 50,
-  rivalAfterWeeks: 4,
-  reputationForUpgrade: 40,
-  showroomPrestigeForUpgrade: 1, // site prestige needed (a Showroom gives 1+)
-  maxPanicPremium: 0.5, // a track at 100 tension adds up to +50% to prices in a high-exposure region (provisional)
-});
+export { DEMAND }; // lives in the single tuning table (#77)
 
 // The eight regions. Exposure (h/m/l) per crisis track, client pool weights, site cost.
 // `art` maps each to the six-region placeholder world map until #3's map lands. Provisional
@@ -62,16 +54,7 @@ for (const r of REGIONS) {
 const clamp = (v, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
 const r2 = (n) => Math.round(n * 100) / 100;
 
-function rngFrom(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+const rngFrom = seededRng; // saveable state (#80)
 
 /** One week of Fear for one track. */
 export function nextFear(fear, tensionGained, breachWeek, cfg = DEMAND) {
@@ -230,6 +213,21 @@ export class LeadMarket {
     this.worked.push(lead);
     this._emit('worked', lead);
     return lead;
+  }
+
+  /** Save slot (#80): everything that changes as weeks pass, plus the RNG position. */
+  toJSON() {
+    return { v: 1, fear: { ...this.fear }, lastTension: this.lastTension ? { ...this.lastTension } : null, sites: JSON.parse(JSON.stringify(this.sites)),
+      referrals: { ...this.referrals }, carry: { ...this.carry }, leads: this.leads.map((x) => ({ ...x })), lost: this.lost.map((x) => ({ ...x })),
+      worked: this.worked.map((x) => ({ ...x })), weekNo: this.weekNo, history: this.history, ids: this._ids, rng: this.rng.state };
+  }
+
+  load(d) {
+    if (!d || d.v !== 1) return;
+    this.fear = { ...d.fear }; this.lastTension = d.lastTension; this.sites = d.sites; this.referrals = { ...d.referrals }; this.carry = { ...d.carry };
+    this.leads = d.leads.map((x) => ({ ...x })); this.lost = d.lost.map((x) => ({ ...x })); this.worked = d.worked.map((x) => ({ ...x }));
+    this.weekNo = d.weekNo; this.history = d.history ?? []; this._ids = d.ids; if (d.rng != null) this.rng.state = d.rng;
+    this._emit('load', {});
   }
 
   snapshot() {

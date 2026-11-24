@@ -9,12 +9,18 @@
 //        ending: { ending: <ENDINGS id from outcomes.js>, text }
 // CHOICE { text, next: nodeId, effects?: { trust, fear, trait, aggressive, slip, promise, learn } }
 //        fear: a threat track id, or '$guest' (the guest's own fear) / '$other' (a fear they don't have).
-// TEXT   may use {name} (the guest), {fear} (their fear's name) and {otherFear} (a fear they don't have).
+// TEXT   may use {name} (the guest), {fear} (their fear's name) and {otherFear} (a fear they don't have),
+//        and, reading the live world (#57), {level} ("boiling over") and {headline} (latest about their fear).
+// CRISIS-AWARE (#57, src/dialogue/world-state.js for the condition vocabulary)
+//        NODE.alt:    [{ when: CONDITION, text }]  the first alt whose condition holds replaces the text
+//        CHOICE.when: CONDITION                    the choice is only offered when it holds
+//        Every line node keeps at least one choice without `when`, so a calm world can always answer.
 // RULES  every node reachable; at least two different winning endings and at least one rebuffed/backfire.
 
 import { ENDINGS, resolveOutcome } from './outcomes.js';
 import { TRACKS, TRACK_BY_ID } from '../world/tracks.js';
 import { TREES } from './trees/index.js';
+import { conditionHolds, worldWords, CONDITION_KEYS, BANDS_FOR_CONDITIONS, QUIET_WORLD } from './world-state.js';
 
 export const TRAITS = Object.freeze(['vain', 'paranoid', 'family', 'skeptic', 'gambler', 'discreet', 'practical', 'ruthless', 'traditional', 'futurist']);
 
@@ -37,7 +43,17 @@ export const ARCHETYPES = Object.freeze({
 
 export const DIALOGUE_LIMITS = Object.freeze({ minNodes: 6, maxNodes: 10, maxChoices: 4 });
 const EFFECT_KEYS = new Set(['trust', 'fear', 'trait', 'aggressive', 'slip', 'promise', 'learn']);
-const PLACEHOLDERS = new Set(['name', 'fear', 'otherFear']);
+const PLACEHOLDERS = new Set(['name', 'fear', 'otherFear', 'level', 'headline']);
+function checkCondition(when, at, bad) {
+  if (!when || typeof when !== 'object' || !Object.keys(when).length) { bad.push(`${at}: empty condition`); return; }
+  for (const [k, v] of Object.entries(when)) {
+    if (!CONDITION_KEYS.includes(k)) bad.push(`${at}: unknown condition "${k}"`);
+    if ((k === 'band' || k === 'bandBelow') && !BANDS_FOR_CONDITIONS.includes(v)) bad.push(`${at}: band "${v}"`);
+    if (k === 'track' && !TRACK_BY_ID[v]) bad.push(`${at}: track "${v}"`);
+    if (['breach', 'anyBreach', 'headline', 'schemed'].includes(k) && v !== true) bad.push(`${at}: ${k} must be true`);
+    if (k === 'suspicious' && typeof v !== 'boolean') bad.push(`${at}: suspicious must be true or false`);
+  }
+}
 const WIN = (e) => ENDINGS[e]?.win;
 const FAIL_ENDINGS = new Set(['rebuffed', 'backfire']);
 
@@ -63,10 +79,13 @@ export function validateTree(tree) {
       continue;
     }
     if (!['guest', 'you', 'narrator'].includes(n.speaker)) bad.push(`${id}: speaker "${n.speaker}"`);
+    (n.alt ?? []).forEach((a, i) => { checkText(a.text, `${id}.alt[${i}]`); checkCondition(a.when, `${id}.alt[${i}]`, bad); });
+    if (Array.isArray(n.choices) && n.choices.length && n.choices.every((c) => c.when)) bad.push(`${id}: every choice is conditional (a calm world could not answer)`);
     if (!Array.isArray(n.choices) || n.choices.length < 1 || n.choices.length > DIALOGUE_LIMITS.maxChoices) { bad.push(`${id}: needs 1-${DIALOGUE_LIMITS.maxChoices} choices`); continue; }
     n.choices.forEach((c, i) => {
       const at = `${id}.choices[${i}]`;
       checkText(c.text, at);
+      if (c.when !== undefined) checkCondition(c.when, at, bad);
       if (!nodes[c.next]) bad.push(`${at}: next "${c.next}" missing`);
       for (const [k, v] of Object.entries(c.effects ?? {})) {
         if (!EFFECT_KEYS.has(k)) bad.push(`${at}: unknown effect "${k}"`);
@@ -129,12 +148,13 @@ const trackName = (id) => TRACK_BY_ID[id]?.name ?? 'the end of the world';
 
 /** Minimal runner: walk a tree for one guest, collect choice effects, finish into an outcome (#55). */
 export class Conversation {
-  constructor({ guest, tree = treeFor(guest), rng = Math.random } = {}) {
+  constructor({ guest, tree = treeFor(guest), rng = Math.random, world = null } = {}) {
     if (!tree) throw new Error('No dialogue tree for this guest.');
     this.tree = tree;
     this.archetype = tree.archetype;
     this.guest = { ...guest, traits: guest.traits?.length ? guest.traits : [...ARCHETYPES[tree.archetype].traits] };
     this.rng = rng;
+    this.world = world ?? QUIET_WORLD; // live crisis snapshot (#57): worldState({ crisis, schemes })
     this.fear = this.guest.fears?.[0] ?? 'atomic';
     const others = TRACKS.filter((t) => t.classic && !(this.guest.fears ?? []).includes(t.id));
     this.otherFear = others[hash(guest?.id) % others.length].id;
@@ -144,19 +164,32 @@ export class Conversation {
   }
 
   fill(text) {
-    return text.replace(/\{name\}/g, this.guest.name ?? 'the guest').replace(/\{fear\}/g, trackName(this.fear)).replace(/\{otherFear\}/g, trackName(this.otherFear));
+    const w = worldWords({ ...this.guest, fears: [this.fear] }, this.world);
+    return text.replace(/\{name\}/g, this.guest.name ?? 'the guest').replace(/\{fear\}/g, trackName(this.fear)).replace(/\{otherFear\}/g, trackName(this.otherFear))
+      .replace(/\{level\}/g, w.level).replace(/\{headline\}/g, w.headline);
   }
+
+  /** Does a tree condition hold for this guest right now? */
+  holds(when) { return conditionHolds(when, this.guest, this.world); }
 
   get node() { return this.tree.nodes[this.nodeId]; }
   get done() { return !!this.node.ending; }
-  get text() { return this.fill(this.node.text); }
+  /** The node's line, using the first alternative whose condition holds in the live world. */
+  get rawText() { return (this.node.alt ?? []).find((a) => this.holds(a.when))?.text ?? this.node.text; }
+  get text() { return this.fill(this.rawText); }
   get speaker() { return this.node.speaker ?? 'narrator'; }
-  get choices() { return this.done ? [] : this.node.choices.map((c, i) => ({ index: i, text: this.fill(c.text), risky: !!(c.effects?.aggressive || c.effects?.slip) })); }
+  /** Choices offered now (conditional ones only when their condition holds). `index` is the tree index. */
+  get choices() {
+    if (this.done) return [];
+    return this.node.choices.map((c, i) => ({ c, i })).filter(({ c }) => this.holds(c.when))
+      .map(({ c, i }) => ({ index: i, text: this.fill(c.text), risky: !!(c.effects?.aggressive || c.effects?.slip), live: !!c.when }));
+  }
 
   choose(i) {
     if (this.done) throw new Error('The conversation is over.');
     const c = this.node.choices[i];
     if (!c) throw new Error(`No choice ${i}`);
+    if (!this.holds(c.when)) throw new Error(`Choice ${i} isn't on offer right now.`);
     const e = { ...(c.effects ?? {}) };
     if (e.fear === '$guest') e.fear = this.fear;
     else if (e.fear === '$other') e.fear = this.otherFear;
@@ -169,6 +202,6 @@ export class Conversation {
   /** The #55 outcome for the ending reached. */
   finish({ context = {} } = {}) {
     if (!this.done) throw new Error('The conversation has not ended.');
-    return resolveOutcome({ ending: this.node.ending, guest: this.guest, effects: this.effects, context, rng: this.rng });
+    return resolveOutcome({ ending: this.node.ending, guest: this.guest, effects: this.effects, context: { world: this.world, ...context }, rng: this.rng });
   }
 }

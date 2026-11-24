@@ -35,3 +35,11 @@
 .br-advance { font-family: var(--at-font); font-weight: 900; font-size: 12px; padding: 10px 12px; cursor: pointer; background: var(--at-gold); color: var(--at-paper-ink); border: 3px solid var(--at-border); white-space: nowrap; }
 @keyframes at-blink { 50% { opacity: 0.3; } }
 @keyframes at-slide { from { transform: translateY(24px); opacity: 0; } }
+
+/* Shelter-in-place results (#66) */
+.br-sip { margin: 8px 0; font-size: 11px; }
+.br-sip-head { font-weight: 900; letter-spacing: 1px; color: var(--at-dim, #a8977a); margin-bottom: 3px; }
+.br-sip-row { padding: 3px 6px; border-left: 3px solid #a8977a; margin-bottom: 2px; background: rgba(0,0,0,.25); }
+.br-sip-row[data-pass='true'] { border-color: #7ed957; }
+.br-sip-row[data-pass='false'] { border-color: #ff5a4f; color: #ffb3ad; }
+.br-sip-row[data-pass='delay'] { border-color: #f5c542; }

@@ -1,0 +1,9 @@
+Roster: 1:Atomic Standoff  2:The Bloom  3:Superstorm Season  4:The Optimizer  5:The Hush  6:The Pitchforks
+Weeks run: 156  completed: true
+Opened: Atomic Standoff (wk 13), The Bloom (wk 27), Superstorm Season (wk 57), The Optimizer (wk 75), The Hush (wk 97), The Pitchforks (wk 102)
+Breaches: 1  collapses: The Bloom
+Dominoes: 2 (2 through slot 2, The Bloom): The Bloom -> The Pitchforks (medium); The Bloom -> The Hush (weak)
+Arriving apocalypse at Midnight: The Bloom
+Hero fears: Gerald Pemberton-Wick: Atomic Standoff | Dana and Doug Fairweather: The Bloom | Marla Quist: Atomic Standoff + The Bloom + Superstorm Season + The Optimizer + The Hush + The Pitchforks | Skyler Thorne: The Optimizer | Lexi Monroe: The Bloom | Ravi Castellanos: The Optimizer
+Rival favourites: Halcyon Superstorm Season + Atomic Standoff; Bunkr The Optimizer
+PASS

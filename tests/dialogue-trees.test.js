@@ -29,13 +29,14 @@ test('the validator catches broken trees', () => {
   assert.throws(() => validateTrees([t]), /no tree for archetype/);
 });
 
-// Every distinct ending each tree can reach, with one path (list of choice indexes) to it.
+// Every distinct ending each tree can reach in a quiet world (no crisis-conditional choices, #57), with
+// one path (list of choice indexes) to it.
 function pathsToEndings(tree) {
   const out = new Map();
   const walk = (id, path) => {
     const n = tree.nodes[id];
     if (n.ending) { if (!out.has(n.ending)) out.set(n.ending, path); return; }
-    n.choices.forEach((c, i) => walk(c.next, [...path, i]));
+    n.choices.forEach((c, i) => { if (!c.when) walk(c.next, [...path, i]); });
   };
   walk(tree.start, []);
   return out;

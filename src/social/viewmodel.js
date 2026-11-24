@@ -23,6 +23,7 @@
 
 import { resolveOutcome, applyOutcome, ENDINGS } from '../dialogue/outcomes.js';
 import { createTreeDialogue } from './tree-dialogue.js';
+import { crisisPitch, worldWords, CRISIS_TALK } from '../dialogue/world-state.js';
 import { GDD_REGIONS, TRACKS } from '../world/tracks.js';
 
 const regionName = (id) => GDD_REGIONS.find((r) => r.id === id)?.name ?? id;
@@ -39,9 +40,20 @@ export function choiceTags(effects = {}) {
   return tags;
 }
 
+/** One line on how the live crises have this guest feeling (#57), or null in a quiet world. */
+export function moodLine(guest, world) {
+  if (!world || !guest?.fears?.length) return null;
+  const p = crisisPitch(guest, world);
+  const bits = [];
+  if (p.pressure >= 0.35) bits.push(`${trackName(p.track)} is ${worldWords(guest, world).level}: they are rattled`);
+  if (p.suspicion >= CRISIS_TALK.suspicious) bits.push('they eye you like they read the papers');
+  else if (p.suspicion > 0) bits.push('something about the timing bothers them');
+  return bits.length ? bits.join('; ') + '.' : null;
+}
+
 export class SocialSession {
   constructor({ circuit, leads = null, getQuarter = () => 1, getCash = null, addHeat = null, addReputation = null,
-    pushback = null, press = null, dialogueFactory = null, rng = Math.random } = {}) {
+    pushback = null, press = null, dialogueFactory = null, rng = Math.random, getWorld = null } = {}) {
     if (!circuit) throw new Error('SocialSession needs an EventCircuit');
     this.circuit = circuit;
     this.leads = leads;
@@ -51,7 +63,8 @@ export class SocialSession {
     this.addReputation = addReputation;
     this.pushback = pushback;
     this.press = press;
-    this.dialogueFactory = dialogueFactory ?? ((guest) => createTreeDialogue(guest, { rng }));
+    this.getWorld = getWorld; // () => worldState({ crisis, schemes }): guests react to the live crises (#57)
+    this.dialogueFactory = dialogueFactory ?? ((guest, ctx) => createTreeDialogue(guest, { rng, world: ctx?.world }));
     this.rng = rng;
     this.screen = 'events';
     this.results = new Map(); // guestId -> resolved outcome (this visit)
@@ -119,7 +132,7 @@ export class SocialSession {
     const guest = v.guests.find((g) => g.id === guestId);
     if (!guest) throw new Error('That guest is not here.');
     if (this.results.has(guestId) || v.met.includes(guestId)) throw new Error(`You have already spoken to ${guest.name}.`);
-    this.talking = { guest, session: this.dialogueFactory(guest, { venueId: v.venueId, journalistPresent: v.press, quarter: v.quarter }) };
+    this.talking = { guest, session: this.dialogueFactory(guest, { venueId: v.venueId, journalistPresent: v.press, quarter: v.quarter, world: this.getWorld?.() ?? null }) };
     this.screen = 'dialogue';
     this._emit();
     return this.dialogueView();
@@ -134,7 +147,8 @@ export class SocialSession {
       guest: { id: guest.id, name: guest.name, wealthClass: guest.wealthClass, fears: (guest.fears ?? []).map(trackName), archetype: session.archetype ?? null },
       line: n ? { speaker: n.speaker, text: n.text } : null,
       transcript: session.transcript.map(({ speaker, text }) => ({ speaker, text })),
-      choices: n ? n.choices.map((c) => ({ id: c.id, text: c.text, tags: choiceTags(c.effects) })) : [],
+      choices: n ? n.choices.map((c) => ({ id: c.id, text: c.text, tags: [...(c.live ? ['NEWS'] : []), ...choiceTags(c.effects)] })) : [],
+      mood: moodLine(session.guest ?? guest, session.world),
     };
   }
 
@@ -148,7 +162,7 @@ export class SocialSession {
 
   _finish(guest, session) {
     const v = this.visit;
-    const result = resolveOutcome({ ending: session.ending, guest: session.guest ?? guest, effects: session.effects, context: { journalistPresent: v.press }, rng: this.rng });
+    const result = resolveOutcome({ ending: session.ending, guest: session.guest ?? guest, effects: session.effects, context: { journalistPresent: v.press, world: session.world ?? this.getWorld?.() ?? null }, rng: this.rng });
     const { lead, tipOffs } = applyOutcome(result, {
       leads: this.leads, pushback: this.pushback, press: this.press, addHeat: this.addHeat, addReputation: this.addReputation,
       guest, venueId: v.venueId, quarter: v.quarter,

@@ -1,0 +1,24 @@
+== Classic world, quarter 1: Heartland Preparedness Fair (4 guests)
+  Ximena Pennington       The Lottery Winner            C1 The Comfortably Nervous  $10.8M   fears The Pitchforks     traits: Sentimental, Generous  [hidden: Secretly Broke]
+  Florian Pennington      The Prepping Dentist          C1 The Comfortably Nervous  $10.5M   fears The Hush           traits: Paranoid, Engineer
+  Esme Ingram             The Celebrity Chef            C1 The Comfortably Nervous  $6.3M    fears The Hush           traits: Pet Parent, Gourmand
+  Bettina Fairfax         The Lottery Winner            C1 The Comfortably Nervous  $10.0M   fears Atomic Standoff    traits: Generous, Sentimental  [hidden: Secretly Broke]
+== Classic world, quarter 1: End Times Prepper Expo (6 guests)
+  Delphine Bellweather    The Prepping Dentist          C1 The Comfortably Nervous  $8.5M    fears Atomic Standoff    traits: Penny-Pincher, Engineer
+  Ximena Pennington       The Wellness Influencer       C1 The Comfortably Nervous  $4.1M    fears The Bloom          traits: Health Optimizer, Influencer, Vain
+  Quentin Vance           The Celebrity Chef            C1 The Comfortably Nervous  $10.2M   fears The Hush           traits: Gourmand, Gossipy, Generous
+  Dashiell Thorne         The Lottery Winner            C1 The Comfortably Nervous  $10.0M   fears Atomic Standoff    traits: Sentimental, Gossipy, Generous
+  Dashiell Northcott      The Lottery Winner            C1 The Comfortably Nervous  $4.7M    fears The Pitchforks     traits: Gossipy, Sentimental  [hidden: Secretly Broke]
+  Rosalind Fairfax        The Wellness Influencer       C1 The Comfortably Nervous  $11.7M   fears The Bloom          traits: Influencer, Germaphobe, Vain
+== Grey Goo + Kessler world, quarter 6: Heartland Preparedness Fair (4 guests)
+  Sterling Northcott      The Prepping Dentist          C1 The Comfortably Nervous  $6.1M    fears The Hush           traits: Paranoid, Engineer, Penny-Pincher
+  Cornelius Ashcombe      The Lottery Winner            C1 The Comfortably Nervous  $5.4M    fears Superstorm Season  traits: Gossipy  [hidden: Secretly Broke]
+  Cornelius Ellsworth     The Prepping Dentist          C1 The Comfortably Nervous  $9.8M    fears Atomic Standoff    traits: Engineer, Penny-Pincher
+  Florian Lockhart        The Celebrity Chef            C1 The Comfortably Nervous  $5.5M    fears The Hush           traits: Gourmand, Gossipy
+== Grey Goo + Kessler world, quarter 6: End Times Prepper Expo (6 guests)
+  Dashiell Northcott      The Lottery Winner            C1 The Comfortably Nervous  $4.7M    fears The Pitchforks     traits: Gossipy, Sentimental  [hidden: Secretly Broke]
+  Orson Carrington        The Prepping Dentist          C1 The Comfortably Nervous  $6.0M    fears The Pitchforks     traits: Skeptical, Paranoid, Penny-Pincher
+  Fenella Kensington      The Celebrity Chef            C1 The Comfortably Nervous  $10.5M   fears The Hush           traits: Gourmand, Gossipy
+  Ulrich Hargreave        The Agribusiness Baron        C2 The Disruptors           $24.2M   fears The Hush           traits: Penny-Pincher, Sentimental, Pet Parent
+  Orson Jessup            The Celebrity Chef            C1 The Comfortably Nervous  $8.7M    fears The Hush           traits: Generous, Gourmand
+  Vivienne Sinclair       The Celebrity Chef            C1 The Comfortably Nervous  $5.7M    fears The Hush           traits: Gossipy, Gourmand, Vain
