@@ -201,17 +201,4 @@ export class DoomClock {
   }
 }
 
-/**
- * Bridge for today's single world-tension track in pushback (until #4's crisis tracks land):
- * pushback's tension feeds the clock as one track, and each runaway (which pushback resets to 70,
- * i.e. the breach is pulled back) counts as a contained breach. Supersedes pushback.doomsdayShift.
- * Returns an unsubscribe function.
- */
-export function attachPushback(clock, pushback, { track = 'world', tip = 100 } = {}) {
-  clock.setTensions({ [track]: pushback.tension }, { tips: { [track]: tip } });
-  const offs = [
-    pushback.on('change', (s) => clock.setTensions({ [track]: s.tension }, { tips: { [track]: tip } })),
-    pushback.on('runaway', () => { clock.brink(track); clock.breachContained(track); }), // a runaway passed the Brink on its way
-  ];
-  return () => offs.forEach((o) => o());
-}
+// #90: the pushback 'world' bridge is gone. The clock hears only the CrisisSystem's tracks (CrisisSystem._sync).

@@ -108,6 +108,7 @@ GDD numbers are from Production plan > Content counts. Repo counts are from the 
 GDD inconsistencies to settle: the Overview says "one shovel crew" but Company tiers give Startup 2 crews;
 quarters are 26 minutes in Economy and tuning but "rise from about 26 to about 32" in Pacing; the event deck
 is 220 cards in World canvas and 340 in Content counts (340 includes the 120 alternate-track cards).
+**Settled in #96:** see `docs/gdd-decisions.md` (2 crews, 27-minute quarters, 220 per campaign / 340 total, reputation starts at 40).
 
 ## Suggested next tickets (vertical slice first)
 

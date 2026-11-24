@@ -6,6 +6,7 @@
 import { TRACKS, TRACK_BY_ID, GDD_REGIONS, COUNTER_ROOMS, SWAPPABLE_SLOTS, tracksInSlot, selectRoster, CLASSIC_ROSTER } from './tracks.js';
 import { schemesForRoster, SCHEME_GROUPS } from './schemeCatalog.js';
 import { fmtTime } from './momentum.js';
+import { settings } from '../settings/settings.js';
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -119,7 +120,7 @@ export function createThreatsPanel({ root, getRoster, getMinutes }) {
     if (overlay.hidden) return;
     const roster = getRoster();
     const minutes = getMinutes();
-    const close = el('button', 'tw-back', 'CLOSE [T]');
+    const close = el('button', 'tw-back', `CLOSE [${settings.keyLabel('threats')}]`);
     close.type = 'button';
     close.onclick = () => toggle(false);
     const head = el('div', 'tw-panel-head');
@@ -148,7 +149,7 @@ export function createThreatsPanel({ root, getRoster, getMinutes }) {
   }
   const onKey = (e) => {
     if (e.target?.tagName === 'INPUT') return;
-    if (e.key === 't' || e.key === 'T') toggle();
+    if (settings.matches(e, 'threats')) toggle();
     else if (e.key === 'Escape' && !overlay.hidden) toggle(false);
   };
   addEventListener('keydown', onKey);

@@ -1,0 +1,33 @@
+{
+ "log": {
+  "atBrink": {
+   "premium": 1.72,
+   "panic": 1.42,
+   "price": 915000,
+   "state": "brink",
+   "heat": 5,
+   "windowTotal": null
+  },
+  "burning": {
+   "premium": 2.478,
+   "panic": 1.878,
+   "price": 1318000,
+   "state": "breach",
+   "heat": 15,
+   "windowTotal": 6
+  },
+  "contained": {
+   "premium": 1.3,
+   "panic": 1.3,
+   "price": 691000,
+   "state": "locked",
+   "heat": 15,
+   "windowTotal": null
+  },
+  "nextBreach": {
+   "windowTotal": 4,
+   "scars": 1
+  }
+ },
+ "errs": []
+}

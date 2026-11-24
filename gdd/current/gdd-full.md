@@ -14,7 +14,7 @@ Apocalypse Tycoon is a pixel-art management sim about building luxury doomsday s
 
 ## Player fantasy
 
-You found Last Resort Holdings, a shelter builder with one shovel crew and a board that expects growth every quarter. Calm worlds don’t buy bunkers, so you learn to make the world a little less calm. The whole game asks one question: how close to the edge do you dare run it?
+You found Last Resort Holdings, a shelter builder with two shovel crews and a board that expects growth every quarter. Calm worlds don’t buy bunkers, so you learn to make the world a little less calm. The whole game asks one question: how close to the edge do you dare run it?
 
 ## Design pillars
 
@@ -34,7 +34,7 @@ You found Last Resort Holdings, a shelter builder with one shovel crew and a boa
 | World canvas | Situation-room map, 8 regions, 6 of 10 threat tracks per campaign, weekly event deck |
 | Threat tracks | 10 in total, 6 per campaign: the Classic six (Atomic Standoff, The Bloom, Superstorm Season, The Optimizer, The Hush, The Pitchforks) plus four alternates (The Grey Goo, The Long Shade, The Kessler Rain, The Cloud Strike) |
 | Clients | 5 wealth classes, 16 hero clients plus generated clients |
-| Content | 73 rooms and fixtures, 37 schemes, 48 unlocks, 340 event cards, 12 endings |
+| Content | 73 rooms and fixtures, 37 schemes, 48 unlocks, 340 event cards (220 Classic + 120 alternate), 12 endings |
 | Art | 16 px pixel art on a strict grid, colour-coded by needs tier |
 | Platform | PC (Steam) first, Steam Deck target (to confirm) |
 
@@ -85,8 +85,8 @@ Every lap sells shelters and buys research by pushing the world toward the edge,
 | Loop | Real time at 1× | What the player does | What it feeds |
 |---|---|---|---|
 | Moment | Seconds | Dig tiles, place rooms, route utilities, approve schemes, answer headlines | The shelter grid and next week’s tension |
-| Week | 2 minutes | Watch crews progress, tension drift and grants pay out; resolve one headline card | Cash, RP, demand, heat |
-| Quarter | 26 minutes (13 weeks) | Board meeting, quota, directives, new unlocks, a contract wave | Board confidence, chapter progress |
+| Week | About 2 minutes | Watch crews progress, tension drift and grants pay out; resolve one headline card | Cash, RP, demand, heat |
+| Quarter | 27 minutes (13 weeks) | Board meeting, quota, directives, new unlocks, a contract wave | Board confidence, chapter progress |
 | Campaign | 5 to 6.5 hours | Open new tracks, dig deeper strata, court richer clients, hold off Midnight | The Doom Clock floor and the ending |
 
 ## The edge loop
@@ -375,6 +375,10 @@ Clients fear what is hot where they live. A track’s panic premium applies in f
 
 Leads arrive every week by region, so the world canvas feeds the shelter canvas through one rule:
 
+```text
+Leads_r = 0.5 + (Σ_i F_i · e_{i,r}) / 50 + R_r
+```
+
 The 0.5 applies only in regions where you own a site. F is each track’s Fear (Core loop section), e is its exposure in that region (1 high, 0.5 medium, 0.25 low) and R is referrals from Influencer clients. Sales adds one more lead a week per level, sent to your best region. Lead quality follows the Showroom’s prestige and your reputation: every 20 points of either above 40 moves one lead in five up a wealth class. Unworked leads wait 4 weeks, then go to a rival.
 
 ## Threat tracks
@@ -474,7 +478,7 @@ Containment ops, one per track, run only during a breach and are listed in the C
 
 ## The event deck
 
-One headline arrives every in-game week. Cards are drawn from each open track’s deck according to its band, plus a general deck: 30 cards per track and 40 general, 220 in total.
+One headline arrives every in-game week. Cards are drawn from each open track’s deck according to its band, plus a general deck: 30 cards per track and 40 general, so a campaign’s six tracks draw on 220 cards. The four alternate tracks add 120 more, 340 in the full game.
 
 | Card type | Share of draws | What it does |
 |---|---|---|
@@ -591,6 +595,10 @@ The map shows the Classic world. Links belong to slots, so each alternate inheri
 
 The Doom Clock shows minutes to Midnight. Tension can pull the hand forward or let it fall back, but never past the floor, which only moves toward Midnight.
 
+```text
+M = min(F, 15 − (Σ_i T_i) / 40)
+```
+
 Here M is the minutes shown, T is each open track’s tension (0–100), and F is the floor: the most time the world can ever show again. F starts at 15. With all six tracks at 100, the hand reaches Midnight.
 
 | Event | Floor moves toward Midnight by |
@@ -649,9 +657,21 @@ Willingness-to-pay weights shift by wealth class (below). The survival weights n
 
 Every shelter carries two scores. **Satisfaction** is what the client sees and pays for; **Survivability** is what Midnight grades.
 
+```text
+Satisfaction = s · Σ_k w_k · met_k
+```
+
 Here w is the client’s willingness-to-pay weight for tier k, met is the share of that tier’s needs the shelter meets (0 to 1), and s is the style multiplier: 1.25 for a match, 1.0 neutral, 0.8 for a clash.
 
+```text
+Days Sealed = min_j [ stock_j / (use_j − production_j) ]
+```
+
 This runs over air, water, food and power, and a system whose production covers its use never runs out.
+
+```text
+P(survive) = min(1, Days Sealed / Required days) · f_seal · f_blast · f_security · f_morale
+```
 
 Each f is 1 when the shelter meets the apocalypse’s requirement and drops by 0.25 for every missing rating point, to a minimum of 0.
 
@@ -863,6 +883,11 @@ Heat decays by 1 a week, plus 1 per Communications level, but never below your N
 ## Runaway tension
 
 Each week, every track’s tension moves by its band’s drift, its momentum and any spillover, and momentum decays toward zero as new impulses arrive.
+
+```text
+ΔT = d_band + 0.25·M + S
+M_{t+1} = 0.75·M_t + I_t
+```
 
 Here d is the band’s drift (Core loop section), M is momentum, S is spillover from breached or collapsed tracks, and I is this week’s impulses: schemes up or down, rival schemes and wildcards.
 
@@ -1094,7 +1119,7 @@ Each gate opens when the chapter’s last quota is hit and its handover mileston
 | 4. Too Big to Fail | Q8–Q10 | 3:20–4:50 | 6 | 9 → 6 | 6 | 24 | 10, one every 9 min | Dominoes, sieges, reactors, The Table |
 | 5. The Final Quarter | Q11–Q12 | 4:50–6:15 | 6 | 6 → 0 | 8 plus the Ark | 30 plus the Ark | 8, one every 8 min | Engineered Midnight and the endings |
 
-Real minutes per quarter rise from about 26 to about 32 as decisions get denser and players pause more. The handover milestones match the tier-up gates in the Company and board section.
+A quarter is 27 minutes of game clock at 1×. Real minutes per quarter, counting paused reading and decisions, rise from about 29 to about 32 as decisions get denser and players pause more. The handover milestones match the tier-up gates in the Company and board section.
 
 ## Signature moments
 
@@ -1323,8 +1348,8 @@ These are starting values for the first balance pass. They are set so the quota 
 
 | Unit | Value |
 |---|---|
-| In-game week | 120 seconds at 1× |
-| Quarter | 13 weeks: 26 minutes at 1× |
+| In-game week | About 125 seconds at 1× (27 minutes ÷ 13) |
+| Quarter | 13 weeks: 27 minutes at 1× (game clock; paused screens add 2 to 5 real minutes) |
 | Speeds | Pause, 1×, 2×, 4× |
 | Campaign | 12 quarters: 5 to 6.5 hours real time at mixed speed |
 
@@ -1340,9 +1365,17 @@ The meters (heat, board confidence, reputation, leverage, tension, Fear and the 
 
 ## The quota
 
+```text
+Q_n = 6 × 1.3^(n−1)        ($M)
+```
+
 Q is the revenue target in $M for quarter n: $6M in Q1, about $13M in Q4, about $38M in Q8 and about $108M in Q12. Overtime keeps the same growth.
 
 ## Contract pricing
+
+```text
+Price = Base × (1 + p) × c
+```
 
 Base is the shelter’s dig and room cost plus a 40% margin. p is the panic premium for the client’s fears in their region, scaled by exposure (Core loop and World canvas sections). c is the class multiplier: 1.0 for C1, 1.1 for C2, 1.2 for C3, 1.35 for C4 and 1.5 for C5. Penny-Pinchers knock 15% off.
 
@@ -1520,7 +1553,7 @@ The four alternate tracks and six extra endings add an estimated 3 to 4 weeks: 1
 | Rooms and fixtures | 73 | 25 |
 | Threat tracks | 10 (6 per campaign) | 2 |
 | Schemes | 37 | 6 |
-| Event cards | 340 | 60 |
+| Event cards | 340 (220 Classic + 120 alternate) | 60 |
 | Unlocks | 48 | 19 |
 | Hero clients | 16 | 6 |
 | Named characters | 32 | 12 |
@@ -1537,7 +1570,7 @@ If the schedule slips, cut in this order:
 3. The Compound product goes; the Ark stays.
 4. Regions drop from 8 to 6.
 5. Tracks drop from 6 to 5, folding The Hush into Superstorm Season as crop failure.
-6. Event cards drop from 220 to 150.
+6. Classic-world event cards drop from 220 to 150. (The 120 alternate-track cards ship with the alternates.)
 Never cut the hidden tipping point, the two scores, containment windows, the board or Midnight. They are the game.
 
 ## Risks

@@ -160,7 +160,10 @@ export class SchemeBoard {
     if (typeof region === 'string') region = this.region(region);
     let best = 0;
     for (const [track, level] of Object.entries(region?.exposure ?? {})) {
-      if (this.crisis.tracks[track]?.state === 'brink') best = Math.max(best, this.rules.edgeBonus * EXPOSURE[level]);
+      const state = this.crisis.tracks[track]?.state;
+      if (state === 'brink') best = Math.max(best, this.rules.edgeBonus * EXPOSURE[level]);
+      // breach weeks pay double (GDD): the edge premium stays on through a breach and doubles with the panic premium
+      else if (state === 'breach') best = Math.max(best, this.rules.edgeBonus * EXPOSURE[level] * (this.crisis.panicMultiplier ?? 1));
     }
     return Math.round(best * 1000) / 1000;
   }

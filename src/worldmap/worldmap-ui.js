@@ -18,6 +18,7 @@ import { HEX } from '../art/palette.js';
 import { formatMoney } from '../ledger/ledger.js';
 import { CLIENT_TYPES } from '../clients/clients.js';
 import { ROOM_CATALOG } from '../clients/rooms.js';
+import { settings } from '../settings/settings.js';
 
 // Short map labels (the 3x5 font is 4px a letter) and marker anchors, in cells.
 export const MAP_PLACES = Object.freeze({
@@ -107,6 +108,16 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   canvas.addEventListener('mouseleave', () => { hover = null; });
   canvas.addEventListener('click', (e) => { const id = regionFromEvent(e); if (id) select(id); });
 
+  // Colour-blind patterns (#94): dots = uneasy, stripes = edge, crosshatch = tipping.
+  function hatch(zone, x0, y0) {
+    if (zone === 'calm') return;
+    ctx.fillStyle = 'rgba(10,8,7,.55)';
+    for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) {
+      const d = (x + y) % 4 === 0, a = (x - y + 64) % 4 === 0;
+      if (zone === 'uneasy' ? x % 3 === 1 && y % 3 === 1 : zone === 'edge' ? d : d || a) ctx.fillRect(x0 + x, y0 + y, 1, 1);
+    }
+  }
+
   function drawMap() {
     const anim = Math.floor(frame / 20) % 2;
     ctx.fillStyle = HEX.K;
@@ -119,6 +130,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       if (!id) continue;
       const ov = crisisOverlay(byId[id]?.crisis ?? 0);
       if (ov) drawSprite(ctx, CRISIS_OVERLAYS[ov], c * CELL, r * CELL, { frame: anim });
+      if (settings.get('trackPatterns')) hatch(zoneOf(byId[id]?.crisis ?? 0).name, c * CELL, r * CELL); // #94
       if (id === selected || id === hover) {
         if (id === selected) drawSprite(ctx, CRISIS_OVERLAYS.selected, c * CELL, r * CELL, { frame: anim });
         // outline the region's edge
@@ -235,9 +247,28 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       const tipTxt = tv.zone === 'breach' ? 'BREACHED' : tv.zone === 'collapsed' ? 'COLLAPSED' : tv.zone === 'locked' ? `recovering ${tv.lockWeeks}wk` : tv.exact != null ? `tips at ${tv.exact}` : `tips ${tv.tipLow}-${tv.tipHigh}?`;
       row.innerHTML = `<div class="wm-track-lbl"><span>${tv.name} <em data-x="${region.exposure[id]}">${region.exposure[id].toUpperCase()}</em></span><span><b>${tv.tension}</b> · ${tipTxt}</span></div>
         <div class="wm-tbar"><span class="wm-tedge" style="left:${tv.edgeFrom}%;width:${tv.tipLow - tv.edgeFrom}%"></span><span class="wm-ttip" style="left:${tv.tipLow}%;width:${Math.max(1, tv.tipHigh - tv.tipLow)}%"></span><i style="width:${tv.tension}%"></i></div>`;
+      // Controlled burn (#93): at the Brink you may tip it on purpose for a window of doubled premiums.
+      if (tv.state === 'brink' && schemes.crisis.controlledBurn) {
+        const t = schemes.crisis.tracks[id];
+        const next = schemes.crisis.cfg.windowWeeks[Math.min(t.breaches + 2, schemes.crisis.cfg.windowWeeks.length) - 1];
+        const now = schemes.crisis.cfg.windowWeeks[Math.min(t.breaches + 1, schemes.crisis.cfg.windowWeeks.length) - 1];
+        const burn = el('button', 'wm-burn', 'CONTROLLED BURN');
+        burn.type = 'button';
+        burn.title = `Tip ${tv.name} on purpose: panic premiums double for the breach (${now} weeks to contain it). Costs heat +${schemes.crisis.cfg.controlledBurnHeat ?? 10}, a scar when contained, and a ${next}-week window next time.`;
+        burn.onclick = () => {
+          const r = schemes.crisis.controlledBurn(id);
+          flash = r.ok ? { kind: 'err', msg: `CONTROLLED BURN: ${tv.name} breached on your schedule. Panic premiums doubled for up to ${r.weeks} weeks. Heat +${r.heat}. Next time it breaches you'll get ${r.nextWindow} weeks.` } : { kind: 'err', msg: r.reason };
+          onScheme?.(r);
+          refresh();
+        };
+        row.append(burn);
+      }
       wrap.append(row);
     }
-    if (v.edgeBonus) wrap.append(el('div', 'wm-edge-note', `AT THE EDGE: prices here +${Math.round(v.edgeBonus * 100)}%. One more push could tip it.`));
+    const burning = ids.some((id) => schemes.crisis.tracks[id]?.state === 'breach');
+    if (v.edgeBonus) wrap.append(el('div', 'wm-edge-note', burning
+      ? `BREACH: premiums doubled while it burns (edge +${Math.round(v.edgeBonus * 100)}%, prices x${v.premium.toFixed(2)}). Contain it before the window closes.`
+      : `AT THE EDGE: prices here +${Math.round(v.edgeBonus * 100)}%. One more push could tip it.`));
     return wrap;
   }
 

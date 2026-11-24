@@ -3,9 +3,11 @@
 // Four forces push back on the player:
 //   HEAT      0-100  regulators & press. Rises with schemes, decays slowly. Crossing 50 opens an
 //                    investigation (a choice); ending a quarter hot draws fines, and maxing it raids you.
-//   TENSION   0-100  runaway world tension. Schemes feed it; above MOMENTUM it feeds itself each
-//                    quarter. Hitting 100 is a RUNAWAY: crises spill over, everyone gets fined and
-//                    the doomsday clock jumps forward.
+//   TENSION   0-100  In the campaign there is ONE tension model: the CrisisSystem's tracks (#90).
+//                    pb.useCrisis(crisis) makes pb.tension a read-only view of the hottest open track,
+//                    pb.runaways the number of collapsed tracks, and Fund relief calms the hottest track.
+//                    Without a crisis system (headless sims, pacing harness, old demos) a single stand-in
+//                    world meter remains: schemes feed it, above MOMENTUM it feeds itself, 100 is a RUNAWAY.
 //   LEVERAGE  per client. Every shelter buyer knows a little; their leverage grows with your heat.
 //                    Clients make demands (pay for upgrades) or blackmail you (hush money or heat).
 //   BOARD     sets a quarterly profit target that grows every quarter. Misses cost confidence and
@@ -60,7 +62,9 @@ export class Pushback {
     this.ledger = ledger;
     this.rng = mulberry32(seed);
     this.heat = this.cfg.heat.start;
-    this.tension = this.cfg.tension.start;
+    this.crisis = null; // #90: when set, tension and runaways come from its tracks
+    this._tension = this.cfg.tension.start; // stand-in world meter (sims and demos only)
+    this._runaways = 0;
     this.quarter = 1;
     this.clients = []; // { id, name, region, price, leverage, appeased }
     this.board = {
@@ -74,8 +78,7 @@ export class Pushback {
     this.schemeHeatMultiplier = 1; // the board's Scrutiny state raises it (src/board/board.js)
     this.pending = []; // choice events waiting on the player
     this.log = []; // everything that happened, newest last
-    this.runaways = 0;
-    this.doomsdayShift = 0; // legacy runaway counter; the Doom Clock (src/doomclock) is the real model — see attachPushback()
+    this.doomsdayShift = 0; // legacy runaway counter (stand-in meter only); the Doom Clock hears the crisis tracks
     this._ids = 0;
     this._investigatedThisQuarter = false;
     this._internalCash = startingCash; // only used when no ledger is attached
@@ -121,6 +124,34 @@ export class Pushback {
     return entry;
   }
 
+  // ---------- the one tension model (#90) ----------
+  /** Hand tension over to a CrisisSystem: its tracks become the only tension. */
+  useCrisis(crisis) {
+    this.crisis = crisis;
+    crisis?.on?.('week', () => this._changed());
+    crisis?.on?.('collapse', () => this._changed());
+    this._changed();
+    return this;
+  }
+
+  /** The hottest open crisis track (0-100), or the stand-in meter when no crisis system is attached. */
+  get tension() {
+    if (!this.crisis) return this._tension;
+    return Math.max(0, ...Object.values(this.crisis.tracks).filter((t) => t.open !== false).map((t) => t.tension));
+  }
+  set tension(v) { if (!this.crisis) this._tension = v; }
+
+  /** Runaway crises: collapsed tracks when a crisis system is attached. */
+  get runaways() { return this.crisis ? Object.values(this.crisis.tracks).filter((t) => t.state === 'collapsed').length : this._runaways; }
+  set runaways(v) { if (!this.crisis) this._runaways = v; }
+
+  /** The hottest open track that can still be calmed (not collapsed, not locked). */
+  hottestTrack() {
+    if (!this.crisis) return null;
+    const open = Object.values(this.crisis.tracks).filter((t) => t.open !== false && t.state !== 'collapsed' && t.state !== 'locked');
+    return open.sort((a, b) => b.tension - a.tension)[0] ?? null;
+  }
+
   // ---------- inputs from other systems ----------
   /** Call whenever a scheme runs. `heat`/`tension` are the scheme's raw amounts. */
   onScheme({ label = 'Scheme', heat = 0, tension = 0 } = {}) {
@@ -147,6 +178,14 @@ export class Pushback {
     return c;
   }
 
+  /** One in-game week: heat cools by heat.decayPerWeek (GDD Difficulty: 2 / 1 / 0.5). */
+  weekTick() {
+    const d = this.cfg.heat.decayPerWeek ?? 0;
+    if (!d || this.heat <= 0) return;
+    this.heat = clamp(this.heat - d);
+    this._changed?.();
+  }
+
   addHeat(amount, source = '', fired = []) {
     const h = this.cfg.heat;
     const before = this.heat;
@@ -161,6 +200,7 @@ export class Pushback {
   }
 
   addTension(amount, source = '', fired = []) {
+    if (this.crisis) return fired; // schemes push the crisis tracks themselves; there is no second meter
     const t = this.cfg.tension;
     const before = this.tension;
     this.tension = clamp(this.tension + amount);
@@ -339,8 +379,8 @@ export class Pushback {
     }
     this.heat = clamp(this.heat - H.decayPerQuarter);
 
-    // 3. Tension: momentum feeds itself, otherwise it eases.
-    if (this.tension >= T.momentumAt) {
+    // 3. Tension (stand-in meter only; with a crisis system the tracks drift on their own weeks).
+    if (this.crisis) { /* one tension model: nothing to do here */ } else if (this.tension >= T.momentumAt) {
       lines.push(`Tension has momentum: +${T.momentumGain} on its own.`);
       this.addTension(T.momentumGain, 'Momentum', events);
     } else {
@@ -457,7 +497,10 @@ export class Pushback {
     this._reliefUses[kind] = (this._reliefUses[kind] ?? 0) + 1;
     this._pay('schemes', r.label, -cost);
     const before = { heat: this.heat, tension: this.tension };
-    if (r.tension) this.tension = clamp(this.tension + r.tension);
+    if (r.tension && this.crisis) {
+      const t = this.hottestTrack();
+      if (t) this.crisis.addTension(t.id, r.tension, r.label);
+    } else if (r.tension) this.tension = clamp(this.tension + r.tension);
     const fired = [];
     if (r.heat > 0) this.addHeat(r.heat, r.label, fired);
     else if (r.heat < 0) this.heat = clamp(this.heat + r.heat);
