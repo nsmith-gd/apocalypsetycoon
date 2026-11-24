@@ -144,3 +144,30 @@ test('residents sleep in their own bed, not someone else\'s', () => {
   assert.equal(opts[0].obj.id, r.bedId);
   assert.ok(!opts.some((o) => o.obj.id !== r.bedId));
 });
+
+test('a well-furnished suite keeps its billionaires happy over two resident days', async () => {
+  const { furnishedSuite } = await import('../src/shelter/showcase.js');
+  const b = new BunkerSite({ surveyed: true });
+  furnishedSuite(b, { instant: true });
+  const sim = b.people;
+  let low = 100;
+  for (let i = 0; i < 48 * 10; i++) { b.tick(sim.cfg.hourSeconds / 10); if (i > 60) low = Math.min(low, sim.averageMood); }
+  assert.equal(sim.residents.length, 4);
+  assert.ok(low >= 65, `average mood dipped to ${low}`);
+  assert.ok(b.simulate().rooms.filter((r) => r.finishBeauty > 0).length >= 4);
+});
+
+test('a resident queuing for the only toilet says so instead of "can\'t reach"', () => {
+  const b = house();
+  b.place('bed', 2, 3); b.place('bed', 12, 3);
+  b.place('toilet', 9, 3); b.conduitLine('water', 2, 3, 9, 3);
+  b.finishAll();
+  const sim = new ResidentSim(b);
+  sim.tick(0.01);
+  const [a, z] = sim.residents;
+  const toilet = b.built.find((o) => o.kind === 'toilet');
+  a.action = { objId: toilet.id, kind: 'toilet', use: { needs: { bladder: 1 }, hours: 5 }, hoursLeft: 5, started: true };
+  z.needs.bladder = 5; z.action = null;
+  sim._decide(z);
+  assert.ok(sim.complaints.some((c) => /waiting for the toilet/.test(c)), sim.complaints.join());
+});

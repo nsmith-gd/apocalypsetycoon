@@ -180,3 +180,6 @@ export function drawThought(ctx, x, y, good) {
   if (good) { ctx.fillRect(x + 2, y + 2, 2, 2); ctx.fillRect(x + 5, y + 2, 2, 2); ctx.fillRect(x + 2, y + 4, 5, 1); }
   else { ctx.fillRect(x + 4, y + 1, 1, 3); ctx.fillRect(x + 4, y + 5, 1, 1); }
 }
+
+/** Whether a kind has a hand-drawn sprite (machines without one use the labelled block in the UI). */
+export const hasSprite = (kind) => !!RECIPES[kind];

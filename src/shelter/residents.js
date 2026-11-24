@@ -16,9 +16,11 @@
 import { OBJECTS, USES, NEED_IDS, layerOf } from './bunker-catalog.js';
 
 export const RESIDENTS = Object.freeze({
-  hourSeconds: 120 / 7 / 24, // a game day is 120/7 s at 1x
-  walkTilesPerSecond: 3,
-  climbTilesPerSecond: 2,
+  // Residents live on their own, slower clock so you can watch them (a resident day is 2 minutes at 1x).
+  // The calendar (a week = 120 s) still drives supplies and Days Sealed; this clock only drives needs.
+  hourSeconds: 5,
+  walkTilesPerSecond: 6,
+  climbTilesPerSecond: 4,
   // need loss per in-game hour
   decay: { energy: 4, hunger: 5, bladder: 9, hygiene: 3, fun: 5, social: 3 },
   admireFunPerBeauty: 10, // fun per hour of admiring, per beauty point
@@ -219,6 +221,7 @@ export class ResidentSim {
       const broken = [...this.site.objects.values()].find((obj) => (USES[obj.kind]?.needs?.[worst] ?? 0) > 0);
       let why = `can't find ${want}`;
       if (broken && OBJECTS[broken.kind].net && !sim.online.has(broken.id)) why = `says the ${OBJECTS[broken.kind].name.toLowerCase()} doesn't work (check its ${OBJECTS[broken.kind].net.join(' and ')})`;
+      else if (broken && this._usersOf(broken.id) >= (USES[broken.kind].seats ?? 1)) why = `is waiting for the ${OBJECTS[broken.kind].name.toLowerCase()} (add another?)`;
       else if (broken) why = `can't reach the ${OBJECTS[broken.kind].name.toLowerCase()}`;
       if (!r.thought || r.thought.until < this.clock) this._think(r, `${r.name.split(' ')[0]} ${why}!`, false);
       this._complain(`${r.name} ${why}.`);
