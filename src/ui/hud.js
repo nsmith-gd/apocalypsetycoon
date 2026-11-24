@@ -8,6 +8,7 @@
 
 import { formatMoney } from '../ledger/ledger.js';
 import { createLedgerChip, createLedgerRail, createLedgerScreen, renderStatement, CATEGORY_CANVAS } from './ledgerRail.js';
+import { settings } from '../settings/settings.js';
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -98,7 +99,10 @@ export function createGameUI({ root, ledger, views = {}, onViewChange, initialVi
     viewButtons[key] = b;
     toggle.append(b);
   }
-  const hint = el('span', 'view-hint', '[TAB]');
+  const hint = el('span', 'view-hint');
+  const putHint = () => { hint.textContent = `[${settings.keyLabel('switchCanvas')}]`; };
+  putHint();
+  settings.onChange(putHint);
   toggle.append(hint);
 
   // ---------- Ledger: chip in the HUD, optional docked rail, full screen on L ----------
@@ -135,12 +139,12 @@ export function createGameUI({ root, ledger, views = {}, onViewChange, initialVi
     if (reportOpen || e.ctrlKey || e.metaKey || e.altKey) return;
     const tag = e.target?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-    if (e.key === 'l' || e.key === 'L') { e.preventDefault(); ledgerScreen.toggle(); return; }
+    if (settings.matches(e, 'ledger')) { e.preventDefault(); ledgerScreen.toggle(); return; }
     if (e.key === 'Escape' && ledgerScreen.open) { e.preventDefault(); ledgerScreen.toggle(false); return; }
     if (ledgerScreen.open) return;
-    if (e.key === 'Tab') { e.preventDefault(); setView(view === 'grid' ? 'map' : 'grid'); }
-    else if (e.key === '1' && views.grid) setView('grid');
-    else if (e.key === '2' && views.map) setView('map');
+    if (settings.matches(e, 'switchCanvas')) { e.preventDefault(); setView(view === 'grid' ? 'map' : 'grid'); }
+    else if (settings.matches(e, 'shelter') && views.grid) setView('grid');
+    else if (settings.matches(e, 'map') && views.map) setView('map');
   };
   window.addEventListener('keydown', onKey);
 
