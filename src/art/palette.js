@@ -48,6 +48,23 @@ export const PALETTE = Object.freeze({
   V: { hex: '#7a2a5a', name: 'Velvet' },
   v: { hex: '#c070ff', name: 'Neon' },
   T: { hex: '#b8e0c8', name: 'Clean air' },
+
+  // Interior materials (design-layer room styles, #88): longer ramps so walls can carry texture and light.
+  a: { hex: '#262426', name: 'Concrete shadow' },
+  f: { hex: '#3a3738', name: 'Concrete dark' },
+  h: { hex: '#524d4b', name: 'Concrete' },
+  i: { hex: '#6c655f', name: 'Concrete lit' },
+  j: { hex: '#8b8179', name: 'Concrete pale' },
+  l: { hex: '#ab9f92', name: 'Concrete highlight' },
+  o: { hex: '#b8742a', name: 'Sodium glow' },
+  p: { hex: '#f0b052', name: 'Sodium lamp' },
+  q: { hex: '#3e1230', name: 'Velvet shadow' },
+  s: { hex: '#a2407a', name: 'Velvet sheen' },
+  t: { hex: '#c79430', name: 'Gold leaf' },
+  u: { hex: '#ddd3c0', name: 'Marble' },
+  x: { hex: '#b3a68f', name: 'Marble vein' },
+  z: { hex: '#3e2414', name: 'Walnut dark' },
+  A: { hex: '#6e4428', name: 'Walnut' },
 });
 
 export const HEX = Object.fromEntries(Object.entries(PALETTE).map(([k, v]) => [k, v.hex]));
