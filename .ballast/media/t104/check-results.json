@@ -6,13 +6,14 @@
    "state": "uneasy",
    "pass": true,
    "fails": [],
-   "changedPct": 6.3,
+   "changedPct": 75.4,
+   "strength": 45.5,
    "bleedPx": 0,
-   "cells": "44/35",
+   "cells": "47/33",
    "labelBg": [
-    95,
-    101,
-    78
+    14,
+    29,
+    21
    ]
   },
   {
@@ -21,13 +22,14 @@
    "state": "edge",
    "pass": true,
    "fails": [],
-   "changedPct": 22.9,
+   "changedPct": 75.5,
+   "strength": 78.1,
    "bleedPx": 0,
-   "cells": "47/35",
+   "cells": "47/33",
    "labelBg": [
-    95,
-    101,
-    78
+    14,
+    29,
+    21
    ]
   },
   {
@@ -36,13 +38,14 @@
    "state": "tipping",
    "pass": true,
    "fails": [],
-   "changedPct": 45.3,
+   "changedPct": 75.5,
+   "strength": 98.1,
    "bleedPx": 0,
-   "cells": "47/35",
+   "cells": "47/33",
    "labelBg": [
-    95,
-    101,
-    78
+    14,
+    29,
+    21
    ]
   },
   {
@@ -59,13 +62,14 @@
    "state": "uneasy",
    "pass": true,
    "fails": [],
-   "changedPct": 6.7,
+   "changedPct": 75,
+   "strength": 48.8,
    "bleedPx": 0,
-   "cells": "31/25",
+   "cells": "33/23",
    "labelBg": [
-    99,
-    105,
-    80
+    9,
+    37,
+    47
    ]
   },
   {
@@ -74,13 +78,14 @@
    "state": "edge",
    "pass": true,
    "fails": [],
-   "changedPct": 23.2,
+   "changedPct": 75.2,
+   "strength": 81.3,
    "bleedPx": 0,
-   "cells": "33/25",
+   "cells": "33/23",
    "labelBg": [
-    99,
-    105,
-    80
+    9,
+    37,
+    47
    ]
   },
   {
@@ -89,13 +94,14 @@
    "state": "tipping",
    "pass": true,
    "fails": [],
-   "changedPct": 45.4,
+   "changedPct": 75.2,
+   "strength": 100.2,
    "bleedPx": 0,
-   "cells": "33/25",
+   "cells": "33/23",
    "labelBg": [
-    99,
-    105,
-    80
+    9,
+    37,
+    47
    ]
   },
   {
@@ -112,13 +118,14 @@
    "state": "uneasy",
    "pass": true,
    "fails": [],
-   "changedPct": 8,
+   "changedPct": 83.9,
+   "strength": 54.4,
    "bleedPx": 0,
-   "cells": "20/14",
+   "cells": "20/12",
    "labelBg": [
-    93,
-    95,
-    77
+    18,
+    45,
+    58
    ]
   },
   {
@@ -127,13 +134,14 @@
    "state": "edge",
    "pass": true,
    "fails": [],
-   "changedPct": 25.8,
+   "changedPct": 84.1,
+   "strength": 90.5,
    "bleedPx": 0,
-   "cells": "20/14",
+   "cells": "20/12",
    "labelBg": [
-    93,
-    95,
-    77
+    18,
+    45,
+    58
    ]
   },
   {
@@ -142,13 +150,14 @@
    "state": "tipping",
    "pass": true,
    "fails": [],
-   "changedPct": 49.5,
+   "changedPct": 84.1,
+   "strength": 113.2,
    "bleedPx": 0,
-   "cells": "20/14",
+   "cells": "20/12",
    "labelBg": [
-    93,
-    95,
-    77
+    18,
+    45,
+    58
    ]
   },
   {
@@ -165,43 +174,46 @@
    "state": "uneasy",
    "pass": true,
    "fails": [],
-   "changedPct": 6.3,
-   "bleedPx": 0,
-   "cells": "20/13",
-   "labelBg": [
-    87,
-    87,
-    70
-   ]
-  },
-  {
-   "region": "mea",
-   "name": "Middle East",
-   "state": "edge",
-   "pass": true,
-   "fails": [],
-   "changedPct": 20.9,
-   "bleedPx": 0,
-   "cells": "22/13",
-   "labelBg": [
-    87,
-    87,
-    70
-   ]
-  },
-  {
-   "region": "mea",
-   "name": "Middle East",
-   "state": "tipping",
-   "pass": true,
-   "fails": [],
-   "changedPct": 41,
+   "changedPct": 65.7,
+   "strength": 41.9,
    "bleedPx": 0,
    "cells": "23/13",
    "labelBg": [
-    87,
-    87,
-    70
+    15,
+    29,
+    26
+   ]
+  },
+  {
+   "region": "mea",
+   "name": "Middle East",
+   "state": "edge",
+   "pass": true,
+   "fails": [],
+   "changedPct": 65.9,
+   "strength": 62.1,
+   "bleedPx": 0,
+   "cells": "23/13",
+   "labelBg": [
+    15,
+    29,
+    26
+   ]
+  },
+  {
+   "region": "mea",
+   "name": "Middle East",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 65.8,
+   "strength": 73.3,
+   "bleedPx": 0,
+   "cells": "23/13",
+   "labelBg": [
+    15,
+    29,
+    26
    ]
   },
   {
@@ -218,13 +230,14 @@
    "state": "uneasy",
    "pass": true,
    "fails": [],
-   "changedPct": 6.5,
+   "changedPct": 81.4,
+   "strength": 41.3,
    "bleedPx": 0,
-   "cells": "46/38",
+   "cells": "48/36",
    "labelBg": [
-    88,
-    89,
-    71
+    14,
+    31,
+    23
    ]
   },
   {
@@ -233,13 +246,14 @@
    "state": "edge",
    "pass": true,
    "fails": [],
-   "changedPct": 23.5,
+   "changedPct": 81.5,
+   "strength": 71.7,
    "bleedPx": 0,
-   "cells": "48/38",
+   "cells": "48/36",
    "labelBg": [
-    88,
-    89,
-    71
+    14,
+    31,
+    23
    ]
   },
   {
@@ -248,13 +262,14 @@
    "state": "tipping",
    "pass": true,
    "fails": [],
-   "changedPct": 46.4,
+   "changedPct": 81.5,
+   "strength": 89,
    "bleedPx": 0,
-   "cells": "48/38",
+   "cells": "48/36",
    "labelBg": [
-    88,
-    89,
-    71
+    14,
+    31,
+    23
    ]
   },
   {
@@ -271,43 +286,46 @@
    "state": "uneasy",
    "pass": true,
    "fails": [],
-   "changedPct": 7.2,
-   "bleedPx": 0,
-   "cells": "17/11",
-   "labelBg": [
-    86,
-    92,
-    72
-   ]
-  },
-  {
-   "region": "sas",
-   "name": "South Asia",
-   "state": "edge",
-   "pass": true,
-   "fails": [],
-   "changedPct": 23,
+   "changedPct": 62,
+   "strength": 43,
    "bleedPx": 0,
    "cells": "19/11",
    "labelBg": [
-    86,
-    92,
-    72
+    15,
+    34,
+    28
    ]
   },
   {
    "region": "sas",
    "name": "South Asia",
-   "state": "tipping",
+   "state": "edge",
    "pass": true,
    "fails": [],
-   "changedPct": 44.2,
+   "changedPct": 62.3,
+   "strength": 65.4,
    "bleedPx": 0,
    "cells": "19/11",
    "labelBg": [
-    86,
-    92,
-    72
+    15,
+    34,
+    28
+   ]
+  },
+  {
+   "region": "sas",
+   "name": "South Asia",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 62.3,
+   "strength": 78.9,
+   "bleedPx": 0,
+   "cells": "19/11",
+   "labelBg": [
+    15,
+    34,
+    28
    ]
   },
   {
@@ -324,13 +342,14 @@
    "state": "uneasy",
    "pass": true,
    "fails": [],
-   "changedPct": 6.5,
+   "changedPct": 82.4,
+   "strength": 49,
    "bleedPx": 0,
-   "cells": "50/42",
+   "cells": "52/42",
    "labelBg": [
-    85,
-    89,
-    70
+    7,
+    32,
+    47
    ]
   },
   {
@@ -339,13 +358,14 @@
    "state": "edge",
    "pass": true,
    "fails": [],
-   "changedPct": 23.6,
+   "changedPct": 82.5,
+   "strength": 83.5,
    "bleedPx": 0,
    "cells": "52/42",
    "labelBg": [
-    85,
-    89,
-    70
+    7,
+    32,
+    47
    ]
   },
   {
@@ -354,13 +374,14 @@
    "state": "tipping",
    "pass": true,
    "fails": [],
-   "changedPct": 46.7,
+   "changedPct": 82.5,
+   "strength": 103.9,
    "bleedPx": 0,
    "cells": "52/42",
    "labelBg": [
-    85,
-    89,
-    70
+    7,
+    32,
+    47
    ]
   },
   {
@@ -377,13 +398,14 @@
    "state": "uneasy",
    "pass": true,
    "fails": [],
-   "changedPct": 6.7,
+   "changedPct": 64,
+   "strength": 35.1,
    "bleedPx": 0,
-   "cells": "16/9",
+   "cells": "19/9",
    "labelBg": [
-    90,
-    93,
-    84
+    7,
+    30,
+    44
    ]
   },
   {
@@ -392,13 +414,14 @@
    "state": "edge",
    "pass": true,
    "fails": [],
-   "changedPct": 20.8,
+   "changedPct": 64.2,
+   "strength": 57.2,
    "bleedPx": 0,
    "cells": "19/9",
    "labelBg": [
-    90,
-    93,
-    84
+    7,
+    30,
+    44
    ]
   },
   {
@@ -407,13 +430,14 @@
    "state": "tipping",
    "pass": true,
    "fails": [],
-   "changedPct": 40.1,
+   "changedPct": 64.2,
+   "strength": 71.9,
    "bleedPx": 0,
    "cells": "19/9",
    "labelBg": [
-    90,
-    93,
-    84
+    7,
+    30,
+    44
    ]
   },
   {

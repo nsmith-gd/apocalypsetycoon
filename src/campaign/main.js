@@ -402,14 +402,9 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     // On narrow screens the page scrolls, so size the grid by width only.
     gridUI.fit(innerWidth < 600 ? innerWidth - 40 : Math.min(innerWidth - sideW, 740) - 60, innerWidth < 700 ? Infinity : innerHeight - hudH - gridUI.chromeHeight() - (root.querySelector('.cb')?.offsetHeight ?? 44) - 20);
 
-    // The world map shows at whole-number scales only (style guide), so its painted pixels stay crisp (#100).
-    const mapWrap = mapView.querySelector('.wm-map');
-    const mapCanvas = mapWrap?.querySelector('canvas');
-    if (mapCanvas && mapWrap.clientWidth) {
-      const scale = Math.max(1, Math.floor(mapWrap.clientWidth / mapCanvas.width));
-      mapCanvas.style.width = `${mapCanvas.width * scale}px`;
-      mapCanvas.style.maxWidth = 'none';
-    }
+    // The world map sizes itself at whole-number scales (style guide; #100, #102, #105): createWorldMapScreen's
+    // fitMap sets width AND height together. A second sizer here set the width alone, which squashed the map
+    // vertically and sent clicks to the wrong region.
   };
   fit();
   requestAnimationFrame(fit);

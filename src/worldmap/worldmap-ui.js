@@ -82,18 +82,29 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   const toast = el('div', 'wm-toast');
   toast.hidden = true;
   mapWrap.append(canvas, toast, legend);
-  // #102 legibility: show the map at a whole-number zoom (2x, 3x...) so every pixel of the labels and
-  // icons stays crisp; fractional scales smear the 3x5 font.
-  const snap = () => {
-    const avail = mapWrap.clientWidth;
-    if (!avail) return;
-    const z = Math.max(1, Math.floor((avail - 8) / MAP_W));
-    canvas.style.width = `${MAP_W * z}px`;
-  };
-  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(snap).observe(mapWrap);
+  // #102 legibility + #105: the map shows at a whole-number zoom (2x, 3x...) so every pixel of the labels and
+  // icons stays crisp; fractional scales smear the 3x5 font. fitMap() below does it (width AND height, so the
+  // aspect and the click mapping stay exact).
 
   const panel = el('aside', 'wm-panel');
   root.append(mapWrap, panel);
+
+  // Whole-number scaling (#105): the 320x192 map is shown at the largest integer scale that fits its column and
+  // the window height, so every map pixel is the same size on screen (fractional scales draw pixels 1 and 2
+  // screen pixels wide: seams and shimmer on hand-placed art). The frame is an outline, so it takes no layout.
+  function fitMap() {
+    const availW = mapWrap.clientWidth || MAP_W;
+    const top = mapWrap.getBoundingClientRect().top;
+    const availH = Math.max(MAP_H, (window.innerHeight || 0) - Math.max(0, top) - 70); // legend + breathing room
+    const scale = Math.max(1, Math.floor(Math.min(availW / MAP_W, availH / MAP_H)));
+    const w = `${MAP_W * scale}px`;
+    const h = `${MAP_H * scale}px`;
+    if (canvas.style.width !== w || canvas.style.height !== h) { canvas.style.width = w; canvas.style.height = h; } // always both: aspect = click mapping
+    canvas.dataset.scale = String(scale);
+  }
+  const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => fitMap()) : null;
+  ro?.observe(mapWrap);
+  addEventListener('resize', fitMap);
 
   const ctx = canvas.getContext('2d');
   let selected = initial;
@@ -440,12 +451,14 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   const offSchemes = schemes?.onChange((e) => { if (e.type !== 'run') refresh(); });
   refresh();
   raf = requestAnimationFrame(loop);
+  requestAnimationFrame?.(() => fitMap());
+  fitMap();
 
   return {
     refresh,
     select,
     get selected() { return selected; },
     canvas,
-    destroy() { cancelAnimationFrame(raf); off(); offLeads?.(); offMarket(); offSchemes?.(); root.replaceChildren(); },
+    destroy() { cancelAnimationFrame(raf); ro?.disconnect(); removeEventListener('resize', fitMap); off(); offLeads?.(); offMarket(); offSchemes?.(); root.replaceChildren(); },
   };
 }

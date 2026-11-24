@@ -31,9 +31,11 @@ import { REGIONS } from '../src/demand/demand.js';
 import { textWidth } from '../src/art/font.js';
 
 // Freeze time: the screen's draw loop only runs when we call it, so ocean and blink frames are fixed.
-let pending = null;
-window.requestAnimationFrame = (fn) => { pending = fn; return 1; };
-window.cancelAnimationFrame = () => { pending = null; };
+// Every queued callback runs once per step (the screen queues its draw loop and a one-off resize fit).
+let queue = [];
+window.requestAnimationFrame = (fn) => { queue.push(fn); return queue.length; };
+window.cancelAnimationFrame = () => { queue = []; };
+const pending = () => { const q = queue; queue = []; for (const fn of q) fn(performance.now()); };
 
 export const STATES = [
   { id: 'calm', crisis: 10 },
@@ -57,8 +59,9 @@ function fakeSales(levels) {
 function render(levels, { selected = null, frames = 1 } = {}) {
   const root = document.getElementById('stage');
   root.replaceChildren();
+  queue = []; // drop the previous screen's loop
   const screen = createWorldMapScreen({ root, sales: fakeSales(levels), initial: selected });
-  for (let i = 0; i < frames; i++) pending?.();
+  for (let i = 0; i < frames; i++) pending();
   const img = screen.canvas.getContext('2d').getImageData(0, 0, MAP_W, MAP_H);
   return { img, screen, canvas: screen.canvas };
 }
@@ -71,7 +74,8 @@ function labelBox(id) {
   const p = MAP_PLACES[id];
   const x = p.at[0] * CELL, y = p.at[1] * CELL;
   // name + crisis number line above, buyer icon + count below (plus the 1px font outline)
-  return { x0: x - 2, y0: y - 9, x1: x + textWidth(p.short) + 4 + textWidth('100') + 2, y1: y + 10 };
+  // #102's name plate (with its crisis box and the selected gold frame) starts 2px left and 11px up
+  return { x0: x - 5, y0: y - 14, x1: x + textWidth(p.short) + textWidth('100') + 16, y1: y + 12 };
 }
 const inBox = (b, x, y) => x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1;
 
@@ -79,15 +83,16 @@ function checkState(id, state, base) {
   const levels = { ...allAt(10), [id]: state.crisis };
   const { img } = render(levels);
   const box = labelBox(id);
-  let bleed = 0, inside = 0, changed = 0;
+  let bleed = 0, inside = 0, changed = 0, shift = 0;
   const cells = new Set();
   const cellsHit = new Set();
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const c = Math.floor(x / CELL), r = Math.floor(y / CELL);
     const mine = regionAtCell(c, r) === id;
     if (mine) { inside++; if (!inBox(box, x, y)) cells.add(`${c},${r}`); } // cells hidden under the label/marker can't show it
-    if (same(px(img, x, y), px(base, x, y))) continue;
-    if (mine) { changed++; cellsHit.add(`${c},${r}`); }
+    const a = px(img, x, y), o = px(base, x, y);
+    if (same(a, o)) continue;
+    if (mine) { changed++; cellsHit.add(`${c},${r}`); shift += Math.hypot(a[0] - o[0], a[1] - o[1], a[2] - o[2]); }
     else if (!inBox(box, x, y)) bleed++;
   }
   // label legibility: the crisis number sits over whatever is under the label line; sample that background
@@ -95,7 +100,9 @@ function checkState(id, state, base) {
   const bg = [];
   for (let x = box.x0; x <= box.x1; x++) bg.push(px(base, Math.max(0, Math.min(MAP_W - 1, x)), Math.max(0, ly)));
   const avg = [0, 1, 2].map((k) => Math.round(bg.reduce((s, p) => s + p[k], 0) / bg.length));
-  return { region: id, state: state.id, changedPct: Math.round((changed / inside) * 1000) / 10, bleedPx: bleed, cellsCovered: cellsHit.size, cells: cells.size, img, labelBg: avg };
+  // strength = mean colour shift (RGB distance) over the region's pixels: whole-region veils (#103) change
+  // nearly every pixel at every level, so 'share of pixels changed' alone can't rank the levels
+  return { region: id, state: state.id, strength: Math.round((shift / inside) * 10) / 10, changedPct: Math.round((changed / inside) * 1000) / 10, bleedPx: bleed, cellsCovered: cellsHit.size, cells: cells.size, img, labelBg: avg };
 }
 
 const results = [];
@@ -112,10 +119,10 @@ for (const r of REGIONS) {
     const fails = [];
     if (c.bleedPx > 0) fails.push(`${c.bleedPx}px drawn outside the region`);
     if (c.cellsCovered < c.cells) fails.push(`${c.cells - c.cellsCovered} of ${c.cells} cells untouched`);
-    if (c.changedPct <= prev) fails.push(`not stronger than the state below (${c.changedPct}% vs ${prev}%)`);
+    if (c.strength <= prev) fails.push(`not stronger than the state below (colour shift ${c.strength} vs ${prev})`);
     if (c.changedPct < 2) fails.push(`barely visible (${c.changedPct}%)`);
-    prev = c.changedPct;
-    results.push({ region: r.id, name: r.name, state: s.id, pass: !fails.length, fails, changedPct: c.changedPct, bleedPx: c.bleedPx, cells: `${c.cellsCovered}/${c.cells}`, labelBg: c.labelBg });
+    prev = c.strength;
+    results.push({ region: r.id, name: r.name, state: s.id, pass: !fails.length, fails, changedPct: c.changedPct, strength: c.strength, bleedPx: c.bleedPx, cells: `${c.cellsCovered}/${c.cells}`, labelBg: c.labelBg });
   }
   // selected outline: drawn only on region edges and inside the region
   const sel = render(allAt(10), { selected: r.id }).img;
@@ -133,7 +140,7 @@ for (const r of REGIONS) {
 }
 render(allAt(10)); // leave the screen on calm
 const passed = results.filter((x) => x.pass).length;
-document.getElementById('out').innerHTML = `<p>${passed} of ${results.length} checks pass.</p><table><tr><th>REGION</th><th>STATE</th><th>RESULT</th><th>FILLED</th><th>BLEED</th><th>WHY</th></tr>${results.map((x) => `<tr><td>${x.name}</td><td>${x.state}</td><td data-ok="${x.pass}">${x.pass ? 'PASS' : 'FAIL'}</td><td>${x.changedPct ?? ''}${x.changedPct != null ? '%' : ''}</td><td>${x.bleedPx}</td><td>${x.fails.join('; ')}</td></tr>`).join('')}</table>`;
+document.getElementById('out').innerHTML = `<p>${passed} of ${results.length} checks pass.</p><table><tr><th>REGION</th><th>STATE</th><th>RESULT</th><th>FILLED</th><th>SHIFT</th><th>BLEED</th><th>WHY</th></tr>${results.map((x) => `<tr><td>${x.name}</td><td>${x.state}</td><td data-ok="${x.pass}">${x.pass ? 'PASS' : 'FAIL'}</td><td>${x.changedPct ?? ''}${x.changedPct != null ? '%' : ''}</td><td>${x.strength ?? ''}</td><td>${x.bleedPx}</td><td>${x.fails.join('; ')}</td></tr>`).join('')}</table>`;
 window.__check = { results, sheets, passed, total: results.length };
 </script>
 </body>

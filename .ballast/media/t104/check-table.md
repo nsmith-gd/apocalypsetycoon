@@ -47,3 +47,14 @@ All states are drawn as whole 8x8 cells. On a base with pixel-level coastlines l
 (ffd5a215d5-pixel-earth.png), a cell that is half sea will get state art on its water pixels. The overlays should
 be masked to land pixels. The check will catch this: it counts bleed against region cells, and should be
 tightened to land pixels once the new base exposes a land mask.
+
+## Addendum: re-run after #102 (markers) and #103 (heat overlay) landed
+Re-ran during #105; the state-*.png sheets and check-results.json in this folder are the new run. 32/32 measured
+passes. Strength is now measured as the mean colour shift over the region (whole-region veils change nearly every
+pixel at every level, so "share of pixels changed" no longer ranks them). Europe, for example: uneasy 54, edge 87, tipping 106.
+1. Uneasy reads as texture: **resolved** by #103 (gold rim and veil).
+2. Edge over desert: **resolved** (amber stripes and rim read on sand).
+3. East Asia stripe beside South Asia: **still open** (region hit-area split; red rim stripe east of S.Asia in state-mixed.png).
+4. Tipping buries the terrain: **improved** (crosshatch lets the terrain through); acceptable.
+5. Selected hides Edge: **resolved** (the stripes show through the gold selection).
+New, minor: North America's name plate sits over a city icon (state-mixed.png, left). The plate placement is #102's.
