@@ -1,7 +1,7 @@
 /* World map screen. Uses the --at-* tokens from src/ui/ui.css. */
-.wm { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 12px; padding: 12px 16px; max-width: 1200px; margin: 0 auto; box-sizing: border-box; width: 100%; font-family: var(--at-font); color: var(--at-ink); }
+.wm { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 12px; padding: 12px 16px; max-width: 1600px; margin: 0 auto; box-sizing: border-box; width: 100%; font-family: var(--at-font); color: var(--at-ink); }
 .wm-map { position: sticky; top: 112px; align-self: start; }
-.wm-map canvas { width: 100%; display: block; image-rendering: pixelated; border: 4px solid var(--at-border); box-shadow: inset 0 0 0 2px var(--at-hi); background: #0a0807; }
+.wm-map canvas { display: block; margin: 4px auto; image-rendering: pixelated; outline: 4px solid var(--at-border); background: #0a0807; } /* sized by fitMap: whole-number scale (#105) */
 .wm-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11px; color: var(--at-dim); margin-top: 6px; }
 .wm-ico { display: inline-block; width: 9px; height: 9px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--at-border); }
 .wm-ico-buyer { background: var(--at-green); }

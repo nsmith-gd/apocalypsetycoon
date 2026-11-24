@@ -44,7 +44,9 @@ html, body { margin: 0; height: 100%; background: var(--at-bg); }
 @media (max-width: 600px) { .cb-time { min-width: 0; } }
 
 /* The pressure and client panels sit fixed on both sides on wide screens. */
-@media (min-width: 1100px) { .gs .stage-map { padding: 0 262px; } .gs .stage-map .wm { grid-template-columns: minmax(0, 1fr) 260px; } }
+/* The side rails end ~275px from each edge; the map view IS the .wm root. At 1440 wide this leaves a 650px
+   map column, enough for the map at 2x (#105). */
+@media (min-width: 1100px) { .gs .stage-map { padding: 0 280px; } .gs .stage-map.wm { grid-template-columns: minmax(0, 1fr) 226px; gap: 8px; } }
 .gs .stage-map .wm-map { position: static; }
 
 /* #81 title screen greybox: start-over confirm and the sound toggle */

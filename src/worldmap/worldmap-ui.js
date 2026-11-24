@@ -82,6 +82,22 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   const panel = el('aside', 'wm-panel');
   root.append(mapWrap, panel);
 
+  // Whole-number scaling (#105): the 320x192 map is shown at the largest integer scale that fits its column and
+  // the window height, so every map pixel is the same size on screen (fractional scales draw pixels 1 and 2
+  // screen pixels wide: seams and shimmer on hand-placed art). The frame is an outline, so it takes no layout.
+  function fitMap() {
+    const availW = mapWrap.clientWidth || MAP_W;
+    const top = mapWrap.getBoundingClientRect().top;
+    const availH = Math.max(MAP_H, (window.innerHeight || 0) - Math.max(0, top) - 70); // legend + breathing room
+    const scale = Math.max(1, Math.floor(Math.min(availW / MAP_W, availH / MAP_H)));
+    const w = `${MAP_W * scale}px`;
+    if (canvas.style.width !== w) { canvas.style.width = w; canvas.style.height = `${MAP_H * scale}px`; }
+    canvas.dataset.scale = String(scale);
+  }
+  const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => fitMap()) : null;
+  ro?.observe(mapWrap);
+  addEventListener('resize', fitMap);
+
   const ctx = canvas.getContext('2d');
   let selected = initial;
   let hover = null;
@@ -439,12 +455,14 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   const offSchemes = schemes?.onChange((e) => { if (e.type !== 'run') refresh(); });
   refresh();
   raf = requestAnimationFrame(loop);
+  requestAnimationFrame?.(() => fitMap());
+  fitMap();
 
   return {
     refresh,
     select,
     get selected() { return selected; },
     canvas,
-    destroy() { cancelAnimationFrame(raf); off(); offLeads?.(); offMarket(); offSchemes?.(); root.replaceChildren(); },
+    destroy() { cancelAnimationFrame(raf); ro?.disconnect(); removeEventListener('resize', fitMap); off(); offLeads?.(); offMarket(); offSchemes?.(); root.replaceChildren(); },
   };
 }
