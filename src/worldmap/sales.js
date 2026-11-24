@@ -172,7 +172,7 @@ export class MapSales {
     };
     this.sold.push(record);
     this.ledger?.record('sales', `${type?.label ?? 'Client'} shelter (${region.name}): ${owner}`, price);
-    this.pushback?.onSale?.({ client: owner, price, region: region.id });
+    this.pushback?.onSale?.({ client: owner, price, region: region.id, leverage: lead.leverage ?? 0 });
     this._emit({ type: 'sale', record, lead });
     return record;
   }
