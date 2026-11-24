@@ -8,10 +8,15 @@
   - Crisis tracks (#4): `setTensions({ id: tension }, { tips })` (auto-detects Brink within 10 of the fragile tip),
     `brink(id)`, `breachContained(id)`, `collapse(id)`. Campaign clock (#1): `chapterStart(n)`, `advanceWeeks(n)`.
   - `snapshot()`, `toJSON()` / `DoomClock.fromJSON()`.
-  - `attachPushback(clock, pushback)`: until #4's tracks land, pushback's world tension is one track and each runaway
-    counts as a Brink plus a contained breach (replaces pushback's old `doomsdayShift` counter).
-- `doomclock-hud.js` + `doomclock.css`: the DOOM CLOCK box on the HUD (pixel face, red wedge for time lost to the
-  floor, minutes and floor, FINAL COUNTDOWN in weeks).
+  - In the campaign the clock is fed by the `CrisisSystem` running the roster's six tracks (#69): every week, and on every
+    tension change, it pushes each OPEN track's tension and pre-fragility tip (`setTensions(open, { tips })`) (the campaign
+    clock's sync turns the Doom Clock's weeks; `clockWeeks: true` lets a CrisisSystem do it elsewhere). Closed tracks don't count toward the sum, but fragility lowers their rolled tip
+    all along, so they open fragile. `attachPushback` (pushback's single world track) is no longer used by the campaign;
+    it stays only for the old demos.
+- `doomclock-hud.js` + `doomclock.css`: the DOOM CLOCK in the centre of the top bar (#71): a crown strip at the top of the
+  HUD holds the pixel face (red wedge = time lost to the floor), time, minutes and floor, a 15-to-0 minutes track with the
+  floor wedge and a pin for now, and a FINAL COUNTDOWN box in weeks. `center: false` gives the old inline chip.
+  The campaign advances the clock one week at a time from the campaign clock (13 a quarter), so the countdown ticks weekly.
 - Uncontrolled Midnight: pass `forceType: 'failed', cause` to `computeMidnight` (src/midnight).
 - Demos: `demo/doom-clock-demo.html` (five stand-in tracks, AUTO-PLAY watches it tick to Midnight) and the
   Midnight demo's campaign (chapters at Q4, Q7, Q10; 13 weeks per quarter).

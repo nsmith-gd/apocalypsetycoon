@@ -10,7 +10,7 @@ import { createResearchPanel } from '../ui/researchPanel.js';
 import { Pushback } from '../pushback/pushback.js';
 import { createPushbackUI } from '../pushback/pushback-ui.js';
 import { createPressureGauge } from '../pushback/pressure-gauge.js';
-import { DoomClock, attachPushback } from '../doomclock/doomclock.js';
+import { DoomClock } from '../doomclock/doomclock.js';
 import { createDoomClockHud } from '../doomclock/doomclock-hud.js';
 import { ResearchTree } from '../research/research.js';
 import { createAudio, wireAudio, createSoundToggle, startOnFirstGesture, midnightTimes } from '../audio/audio.js';
@@ -24,12 +24,20 @@ import { LeadMarket, attachCrisis } from '../demand/demand.js';
 import { SchemeBoard } from '../schemes/schemes.js';
 import { MapSales } from '../worldmap/sales.js';
 import { createWorldMapScreen } from '../worldmap/worldmap-ui.js';
-import { TRACK_BY_ID, CLASSIC_ROSTER } from '../world/tracks.js';
+import { TRACK_BY_ID, CLASSIC_ROSTER, rosterLinks } from '../world/tracks.js';
 import { showWorldSetup, createThreatsPanel } from '../world/world-ui.js';
 import { CampaignClock, SPEEDS, formatClock, QUARTER_SECONDS } from './clock.js';
 import { createSaveSlot, ledgerSaveable, pushbackSaveable, doomClockSaveable } from './save.js';
+import { LeadInventory } from '../leads/leads.js';
+import { loadVenueCatalog } from '../events/venues.js';
+import { EventCircuit } from '../events/attend.js';
+import { SocialSession } from '../social/viewmodel.js';
+import { createSocialScreens } from '../social/text-screens.js';
 
 export const STARTING_CASH = 400_000;
+// A threat opens already simmering (GDD bands: Calm 0-19, Simmer 20-44). Provisional.
+export const TRACK_OPEN_TENSION = 20;
+export const CHAPTER_STARTS = Object.freeze({ 3: 2, 5: 3, 8: 4, 11: 5 });
 
 const params = new URLSearchParams(location.search);
 // ?qs=20 makes each quarter 20 seconds long (testing). Default is the full 27-minute quarter.
@@ -120,9 +128,8 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   const clock = new CampaignClock({ quarterSeconds: QS });
   const ui = createGameUI({ root, ledger, views: { grid: gridView, map: mapView } });
   const pbui = createPushbackUI({ root, pushback: pb });
-  // Doom Clock: world tension and runaways move it; a Final Countdown can bring Midnight early.
+  // Doom Clock: fed by the crisis system's open roster tracks (below); a Final Countdown can bring Midnight early.
   const doom = new DoomClock();
-  attachPushback(doom, pb);
   createDoomClockHud({ clock: doom, hud: root.querySelector('.hud') });
   const gauge = createPressureGauge({ root, pushback: pb, getQuarterProfit: () => ledger.summary(ledger.quarter).net,
     onRelief: (r) => r && pbui.tick(`${r.kind === 'layLow' ? 'Laid low' : 'Funded relief'}: -$${Math.round(r.cost / 1000)}K`, 'ok') });
@@ -147,19 +154,48 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
 
   // ---------- the world: crisis tracks, weekly leads, schemes and map sales ----------
   const worldSeed = Number(params.get('seed') ?? 11);
-  const crisis = new CrisisSystem({ seed: worldSeed, pushback: pb, doomClock: doom, ledger, shelters: () => mapSales.sheltersForMidnight() });
-  const START_TENSION = { pandemic: 30, climate: 22, unrest: 18, markets: 26, war: 10 };
-  for (const [id, v] of Object.entries(START_TENSION)) crisis.setTension(id, v);
+  // The six roster tracks (#33) are the world's crises (#69). Each rolls its hidden tipping point now and stays
+  // closed until its opening time; Doom Clock fragility lowers that roll from day one, so a late track opens fragile.
+  if (resume) roster = slot.peek()?.parts?.world?.roster ?? roster;
+  const crisis = new CrisisSystem({
+    seed: worldSeed, pushback: pb, doomClock: doom, ledger, shelters: () => mapSales.sheltersForMidnight(),
+    tracks: roster.map((id) => ({ id, name: TRACK_BY_ID[id].name, open: false })),
+    links: rosterLinks(roster).map((l) => [l.from, l.to, l.strength]),
+  });
   const tensions = () => Object.fromEntries(Object.values(crisis.tracks).map((t) => [t.id, t.tension]));
   const market = new LeadMarket({ seed: worldSeed + 1, reputation: () => crisis.reputation });
   market.ownSite('nam'); // HQ
-  market.week({ tensions: Object.fromEntries(Object.entries(START_TENSION).map(([k, v]) => [k, Math.round(v / 2)])) });
   market.week({ tensions: tensions() });
   attachCrisis(market, crisis); // a market week runs after every crisis week
   const schemes = new SchemeBoard({ crisis, market, ledger, pushback: pb, isUnlocked: (id) => tree.isUnlocked(id) });
   const mapSales = new MapSales({ market, ledger, pushback: pb, getTensions: tensions, getBreachMultiplier: () => crisis.panicMultiplier,
     getEdgeBonus: (id) => schemes.edgeBonus(id), getQuarter: () => clock.quarter });
-  const mapScreen = createWorldMapScreen({ root: mapView, sales: mapSales, schemes, initial: 'nam', onScheme: () => ui.update(hudState()), onSold: () => ui.update(hudState()) });
+  // Your leads: people met at events (director note D2). Redeemed on the world map for better sales (#58).
+  const leads = new LeadInventory({ getQuarter: () => clock.quarter, getReputation: () => crisis.reputation });
+  slot.register('leads', leads);
+
+  // Social events (director note D2, #60): go to events, talk to guests, come home with leads.
+  // Placeholder text-only screens over the SocialSession view-model; the catalog loads async.
+  const social = { session: null, screens: null };
+  const eventsBtn = el('button', 'view-btn', 'EVENTS');
+  eventsBtn.type = 'button';
+  eventsBtn.disabled = true;
+  eventsBtn.title = 'Go to social events and meet buyers (E)';
+  eventsBtn.onclick = () => social.screens?.toggle();
+  root.querySelector('.view-toggle')?.prepend(eventsBtn);
+  loadVenueCatalog().then((catalog) => {
+    if (session?.ledger !== ledger) return; // campaign was replaced while loading
+    const circuit = new EventCircuit({ catalog, ledger, seed: worldSeed, clock,
+      addHeat: (n, why) => pb.addHeat(n, why), addReputation: (n) => { crisis.reputation = Math.max(0, Math.min(100, crisis.reputation + n)); } });
+    slot.register('events', circuit);
+    if (resume) { const saved = slot.peek(); if (saved?.parts?.events) circuit.load(saved.parts.events); }
+    social.session = new SocialSession({ circuit, leads, getQuarter: () => clock.quarter, getCash: () => ledger.cash,
+      addHeat: (n, why) => pb.addHeat(n, why), addReputation: (n) => { crisis.reputation = Math.max(0, Math.min(100, crisis.reputation + n)); } });
+    social.screens = createSocialScreens({ root: document.body, social: social.session, onClose: () => { ui.update(hudState()); mapScreen.refresh(); } });
+    social.session.onChange(() => ui.update(hudState()));
+    eventsBtn.disabled = false;
+  }).catch((err) => { eventsBtn.title = `Events unavailable: ${err.message}`; });
+  const mapScreen = createWorldMapScreen({ root: mapView, sales: mapSales, schemes, leads, initial: 'nam', onScheme: () => ui.update(hudState()), onSold: () => ui.update(hudState()) });
   createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => crisis.advanceWeek() });
   crisis.on('week', () => mapScreen.refresh());
   slot.register('sales', mapSales);
@@ -168,8 +204,11 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   tree.onUnlock?.(() => { gridUI.refresh(); mapScreen.refresh(); });
   // The threat roster this campaign runs (6 slots; alternates chosen at the world setup screen).
   const world = { roster: [...roster], opened: [] };
+  slot.register('crisis', crisis);
   slot.register('world', { toJSON: () => ({ roster: world.roster, opened: world.opened }), load: (d) => { if (d.roster?.length === 6) world.roster = d.roster; world.opened = d.opened ?? []; } });
   if (resume) slot.load(); else slot.clear();
+  delete doom.tensions.world; // saves from before #69 carried pushback's stand-in track
+  for (const id of world.opened) crisis.openTrack(id); // already a no-op for tracks the crisis save reopened
   ledger.setQuarter(clock.quarter);
 
   // Midnight grades the HQ grid alongside every shelter sold (sold ones join this list from the map/clients).
@@ -251,14 +290,23 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
       const t = TRACK_BY_ID[id];
       if (t.opensAt <= m && !world.opened.includes(id)) {
         world.opened.push(id);
+        crisis.openTrack(id, { tension: TRACK_OPEN_TENSION });
         toast(`THREAT OPENS: ${t.name}. ${t.premise}.`);
       }
     }
   }
+  // The Doom Clock counts real in-game weeks (13 a quarter), so a Final Countdown runs week by week.
+  // Synced from the campaign clock, so skipped quarters and loaded saves land on the right week.
+  const syncDoomWeeks = () => {
+    const target = (clock.quarter - 1) * 13 + Math.floor(clock.elapsed / WEEK_SECONDS);
+    if (target > doom.week) doom.advanceWeeks(target - doom.week);
+  };
   clock.onQuarterStart(({ quarter }) => {
+    syncDoomWeeks();
     ledger.setQuarter(quarter);
-    doom.advanceWeeks(13);
-    if ((quarter - 1) % 3 === 0) doom.chapterStart((quarter - 1) / 3 + 1);
+    leads.expire(quarter); // unused leads go cold on schedule
+    const chapter = CHAPTER_STARTS[quarter]; // GDD Pacing: chapters 2-5 start at Q3, Q5, Q8 and Q11
+    if (chapter) doom.chapterStart(chapter);
     slot.save(); // autosave at every quarter close
     ui.update(hudState());
   });
@@ -285,7 +333,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   ledger.onChange(() => { ui.update(hudState()); gauge.render(); });
 
   // Modals hold the clock: quarter report and choice cards pause time.
-  const modalOpen = () => !!document.querySelector('.report-overlay:not([hidden]), .br-overlay:not([hidden]), .pb-overlay, .mn-overlay, .mn-strike');
+  const modalOpen = () => !!document.querySelector('.report-overlay:not([hidden]), .br-overlay:not([hidden]), .pb-overlay, .mn-overlay, .mn-strike, .soc-overlay:not([hidden])');
 
   // ---------- keys ----------
   const onKey = (e) => {
@@ -294,6 +342,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     else if (e.key === '.' || e.key === '>') clock.setSpeed(SPEEDS[Math.min(SPEEDS.length - 1, SPEEDS.indexOf(clock.speed) + 1)] ?? 1);
     else if (e.key === ',' || e.key === '<') clock.setSpeed(SPEEDS[Math.max(0, SPEEDS.indexOf(clock.speed) - 1)] ?? 1);
     else if (e.key === 'n' || e.key === 'N') { if (!modalOpen()) clock.skipQuarter(); }
+    else if ((e.key === 'e' || e.key === 'E') && social.screens && !modalOpen()) social.screens.toggle();
   };
   addEventListener('keydown', onKey);
 
@@ -312,6 +361,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
       grid.tick(g);
       weekAcc += g;
       while (weekAcc >= WEEK_SECONDS) { weekAcc -= WEEK_SECONDS; crisis.advanceWeek(); }
+      syncDoomWeeks();
     }
     clock.tick(dt);
     acc += dt;
@@ -343,10 +393,11 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   }
 
   session = {
-    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, market, schemes, mapSales, mapScreen, slot,
+    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, market, schemes, mapSales, mapScreen, slot, leads, social,
     destroy() {
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);
+      social.screens?.destroy();
       removeEventListener('resize', fit);
       gridUI.destroy();
       ui.destroy();

@@ -1,0 +1,66 @@
+{
+ "log": {
+  "start": {
+   "doomTensions": {},
+   "floor": 15,
+   "minutes": 15,
+   "time": "11:45",
+   "tips": {
+    "atomic": 88,
+    "bloom": 88,
+    "superstorm": 89,
+    "optimizer": 89,
+    "hush": 93,
+    "pitchforks": 88
+   },
+   "open": [],
+   "week": 0,
+   "countdown": null
+  },
+  "afterAtomicOpens": {
+   "doomTensions": {
+    "atomic": 20
+   },
+   "floor": 15,
+   "minutes": 14.5,
+   "time": "11:45:30",
+   "tips": {
+    "atomic": 88,
+    "bloom": 88,
+    "superstorm": 89,
+    "optimizer": 89,
+    "hush": 93,
+    "pitchforks": 88
+   },
+   "open": [
+    "atomic"
+   ],
+   "week": 12,
+   "countdown": null
+  },
+  "afterCollapse": {
+   "doomTensions": {
+    "atomic": 20,
+    "bloom": 100
+   },
+   "floor": 10.75,
+   "minutes": 10.75,
+   "time": "11:49:15",
+   "tips": {
+    "atomic": 83.75,
+    "bloom": 83.75,
+    "superstorm": 84.75,
+    "optimizer": 84.75,
+    "hush": 88.75,
+    "pitchforks": 83.75
+   },
+   "open": [
+    "atomic",
+    "bloom"
+   ],
+   "week": 12,
+   "countdown": null
+  }
+ },
+ "errs": []
+}

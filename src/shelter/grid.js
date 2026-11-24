@@ -18,6 +18,7 @@
 // Build time: dig seconds by stratum + fit-out seconds, in game seconds (a 27-minute quarter is
 // 1620 s), so one shovel crew finishes roughly 8 to 12 rooms a quarter.
 
+import { STYLES, DEFAULT_STYLE } from './styles.js';
 import { ROOM_CATALOG, availableRooms } from '../clients/rooms.js';
 import { gradeShelter, LUXURY_PRESTIGE } from '../midnight/midnight.js';
 import { stratumAt, FLOOR_METERS } from './life.js';
@@ -88,17 +89,27 @@ export class ShelterGrid {
   }
 
   // ---------- actions ----------
-  place(col, row, id) {
+  place(col, row, id, { style = DEFAULT_STYLE } = {}) {
     const q = this.quote(col, row, id);
     if (!q.ok) return q;
     const name = ROOM_CATALOG[id].name;
     if (q.dig) this.ledger?.record('builds', `Dig: ${q.stratum.name.toLowerCase()}`, -q.dig);
     this.ledger?.record('builds', `Build: ${name}`, -q.room);
     this._order = (this._order ?? 0) + 1;
-    const cell = { col, row, id, built: false, progress: 0, need: q.seconds, paid: q.room, digPaid: q.dig, order: this._order };
+    const cell = { col, row, id, style: STYLES[style] ? style : DEFAULT_STYLE, built: false, progress: 0, need: q.seconds, paid: q.room, digPaid: q.dig, order: this._order };
     this.cells.set(this.key(col, row), cell);
     this.emit({ type: 'place', cell, quote: q });
     return { ...q, cell };
+  }
+
+  /** Re-skin a placed room (design layer). Free at L0; the room keeps its build progress. */
+  setStyle(col, row, style) {
+    const cell = this.at(col, row);
+    if (!cell || !STYLES[style]) return { ok: false, reason: cell ? 'Unknown style' : 'No room there' };
+    const from = cell.style;
+    cell.style = style;
+    this.emit({ type: 'style', cell, from });
+    return { ok: true, from, style };
   }
 
   remove(col, row) {

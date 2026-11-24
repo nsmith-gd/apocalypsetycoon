@@ -26,30 +26,35 @@ import { ROOM_CATALOG } from './rooms.js';
 // a little for the Prepper, who is the only client who reads the spec sheet.
 export const CLIENT_TYPES = Object.freeze({
   tech_founder: {
+    wealthClass: 'C2', style: 'tech_minimal', // preferred style (design layer)
     label: 'Tech founder', occupants: [3, 5], slots: 7, baseFee: 60_000,
     wants: { cryo_pod: 140_000, ai_butler: 220_000, gold_taps: 30_000 }, wantCount: [1, 2],
     names: ['Kai Brandt', 'Sasha Okonkwo-Reyes', 'Elon-Marie Voss', 'Dev Patel-Hart'],
     blurb: 'Wants to wake up in the future with a butler that knows his name.',
   },
   oil_heir: {
+    wealthClass: 'C3', style: 'gilded', // preferred style (design layer)
     label: 'Oil heir', occupants: [8, 12], slots: 9, baseFee: 80_000,
     wants: { gold_taps: 70_000, wine_cellar: 120_000, cryo_pod: 90_000 }, wantCount: [2, 3],
     names: ['Chad Remington IV', 'Lady Graves', 'Count Velasquez', 'The Halvorsen Twins'],
     blurb: 'The whole family, the staff and the 1961 Pétrus. Gold everything.',
   },
   celebrity: {
+    wealthClass: 'C4', style: 'kitsch', // preferred style (design layer)
     label: 'Celebrity', occupants: [4, 6], slots: 7, baseFee: 50_000,
     wants: { gold_taps: 90_000, cryo_pod: 110_000, wine_cellar: 60_000 }, wantCount: [1, 2],
     names: ['DJ Bunkr', 'Mrs. Abernathy-Lux', 'Rex Starling', 'Paloma'],
     blurb: 'Needs it to look incredible on the last livestream.',
   },
   politician: {
+    wealthClass: 'C3', style: 'gilded', // preferred style (design layer)
     label: 'Politician', occupants: [6, 10], slots: 8, baseFee: 70_000,
     wants: { wine_cellar: 100_000, gold_taps: 50_000 }, wantCount: [1, 2],
     names: ['Senator Pike', 'Minister Hollis', 'Governor Banks', 'Mayor Duquesne'],
     blurb: 'Discreet. Off the books. A panic room for the panic.',
   },
   prepper: {
+    wealthClass: 'C1', style: 'brutalist', // preferred style (design layer)
     label: 'Billionaire prepper', occupants: [6, 8], slots: 8, baseFee: 90_000,
     wants: { mil_scrubber: 60_000, water_recycler: 50_000, hydroponics: 40_000, gold_taps: 40_000 }, wantCount: [2, 3],
     names: ['The Kessler Trust', 'Ms. Tanaka-Ruiz', 'Bishop Oduya', 'Mr. Vance'],
@@ -132,6 +137,8 @@ export class ClientBook {
       client: pick(this.rng, t.names),
       type: typeId,
       typeLabel: t.label,
+      wealthClass: t.wealthClass ?? 'C1',
+      style: t.style ?? null,
       blurb: t.blurb,
       region,
       occupants: between(this.rng, t.occupants),

@@ -169,6 +169,25 @@ export class Press {
     return this.reputation - before;
   }
 
+  /**
+   * A tip-off (#55: a slip at an event): the journalist starts a story with this angle if they have none
+   * (even while resting), and the story grows by `progress` %. It can run at once if it reaches 100.
+   */
+  tipOff(id, progress, angle = 'A source says Last Resort is feeding the panic it sells') {
+    const j = this.journalists[id];
+    if (!j || !(progress > 0)) return null;
+    if (!j.story) {
+      j.story = { id: ++this._ids, angle, progress: 0, buries: 0 };
+      j.restWeeks = 0;
+      this._emit('storyStarted', { journalist: id, story: j.story });
+    }
+    j.story.progress = Math.min(100, j.story.progress + progress);
+    this._note('story', `Tip-off to ${PRESS.journalists[id].name}: story +${progress}% ("${j.story.angle}")`, { journalist: id });
+    const aired = j.story.progress >= PRESS.story.airAt ? this._air(id) : null;
+    this._changed();
+    return { journalist: id, progress: aired ? 100 : j.story.progress, aired };
+  }
+
   _shoveRandomTrack(n, why) {
     const tracks = this.crisis?.tracks ? Object.keys(this.crisis.tracks) : null;
     if (tracks?.length && this.crisis.addTension) {
