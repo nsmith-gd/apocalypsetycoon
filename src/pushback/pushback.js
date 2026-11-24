@@ -178,6 +178,14 @@ export class Pushback {
     return c;
   }
 
+  /** One in-game week: heat cools by heat.decayPerWeek (GDD Difficulty: 2 / 1 / 0.5). */
+  weekTick() {
+    const d = this.cfg.heat.decayPerWeek ?? 0;
+    if (!d || this.heat <= 0) return;
+    this.heat = clamp(this.heat - d);
+    this._changed?.();
+  }
+
   addHeat(amount, source = '', fired = []) {
     const h = this.cfg.heat;
     const before = this.heat;

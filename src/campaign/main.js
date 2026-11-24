@@ -40,6 +40,7 @@ import { StoryBeats } from '../story/beats.js';
 import { showBeat } from '../story/beat-ui.js';
 import { Telemetry } from '../telemetry/telemetry.js';
 import { LeadInventory } from '../leads/leads.js';
+import { DIFFICULTIES, DIFFICULTY_ORDER, DEFAULT_DIFFICULTY, difficultySettings } from '../config/difficulty.js';
 import { loadVenueCatalog } from '../events/venues.js';
 import { EventCircuit } from '../events/attend.js';
 import { WeeklyDeck, applyChoice } from '../events/weekly.js';
@@ -112,6 +113,22 @@ function showMainMenu() {
   addEventListener('keydown', onKey);
   const leave = () => { removeEventListener('keydown', onKey); menuKeyOff = null; };
   menuKeyOff = leave;
+  // Difficulty (#92): applies to the next NEW CAMPAIGN; remembered between visits.
+  const diffRow = el('div', 'mm-diff');
+  const renderDiff = () => {
+    diffRow.replaceChildren(el('span', 'mm-diff-label', 'DIFFICULTY'));
+    for (const id of DIFFICULTY_ORDER) {
+      const d = DIFFICULTIES[id];
+      const b = el('button', 'mm-small mm-diff-btn', d.label.toUpperCase());
+      b.setAttribute('aria-pressed', String(chosenDifficulty() === id));
+      b.title = `${d.for}. Tipping points ${d.tipRange[0]}-${d.tipRange[1]}, Brink drift +${d.brinkDrift}/week, heat cools ${d.heatDecayPerWeek}/week, quota +${Math.round(d.quotaGrowth * 100)}% a quarter.`;
+      b.onclick = () => { chooseDifficulty(id); renderDiff(); };
+      diffRow.append(b);
+    }
+    const d = DIFFICULTIES[chosenDifficulty()];
+    diffRow.append(el('div', 'mm-diff-note', `${d.for}: tipping points ${d.tipRange[0]}-${d.tipRange[1]}, quota +${Math.round(d.quotaGrowth * 100)}% a quarter.`));
+  };
+  renderDiff();
   const setup = el('button', 'mm-small', 'WORLD SETUP');
   setup.title = 'Choose Classic, Random or Custom threat tracks (debug start)';
   setup.onclick = () => openSetup();
@@ -119,7 +136,7 @@ function showMainMenu() {
     onStart: (roster) => { leave(); startCampaign({ resume: false, roster }); }, onBack: () => start.focus() });
   cont.onclick = () => { leave(); startCampaign({ resume: true }); };
   mm.append(sky, el('div', 'mm-title', 'APOCALYPSE TYCOON'), el('div', 'mm-tag', "You don't survive the apocalypse. You sell it."),
-    start, cont, confirmBox, setup, sound, sub, demos, el('div', 'mm-foot', 'LAST RESORT HOLDINGS · 12 QUARTERS TO MIDNIGHT'));
+    start, cont, confirmBox, diffRow, setup, sound, sub, demos, el('div', 'mm-foot', 'LAST RESORT HOLDINGS · 12 QUARTERS TO MIDNIGHT'));
   app.append(mm);
   (save ? cont : start).focus();
 }
@@ -149,6 +166,14 @@ function drawMenuSky(c) {
 // ======================= Campaign =======================
 let session = null;
 
+const DIFFICULTY_KEY = 'apocalypse-tycoon.difficulty';
+function chosenDifficulty() {
+  const fromUrl = params.get('difficulty');
+  if (DIFFICULTIES[fromUrl]) return fromUrl;
+  try { const v = localStorage.getItem(DIFFICULTY_KEY); return DIFFICULTIES[v] ? v : DEFAULT_DIFFICULTY; } catch { return DEFAULT_DIFFICULTY; }
+}
+function chooseDifficulty(id) { try { localStorage.setItem(DIFFICULTY_KEY, id); } catch { /* private mode */ } }
+
 const FINISHED_KEY = 'apocalypse-tycoon.campaigns-finished';
 function campaignsFinished() {
   try { return Number(localStorage.getItem(FINISHED_KEY)) || 0; } catch { return 0; }
@@ -157,7 +182,7 @@ function markCampaignFinished() {
   try { localStorage.setItem(FINISHED_KEY, String(campaignsFinished() + 1)); } catch { /* ignore */ }
 }
 
-function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
+function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chosenDifficulty() }) {
   session?.destroy();
   app.replaceChildren();
   const root = el('div', 'gs');
@@ -170,11 +195,14 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   // Seeds (#80): a resumed campaign reuses the seeds it was started with, whatever the address says now.
   const savedMeta = resume ? slot.peek()?.parts?.meta : null;
   const seeds = savedMeta?.seeds ?? { pushback: Number(params.get('seed') ?? Date.now() % 100000), world: Number(params.get('seed') ?? 11) };
-  slot.register('meta', { toJSON: () => ({ seeds, savedAtQuarter: clock.quarter }), load: () => {} });
-  const pb = new Pushback({ ledger, seed: seeds.pushback, config: { board: { enabled: false } } });
+  // Difficulty (#92): chosen on the title screen, kept in the save; a resumed campaign keeps its own.
+  if (savedMeta) difficulty = savedMeta.difficulty ?? DEFAULT_DIFFICULTY;
+  const diff = difficultySettings(difficulty);
+  slot.register('meta', { toJSON: () => ({ seeds, difficulty: diff.id, savedAtQuarter: clock.quarter }), load: () => {} });
+  const pb = new Pushback({ ledger, seed: seeds.pushback, config: { board: { enabled: false }, heat: diff.pushback.heat } });
   // The board (#18): five members, a revenue quota +30% a quarter, two directives per meeting.
   // Replaces pushback's legacy three-strikes target in the campaign.
-  const board = new Board({ ledger, seed: seeds.world,
+  const board = new Board({ ledger, seed: seeds.world, config: diff.board,
     supports: ['revenue', 'heat', 'tensions', 'brinkTracks', 'breaches', 'handovers', 'schemesRun'] });
   board.onChange(() => { pb.schemeHeatMultiplier = board.schemeHeatMultiplier; });
   const qStats = { handovers: 0, breaches: 0, schemesAtStart: 0, crisisConfidence: null };
@@ -232,10 +260,12 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     links: rosterLinks(roster).map((l) => [l.from, l.to, l.strength]),
     rdLevel: () => company.level('rnd'), // crash research needs R&D level 2 (#64)
     spendRp: (rp) => (tree.pool >= rp ? ((tree.pool -= rp), true) : false), // ...and costs 40 RP a breach week
+    config: diff.crisis, // tipping-point range and Brink drift by difficulty (#92)
   });
   // One tension model (#90): pushback's world meter is retired; its tension is the hottest crisis track, its
   // runaways are collapsed tracks, and the HUD, audio, quarter report and Midnight all read that.
   pb.useCrisis(crisis);
+  crisis.on('week', () => pb.weekTick()); // heat cools weekly by difficulty (#92)
   const tensions = () => Object.fromEntries(Object.values(crisis.tracks).map((t) => [t.id, t.tension]));
   const market = new LeadMarket({ seed: worldSeed + 1, reputation: () => crisis.reputation });
   market.ownSite('nam'); // HQ
@@ -585,7 +615,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   }
 
   session = {
-    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, board, consequences, market, schemes, mapSales, mapScreen, slot, leads, social, company, story, telemetry, firstBreach,
+    difficulty: diff, clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, board, consequences, market, schemes, mapSales, mapScreen, slot, leads, social, company, story, telemetry, firstBreach,
     destroy() {
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);
