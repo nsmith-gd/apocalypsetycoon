@@ -163,6 +163,7 @@ export const PUSHBACK_DEFAULTS = {
     maxEventsPerQuarter: 2,
   },
   board: {
+    enabled: true, // the campaign turns this off and runs the GDD board (src/board/board.js) instead
     firstTarget: 50_000, // quarterly profit expected in Q1
     growth: 0.08, // each target is 8% above the previous one (pacing harness: 25% ousted every bot by Q7)
     ratchet: 0.25, // a beaten target also moves 25% of the way toward the profit that beat it
