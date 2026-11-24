@@ -17,7 +17,7 @@
 // Feed tensions weekly with `week({ tensions, breaching })`, or `attachCrisis(market, crisisSystem)`.
 
 import { TRACKS as GDD_TRACKS } from '../world/tracks.js';
-import { DEMAND } from '../config/tuning.js';
+import { DEMAND, TUNING } from '../config/tuning.js';
 import { seededRng } from '../campaign/rng.js';
 
 export const EXPOSURE = Object.freeze({ high: 1, medium: 0.5, low: 0.25 });
@@ -79,7 +79,7 @@ export function panicPremium(region, tensions, { breachMultiplier = 1 } = {}, cf
 }
 
 export class LeadMarket {
-  constructor({ seed = 1, regions = REGIONS, config = {}, reputation = () => 50 } = {}) {
+  constructor({ seed = 1, regions = REGIONS, config = {}, reputation = () => TUNING.reputation.start } = {}) {
     this.cfg = { ...DEMAND, ...config };
     this.regions = regions;
     this.rng = rngFrom(seed);
