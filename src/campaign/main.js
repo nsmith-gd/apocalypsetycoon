@@ -31,6 +31,8 @@ import { createSaveSlot, ledgerSaveable, pushbackSaveable, doomClockSaveable } f
 import { LeadInventory } from '../leads/leads.js';
 import { loadVenueCatalog } from '../events/venues.js';
 import { EventCircuit } from '../events/attend.js';
+import { WeeklyDeck, applyChoice } from '../events/weekly.js';
+import { showWeeklyCard } from '../events/weekly-ui.js';
 import { SocialSession } from '../social/viewmodel.js';
 import { worldState } from '../dialogue/world-state.js';
 import { createSocialScreens } from '../social/text-screens.js';
@@ -125,7 +127,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
 
   const ledger = new Ledger({ startingCash: STARTING_CASH });
   const pb = new Pushback({ ledger, seed: Number(params.get('seed') ?? Date.now() % 100000) });
-  const tree = new ResearchTree();
+  const tree = new ResearchTree({ ledger }); // R&D costs cash up front; RP comes from crisis grants (#16)
   const clock = new CampaignClock({ quarterSeconds: QS });
   const ui = createGameUI({ root, ledger, views: { grid: gridView, map: mapView } });
   const pbui = createPushbackUI({ root, pushback: pb });
@@ -134,7 +136,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   createDoomClockHud({ clock: doom, hud: root.querySelector('.hud') });
   const gauge = createPressureGauge({ root, pushback: pb, getQuarterProfit: () => ledger.summary(ledger.quarter).net,
     onRelief: (r) => r && pbui.tick(`${r.kind === 'layLow' ? 'Laid low' : 'Funded relief'}: -$${Math.round(r.cost / 1000)}K`, 'ok') });
-  const research = createResearchPanel({ root, tree, getCrisis: () => pb.tension });
+  const research = createResearchPanel({ root, tree, getCrisis: () => pb.tension, mode: 'weekly' });
   root.querySelector('.hud')?.insertBefore(research.chip, root.querySelector('.view-toggle'));
   const audio = createAudio();
   wireAudio(audio, { ledger, pushback: pb });
@@ -149,7 +151,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   // The shelter grid: your HQ shelter. Board budget freezes raise build costs; research adds crews and rooms.
   let frame = 0;
   // Tile-level bunker (RimWorld-style): dig, wall, wire and furnish; rooms form from what you enclose.
-  const grid = new BunkerSite({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: () => tree.crewCount });
+  const grid = new BunkerSite({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: () => tree.crewCount, research: tree });
   const gridUI = createBunkerUI({ mount: gridView, grid, getFrame: () => frame, onHandOver: (sh) => { mapSales.addFinished(sh); mapScreen.refresh(); } });
   slot.register('grid', grid);
 
@@ -168,7 +170,9 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   market.ownSite('nam'); // HQ
   market.week({ tensions: tensions() });
   attachCrisis(market, crisis); // a market week runs after every crisis week
-  const schemes = new SchemeBoard({ crisis, market, ledger, pushback: pb, isUnlocked: (id) => tree.isUnlocked(id) });
+  const schemes = new SchemeBoard({ crisis, market, ledger, pushback: pb, isUnlocked: (id) => tree.isUnlocked(id), getHeatMultiplier: () => tree.schemeHeatMult });
+  // The crisis dividend (#16): every week each track pays research grants by its band (Simmer/Boil/Brink).
+  crisis.on('week', () => tree.fundWeek(Object.values(crisis.tracks)));
   const mapSales = new MapSales({ market, ledger, pushback: pb, getTensions: tensions, getBreachMultiplier: () => crisis.panicMultiplier,
     getEdgeBonus: (id) => schemes.edgeBonus(id), getQuarter: () => clock.quarter });
   // Your leads: people met at events (director note D2). Redeemed on the world map for better sales (#58).
@@ -200,6 +204,8 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => crisis.advanceWeek() });
   crisis.on('week', () => mapScreen.refresh());
   slot.register('sales', mapSales);
+  // Crisis profits fund the labs too: the panic-premium share of every map sale becomes RP (#16).
+  mapSales.onChange((e) => { if (e.type === 'sale' && e.record.premium > 1) tree.fundFromIncome(e.record.price * (1 - 1 / e.record.premium), `${e.record.owner}'s panic premium`); });
   const WEEK_SECONDS = clock.quarterSeconds / 13; // 13 in-game weeks a quarter
   let weekAcc = 0;
   tree.onUnlock?.(() => { gridUI.refresh(); mapScreen.refresh(); });
@@ -334,6 +340,43 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   ledger.onChange(() => { ui.update(hudState()); gauge.render(); });
 
   // Modals hold the clock: quarter report and choice cards pause time.
+  // ---------- weekly headline card (#74, L0): one card every in-game week; the clock holds while it's open ----------
+  const deck = new WeeklyDeck({ seed: worldSeed + 7 });
+  slot.register('weekly', deck);
+  const cardQueue = [];
+  let cardOpen = false;
+  const campaignWeek = () => (clock.quarter - 1) * 13 + Math.floor(clock.elapsed / WEEK_SECONDS);
+  const trackName = (id) => TRACK_BY_ID[id]?.name ?? id;
+  const cardHooks = {
+    addTension: (track, n, why) => {
+      if (track && crisis.tracks[track]?.open) crisis.addTension(track, n, why);
+      else pb.addTension(n, why); // general cards, or a track not in play: the world's tension takes it
+    },
+    addHeat: (n, why) => pb.addHeat(n, why),
+    addCash: (label, n) => ledger.record('other', label, n),
+    addReputation: (n) => { crisis.reputation = Math.max(0, Math.min(100, crisis.reputation + n)); },
+    addResearch: (n) => { tree.pool += n; },
+    note: (text) => toast(text),
+  };
+  async function pumpCards() {
+    if (cardOpen || !cardQueue.length || modalOpen() || midnightStarted) return;
+    cardOpen = true;
+    const { card, week } = cardQueue.shift();
+    const pick = await showWeeklyCard({ root: document.body, card, week, trackName, canAfford: (cost) => ledger.cash >= cost });
+    deck.chose(week, pick);
+    const r = applyChoice(card, pick, cardHooks, trackName);
+    pb._changed?.();
+    ui.update(hudState());
+    toast(`${card.title}: ${r.choice.label}${r.applied.length ? ` (${r.applied.join(', ')})` : ''}`);
+    cardOpen = false;
+  }
+  function drawWeeklyCard() {
+    const week = campaignWeek();
+    if (week < 1) return;
+    const card = deck.draw(week);
+    if (card) cardQueue.push({ card, week });
+  }
+
   const modalOpen = () => !!document.querySelector('.report-overlay:not([hidden]), .br-overlay:not([hidden]), .pb-overlay, .mn-overlay, .mn-strike, .soc-overlay:not([hidden])');
 
   // ---------- keys ----------
@@ -357,14 +400,15 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     if (modalOpen()) clock.hold('modal'); else clock.release('modal');
     if (clock.running) {
       const g = dt * clock.speed;
-      tree.tick(g, pb.tension);
       openDueTracks();
       grid.tick(g);
       weekAcc += g;
       while (weekAcc >= WEEK_SECONDS) { weekAcc -= WEEK_SECONDS; crisis.advanceWeek(); }
       syncDoomWeeks();
+      drawWeeklyCard();
     }
     clock.tick(dt);
+    pumpCards();
     acc += dt;
     if (acc > 0.25) { acc = 0; frame++; drawViews(); }
     renderBar();

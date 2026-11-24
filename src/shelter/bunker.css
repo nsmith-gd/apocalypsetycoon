@@ -47,3 +47,7 @@
 .bk-res .th { font-size: 10px; margin: 1px 0; }
 .bk-res .th.good { color: var(--at-green, #7ed957); }
 .bk-res .th.bad { color: var(--at-red); }
+
+/* #16: research-locked palette entries */
+.bk-obj[data-locked='true'], .bk-tool[data-locked='true'] { opacity: 0.4; }
+.bk-obj[data-locked='true']::after { content: 'R&D'; font-size: 9px; font-weight: 900; color: var(--at-amber, #ff9f1c); margin-left: auto; }
