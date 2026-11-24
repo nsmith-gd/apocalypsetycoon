@@ -1,0 +1,37 @@
+# Example script for the dialogue engine (#54). Compile with parseScript() from src/dialogue/script.js.
+tree crypto_tokens start=hello
+vars trust=0
+
+= hello guest
+{name} jingles a hardware wallet at you. "Last Resort, right? You take tokens?"
+? [crisis>=70] {name} isn't smiling. "Be quick. Have you seen the news?"
+* Of course. Your keys, your bunker. -> keys {trait vain, trust +5}
+* [rep>=40] Only from people I trust. And I trust you. -> keys {trust +10}
+* [trait paranoid | heat<30] Cash is better. Untraceable. -> cash {flag cash_deal}
+* Tokens are a fad. Concrete isn't. -> rebuffed {aggressive}
+
+= keys guest
+"Good. I want a vault for the cold wallets. Under the vault. Under the pool."
+* [trust>=10] A vault under a vault. I'll draw it tonight. -> win {promise wine_cellar, trust +5}
+* Let's talk about the air first. -> air once {trust +2}
+* [crisis>=45] The way things are going, you'll want it by spring. -> win_fear {fear $guest}
+
+= air guest
+"Air? Sure. Scrubbers, whatever. Back to the vault."
+* Fine. The vault. -> keys
+* Everyone forgets the air until the door shuts. -> win_fear {fear $guest, learn paranoid}
+
+= cash guest
+> {heat +1}
+"Untraceable. I like you." {name} lowers their voice.
+* Between us? We hear about these things early. -> win_tip {slip}
+* Just good practice. -> win {trust +3}
+
+= win !sold_dream
+{name} sends a deposit before the canapes come round.
+= win_fear !sold_fear
+{name} pockets your card. "Send the air numbers."
+= win_tip !insider_tip
+{name} goes pale and reaches for a pen.
+= rebuffed !rebuffed
+"A fad." {name} turns back to the bar.

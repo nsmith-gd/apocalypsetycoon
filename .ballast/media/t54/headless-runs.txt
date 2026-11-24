@@ -1,0 +1,33 @@
+=== Calm world, unknown company (reputation 0, heat 50)
+  GUEST: Kip Quill jingles a hardware wallet at you. "Last Resort, right? You take tokens?"
+     > [1] Of course. Your keys, your bunker.
+       [4] Tokens are a fad. Concrete isn't.
+  GUEST: "Good. I want a vault for the cold wallets. Under the vault. Under the pool."
+     > [2] Let's talk about the air first.
+  GUEST: "Air? Sure. Scrubbers, whatever. Back to the vault."
+       [1] Fine. The vault.
+     > [2] Everyone forgets the air until the door shuts.
+  NARRATOR: Kip Quill pockets your card. "Send the air numbers."
+  -> ENDING: sold_fear   path hello > keys > air > win_fear   trust 7   effects [{"trait":"vain","trust":5},{"trust":2},{"fear":"optimizer","learn":"paranoid"}]
+
+=== Trusted company (reputation 45): a gated line opens, trust unlocks the vault promise
+  GUEST: Kip Quill jingles a hardware wallet at you. "Last Resort, right? You take tokens?"
+       [1] Of course. Your keys, your bunker.
+     > [2] Only from people I trust. And I trust you.   (unlocked by a condition)
+       [4] Tokens are a fad. Concrete isn't.
+  GUEST: "Good. I want a vault for the cold wallets. Under the vault. Under the pool."
+     > [1] A vault under a vault. I'll draw it tonight.   (unlocked by a condition)
+       [2] Let's talk about the air first.
+  NARRATOR: Kip Quill sends a deposit before the canapes come round.
+  -> ENDING: sold_dream   path hello > keys > win   trust 15   effects [{"trust":10},{"promise":"wine_cellar","trust":5}]
+
+=== Low heat, The Optimizer boiling (tension 75): the alt line and the cash route
+  GUEST: Kip Quill isn't smiling. "Be quick. Have you seen the news?"
+       [1] Of course. Your keys, your bunker.
+     > [3] Cash is better. Untraceable.   (unlocked by a condition)
+       [4] Tokens are a fad. Concrete isn't.
+  GUEST: "Untraceable. I like you." Kip Quill lowers their voice.
+     > [1] Between us? We hear about these things early.
+       [2] Just good practice.
+  NARRATOR: Kip Quill goes pale and reaches for a pen.
+  -> ENDING: insider_tip   path hello > cash > win_tip   trust 0   effects [{"flag":"cash_deal"},{"heat":1},{"slip":true}]
