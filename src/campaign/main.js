@@ -121,7 +121,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
 
   const ledger = new Ledger({ startingCash: STARTING_CASH });
   const pb = new Pushback({ ledger, seed: Number(params.get('seed') ?? Date.now() % 100000) });
-  const tree = new ResearchTree();
+  const tree = new ResearchTree({ ledger }); // R&D costs cash up front; RP comes from crisis grants (#16)
   const clock = new CampaignClock({ quarterSeconds: QS });
   const ui = createGameUI({ root, ledger, views: { grid: gridView, map: mapView } });
   const pbui = createPushbackUI({ root, pushback: pb });
@@ -131,7 +131,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   createDoomClockHud({ clock: doom, hud: root.querySelector('.hud') });
   const gauge = createPressureGauge({ root, pushback: pb, getQuarterProfit: () => ledger.summary(ledger.quarter).net,
     onRelief: (r) => r && pbui.tick(`${r.kind === 'layLow' ? 'Laid low' : 'Funded relief'}: -$${Math.round(r.cost / 1000)}K`, 'ok') });
-  const research = createResearchPanel({ root, tree, getCrisis: () => pb.tension });
+  const research = createResearchPanel({ root, tree, getCrisis: () => pb.tension, mode: 'weekly' });
   root.querySelector('.hud')?.insertBefore(research.chip, root.querySelector('.view-toggle'));
   const audio = createAudio();
   wireAudio(audio, { ledger, pushback: pb });
@@ -146,7 +146,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   // The shelter grid: your HQ shelter. Board budget freezes raise build costs; research adds crews and rooms.
   let frame = 0;
   // Tile-level bunker (RimWorld-style): dig, wall, wire and furnish; rooms form from what you enclose.
-  const grid = new BunkerSite({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: () => tree.crewCount });
+  const grid = new BunkerSite({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: () => tree.crewCount, research: tree });
   const gridUI = createBunkerUI({ mount: gridView, grid, getFrame: () => frame, onHandOver: (sh) => { mapSales.addFinished(sh); mapScreen.refresh(); } });
   slot.register('grid', grid);
 
@@ -161,7 +161,9 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   market.week({ tensions: Object.fromEntries(Object.entries(START_TENSION).map(([k, v]) => [k, Math.round(v / 2)])) });
   market.week({ tensions: tensions() });
   attachCrisis(market, crisis); // a market week runs after every crisis week
-  const schemes = new SchemeBoard({ crisis, market, ledger, pushback: pb, isUnlocked: (id) => tree.isUnlocked(id) });
+  const schemes = new SchemeBoard({ crisis, market, ledger, pushback: pb, isUnlocked: (id) => tree.isUnlocked(id), getHeatMultiplier: () => tree.schemeHeatMult });
+  // The crisis dividend (#16): every week each track pays research grants by its band (Simmer/Boil/Brink).
+  crisis.on('week', () => tree.fundWeek(Object.values(crisis.tracks)));
   const mapSales = new MapSales({ market, ledger, pushback: pb, getTensions: tensions, getBreachMultiplier: () => crisis.panicMultiplier,
     getEdgeBonus: (id) => schemes.edgeBonus(id), getQuarter: () => clock.quarter });
   // Your leads: people met at events (director note D2). Redeemed on the world map for better sales (#58).
@@ -193,6 +195,8 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => crisis.advanceWeek() });
   crisis.on('week', () => mapScreen.refresh());
   slot.register('sales', mapSales);
+  // Crisis profits fund the labs too: the panic-premium share of every map sale becomes RP (#16).
+  mapSales.onChange((e) => { if (e.type === 'sale' && e.record.premium > 1) tree.fundFromIncome(e.record.price * (1 - 1 / e.record.premium), `${e.record.owner}'s panic premium`); });
   const WEEK_SECONDS = clock.quarterSeconds / 13; // 13 in-game weeks a quarter
   let weekAcc = 0;
   tree.onUnlock?.(() => { gridUI.refresh(); mapScreen.refresh(); });
@@ -339,7 +343,6 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     if (modalOpen()) clock.hold('modal'); else clock.release('modal');
     if (clock.running) {
       const g = dt * clock.speed;
-      tree.tick(g, pb.tension);
       openDueTracks();
       grid.tick(g);
       weekAcc += g;

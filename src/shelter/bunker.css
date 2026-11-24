@@ -31,3 +31,7 @@
 /* In the campaign the Pressure panel (left) and Clients panel (right) float over the stage: keep clear. */
 .gs .bk { margin: 0 270px; grid-template-columns: 180px auto 240px; }
 @media (max-width: 1300px) { .gs .bk { margin: 0; } }
+
+/* #16: research-locked palette entries */
+.bk-obj[data-locked='true'], .bk-tool[data-locked='true'] { opacity: 0.4; }
+.bk-obj[data-locked='true']::after { content: 'R&D'; font-size: 9px; font-weight: 900; color: var(--at-amber, #ff9f1c); margin-left: auto; }
