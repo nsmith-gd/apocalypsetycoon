@@ -1,0 +1,14 @@
+{
+ "before": {
+  "crewDaysDone": 1.167,
+  "crews": 2,
+  "speed": 1
+ },
+ "after": {
+  "crewDaysDone": 2.013,
+  "crews": 3,
+  "speed": 1.15
+ },
+ "ratio": 1.725,
+ "level": 2
+}

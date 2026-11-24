@@ -11,6 +11,11 @@
 //   co.crewSpeed                    -> 1 + 0.15 x (Engineering level - 1)
 //   co.crewCap                      -> the tier's crew limit (Startup 2)
 //   co.setTier('boutique')          -> tier-ups come from the board (#18); this is the hook
+//   co.extraCrews, co.rpPerWeek     -> #72: Engineering +1 crew per level above 1; R&D +3 RP a week per level
+// #72: level-ups cost the GDD's $2M / $4M / $8M / $16M x PRICE_SCALE (the bunker economy's 0.1), so
+//      $200K / $400K / $800K / $1.6M against the $400K opening treasury.
+
+import { PRICE_SCALE } from '../shelter/bunker-catalog.js';
 
 export const TIERS = Object.freeze([
   { id: 'startup', name: 'Startup', sites: 1, crews: 2, cap: 2, opens: ['sales', 'engineering', 'special'] },
@@ -33,8 +38,11 @@ export const DEPARTMENTS = Object.freeze([
 
 export const COMPANY = Object.freeze({
   startLevel: 1,
-  levelCost: 100_000, // stand-in: level n costs n x this (the GDD gives no department prices)
+  levelCostsM: [2, 4, 8, 16], // GDD $M for level 1->2, 2->3, 3->4, 4->5 (#72)
+  priceScale: PRICE_SCALE,
   engineeringSpeedPerLevel: 0.15,
+  engineeringCrewsPerLevel: 1, // +1 crew slot per level above 1
+  rndRpPerLevel: 3, // RP a week per R&D level
 });
 
 export class Company {
@@ -52,7 +60,7 @@ export class Company {
 
   get tier() { return TIERS[this.tierIndex]; }
   get cap() { return this.tier.cap; }
-  get crewCap() { return this.tier.crews; }
+  get crewCap() { return this.tier.crews + this.extraCrews; }
   get siteCap() { return this.tier.sites; }
 
   /** Is a department open: its tier reached and its time in play come? */
@@ -68,7 +76,10 @@ export class Company {
     return this.levels[deptId] ?? this.cfg.startLevel;
   }
 
-  levelCost(deptId) { return (this.level(deptId) + 1) * this.cfg.levelCost; }
+  levelCost(deptId) {
+    const m = this.cfg.levelCostsM[Math.max(1, this.level(deptId)) - 1] ?? this.cfg.levelCostsM.at(-1);
+    return Math.round(m * 1_000_000 * this.cfg.priceScale);
+  }
 
   /** Why a department can't be levelled now, or null. The tier's cap is the hard limit. */
   blocker(deptId) {
@@ -97,8 +108,14 @@ export class Company {
   /** Engineering: every level above 1 speeds every crew by 15%. */
   get crewSpeed() { return 1 + this.cfg.engineeringSpeedPerLevel * Math.max(0, this.level('engineering') - 1); }
 
-  /** Crews actually working: what you have, capped by the tier. */
-  crews(have) { return Math.min(this.crewCap, have); }
+  /** Engineering: every level above 1 adds a crew (and the slot for it). */
+  get extraCrews() { return this.cfg.engineeringCrewsPerLevel * Math.max(0, this.level('engineering') - 1); }
+
+  /** R&D: RP a week, paid with the weekly crisis grants. */
+  get rpPerWeek() { return this.cfg.rndRpPerLevel * this.level('rnd'); }
+
+  /** Crews actually working: what you have plus Engineering's, capped by the tier (+ Engineering's slots). */
+  crews(have) { return Math.min(this.crewCap, have + this.extraCrews); }
 
   setTier(id) {
     const i = TIERS.findIndex((t) => t.id === id);
@@ -109,7 +126,7 @@ export class Company {
 
   view() {
     return {
-      tier: this.tier.name, tierId: this.tier.id, sites: this.siteCap, crews: this.crewCap, cap: this.cap, crewSpeed: this.crewSpeed,
+      tier: this.tier.name, tierId: this.tier.id, sites: this.siteCap, crews: this.crewCap, cap: this.cap, crewSpeed: this.crewSpeed, extraCrews: this.extraCrews, rpPerWeek: this.rpPerWeek,
       departments: DEPARTMENTS.map((d) => ({ id: d.id, name: d.name, head: d.head, perLevel: d.perLevel, open: this.isOpen(d.id), level: this.level(d.id), cap: this.cap, cost: this.levelCost(d.id), blocker: this.blocker(d.id) })),
     };
   }
