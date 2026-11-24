@@ -14,7 +14,7 @@ Apocalypse Tycoon is a pixel-art management sim about building luxury doomsday s
 
 ## Player fantasy
 
-You found Last Resort Holdings, a shelter builder with one shovel crew and a board that expects growth every quarter. Calm worlds don’t buy bunkers, so you learn to make the world a little less calm. The whole game asks one question: how close to the edge do you dare run it?
+You found Last Resort Holdings, a shelter builder with two shovel crews and a board that expects growth every quarter. Calm worlds don’t buy bunkers, so you learn to make the world a little less calm. The whole game asks one question: how close to the edge do you dare run it?
 
 ## Design pillars
 
@@ -34,7 +34,7 @@ You found Last Resort Holdings, a shelter builder with one shovel crew and a boa
 | World canvas | Situation-room map, 8 regions, 6 of 10 threat tracks per campaign, weekly event deck |
 | Threat tracks | 10 in total, 6 per campaign: the Classic six (Atomic Standoff, The Bloom, Superstorm Season, The Optimizer, The Hush, The Pitchforks) plus four alternates (The Grey Goo, The Long Shade, The Kessler Rain, The Cloud Strike) |
 | Clients | 5 wealth classes, 16 hero clients plus generated clients |
-| Content | 73 rooms and fixtures, 37 schemes, 48 unlocks, 340 event cards, 12 endings |
+| Content | 73 rooms and fixtures, 37 schemes, 48 unlocks, 340 event cards (220 Classic + 120 alternate), 12 endings |
 | Art | 16 px pixel art on a strict grid, colour-coded by needs tier |
 | Platform | PC (Steam) first, Steam Deck target (to confirm) |
 
@@ -85,8 +85,8 @@ Every lap sells shelters and buys research by pushing the world toward the edge,
 | Loop | Real time at 1× | What the player does | What it feeds |
 |---|---|---|---|
 | Moment | Seconds | Dig tiles, place rooms, route utilities, approve schemes, answer headlines | The shelter grid and next week’s tension |
-| Week | 2 minutes | Watch crews progress, tension drift and grants pay out; resolve one headline card | Cash, RP, demand, heat |
-| Quarter | 26 minutes (13 weeks) | Board meeting, quota, directives, new unlocks, a contract wave | Board confidence, chapter progress |
+| Week | About 2 minutes | Watch crews progress, tension drift and grants pay out; resolve one headline card | Cash, RP, demand, heat |
+| Quarter | 27 minutes (13 weeks) | Board meeting, quota, directives, new unlocks, a contract wave | Board confidence, chapter progress |
 | Campaign | 5 to 6.5 hours | Open new tracks, dig deeper strata, court richer clients, hold off Midnight | The Doom Clock floor and the ending |
 
 ## The edge loop
@@ -474,7 +474,7 @@ Containment ops, one per track, run only during a breach and are listed in the C
 
 ## The event deck
 
-One headline arrives every in-game week. Cards are drawn from each open track’s deck according to its band, plus a general deck: 30 cards per track and 40 general, 220 in total.
+One headline arrives every in-game week. Cards are drawn from each open track’s deck according to its band, plus a general deck: 30 cards per track and 40 general, so a campaign’s six tracks draw on 220 cards. The four alternate tracks add 120 more, 340 in the full game.
 
 | Card type | Share of draws | What it does |
 |---|---|---|
@@ -1094,7 +1094,7 @@ Each gate opens when the chapter’s last quota is hit and its handover mileston
 | 4. Too Big to Fail | Q8–Q10 | 3:20–4:50 | 6 | 9 → 6 | 6 | 24 | 10, one every 9 min | Dominoes, sieges, reactors, The Table |
 | 5. The Final Quarter | Q11–Q12 | 4:50–6:15 | 6 | 6 → 0 | 8 plus the Ark | 30 plus the Ark | 8, one every 8 min | Engineered Midnight and the endings |
 
-Real minutes per quarter rise from about 26 to about 32 as decisions get denser and players pause more. The handover milestones match the tier-up gates in the Company and board section.
+A quarter is 27 minutes of game clock at 1×. Real minutes per quarter, counting paused reading and decisions, rise from about 29 to about 32 as decisions get denser and players pause more. The handover milestones match the tier-up gates in the Company and board section.
 
 ## Signature moments
 
@@ -1323,8 +1323,8 @@ These are starting values for the first balance pass. They are set so the quota 
 
 | Unit | Value |
 |---|---|
-| In-game week | 120 seconds at 1× |
-| Quarter | 13 weeks: 26 minutes at 1× |
+| In-game week | About 125 seconds at 1× (27 minutes ÷ 13) |
+| Quarter | 13 weeks: 27 minutes at 1× (game clock; paused screens add 2 to 5 real minutes) |
 | Speeds | Pause, 1×, 2×, 4× |
 | Campaign | 12 quarters: 5 to 6.5 hours real time at mixed speed |
 
@@ -1520,7 +1520,7 @@ The four alternate tracks and six extra endings add an estimated 3 to 4 weeks: 1
 | Rooms and fixtures | 73 | 25 |
 | Threat tracks | 10 (6 per campaign) | 2 |
 | Schemes | 37 | 6 |
-| Event cards | 340 | 60 |
+| Event cards | 340 (220 Classic + 120 alternate) | 60 |
 | Unlocks | 48 | 19 |
 | Hero clients | 16 | 6 |
 | Named characters | 32 | 12 |
@@ -1537,7 +1537,7 @@ If the schedule slips, cut in this order:
 3. The Compound product goes; the Ark stays.
 4. Regions drop from 8 to 6.
 5. Tracks drop from 6 to 5, folding The Hush into Superstorm Season as crop failure.
-6. Event cards drop from 220 to 150.
+6. Classic-world event cards drop from 220 to 150. (The 120 alternate-track cards ship with the alternates.)
 Never cut the hidden tipping point, the two scores, containment windows, the board or Midnight. They are the game.
 
 ## Risks
