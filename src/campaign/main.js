@@ -29,6 +29,10 @@ import { showWorldSetup, createThreatsPanel } from '../world/world-ui.js';
 import { CampaignClock, SPEEDS, formatClock, QUARTER_SECONDS } from './clock.js';
 import { createSaveSlot, ledgerSaveable, pushbackSaveable, doomClockSaveable } from './save.js';
 import { LeadInventory } from '../leads/leads.js';
+import { loadVenueCatalog } from '../events/venues.js';
+import { EventCircuit } from '../events/attend.js';
+import { SocialSession } from '../social/viewmodel.js';
+import { createSocialScreens } from '../social/text-screens.js';
 
 export const STARTING_CASH = 400_000;
 // A threat opens already simmering (GDD bands: Calm 0-19, Simmer 20-44). Provisional.
@@ -157,7 +161,6 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     seed: worldSeed, pushback: pb, doomClock: doom, ledger, shelters: () => mapSales.sheltersForMidnight(),
     tracks: roster.map((id) => ({ id, name: TRACK_BY_ID[id].name, open: false })),
     links: rosterLinks(roster).map((l) => [l.from, l.to, l.strength]),
-    clockWeeks: true, // every crisis week is a Doom Clock week (the Final Countdown counts real weeks)
   });
   const tensions = () => Object.fromEntries(Object.values(crisis.tracks).map((t) => [t.id, t.tension]));
   const market = new LeadMarket({ seed: worldSeed + 1, reputation: () => crisis.reputation });
@@ -170,6 +173,28 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   // Your leads: people met at events (director note D2). Redeemed on the world map for better sales (#58).
   const leads = new LeadInventory({ getQuarter: () => clock.quarter, getReputation: () => crisis.reputation });
   slot.register('leads', leads);
+
+  // Social events (director note D2, #60): go to events, talk to guests, come home with leads.
+  // Placeholder text-only screens over the SocialSession view-model; the catalog loads async.
+  const social = { session: null, screens: null };
+  const eventsBtn = el('button', 'view-btn', 'EVENTS');
+  eventsBtn.type = 'button';
+  eventsBtn.disabled = true;
+  eventsBtn.title = 'Go to social events and meet buyers (E)';
+  eventsBtn.onclick = () => social.screens?.toggle();
+  root.querySelector('.view-toggle')?.prepend(eventsBtn);
+  loadVenueCatalog().then((catalog) => {
+    if (session?.ledger !== ledger) return; // campaign was replaced while loading
+    const circuit = new EventCircuit({ catalog, ledger, seed: worldSeed, clock,
+      addHeat: (n, why) => pb.addHeat(n, why), addReputation: (n) => { crisis.reputation = Math.max(0, Math.min(100, crisis.reputation + n)); } });
+    slot.register('events', circuit);
+    if (resume) { const saved = slot.peek(); if (saved?.parts?.events) circuit.load(saved.parts.events); }
+    social.session = new SocialSession({ circuit, leads, getQuarter: () => clock.quarter, getCash: () => ledger.cash,
+      addHeat: (n, why) => pb.addHeat(n, why), addReputation: (n) => { crisis.reputation = Math.max(0, Math.min(100, crisis.reputation + n)); } });
+    social.screens = createSocialScreens({ root: document.body, social: social.session, onClose: () => { ui.update(hudState()); mapScreen.refresh(); } });
+    social.session.onChange(() => ui.update(hudState()));
+    eventsBtn.disabled = false;
+  }).catch((err) => { eventsBtn.title = `Events unavailable: ${err.message}`; });
   const mapScreen = createWorldMapScreen({ root: mapView, sales: mapSales, schemes, leads, initial: 'nam', onScheme: () => ui.update(hudState()), onSold: () => ui.update(hudState()) });
   createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => crisis.advanceWeek() });
   crisis.on('week', () => mapScreen.refresh());
@@ -270,7 +295,14 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
       }
     }
   }
+  // The Doom Clock counts real in-game weeks (13 a quarter), so a Final Countdown runs week by week.
+  // Synced from the campaign clock, so skipped quarters and loaded saves land on the right week.
+  const syncDoomWeeks = () => {
+    const target = (clock.quarter - 1) * 13 + Math.floor(clock.elapsed / WEEK_SECONDS);
+    if (target > doom.week) doom.advanceWeeks(target - doom.week);
+  };
   clock.onQuarterStart(({ quarter }) => {
+    syncDoomWeeks();
     ledger.setQuarter(quarter);
     leads.expire(quarter); // unused leads go cold on schedule
     const chapter = CHAPTER_STARTS[quarter]; // GDD Pacing: chapters 2-5 start at Q3, Q5, Q8 and Q11
@@ -301,7 +333,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   ledger.onChange(() => { ui.update(hudState()); gauge.render(); });
 
   // Modals hold the clock: quarter report and choice cards pause time.
-  const modalOpen = () => !!document.querySelector('.report-overlay:not([hidden]), .br-overlay:not([hidden]), .pb-overlay, .mn-overlay, .mn-strike');
+  const modalOpen = () => !!document.querySelector('.report-overlay:not([hidden]), .br-overlay:not([hidden]), .pb-overlay, .mn-overlay, .mn-strike, .soc-overlay:not([hidden])');
 
   // ---------- keys ----------
   const onKey = (e) => {
@@ -310,6 +342,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     else if (e.key === '.' || e.key === '>') clock.setSpeed(SPEEDS[Math.min(SPEEDS.length - 1, SPEEDS.indexOf(clock.speed) + 1)] ?? 1);
     else if (e.key === ',' || e.key === '<') clock.setSpeed(SPEEDS[Math.max(0, SPEEDS.indexOf(clock.speed) - 1)] ?? 1);
     else if (e.key === 'n' || e.key === 'N') { if (!modalOpen()) clock.skipQuarter(); }
+    else if ((e.key === 'e' || e.key === 'E') && social.screens && !modalOpen()) social.screens.toggle();
   };
   addEventListener('keydown', onKey);
 
@@ -328,6 +361,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
       grid.tick(g);
       weekAcc += g;
       while (weekAcc >= WEEK_SECONDS) { weekAcc -= WEEK_SECONDS; crisis.advanceWeek(); }
+      syncDoomWeeks();
     }
     clock.tick(dt);
     acc += dt;
@@ -359,10 +393,11 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   }
 
   session = {
-    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, market, schemes, mapSales, mapScreen, slot, leads,
+    clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, market, schemes, mapSales, mapScreen, slot, leads, social,
     destroy() {
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);
+      social.screens?.destroy();
       removeEventListener('resize', fit);
       gridUI.destroy();
       ui.destroy();
