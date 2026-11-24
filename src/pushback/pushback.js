@@ -24,22 +24,14 @@
 //   pb.on('event' | 'change' | 'resolved' | 'ousted' | 'runaway', fn)
 
 import { PUSHBACK_DEFAULTS } from '../config/tuning.js';
+import { seededRng } from '../campaign/rng.js';
 export { PUSHBACK_DEFAULTS }; // lives in the single tuning table (#77)
 
 const clamp = (v, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
 const round = (n, to = 1_000) => Math.round(n / to) * to;
 
 /** Small seeded RNG so playthroughs and tests are reproducible. */
-export function mulberry32(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+export function mulberry32(seed) { return seededRng(seed); } // saveable state (#80)
 
 function deepMerge(base, over = {}) {
   const out = {};

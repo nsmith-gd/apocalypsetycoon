@@ -136,7 +136,11 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   app.append(root);
 
   const ledger = new Ledger({ startingCash: STARTING_CASH });
-  const pb = new Pushback({ ledger, seed: Number(params.get('seed') ?? Date.now() % 100000) });
+  // Seeds (#80): a resumed campaign reuses the seeds it was started with, whatever the address says now.
+  const savedMeta = resume ? slot.peek()?.parts?.meta : null;
+  const seeds = savedMeta?.seeds ?? { pushback: Number(params.get('seed') ?? Date.now() % 100000), world: Number(params.get('seed') ?? 11) };
+  slot.register('meta', { toJSON: () => ({ seeds, savedAtQuarter: clock.quarter }), load: () => {} });
+  const pb = new Pushback({ ledger, seed: seeds.pushback });
   const tree = new ResearchTree({ ledger }); // R&D costs cash up front; RP comes from crisis grants (#16)
   const clock = new CampaignClock({ quarterSeconds: QS });
   const ui = createGameUI({ root, ledger, views: { grid: gridView, map: mapView } });
@@ -172,7 +176,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   slot.register('grid', grid);
 
   // ---------- the world: crisis tracks, weekly leads, schemes and map sales ----------
-  const worldSeed = Number(params.get('seed') ?? 11);
+  const worldSeed = seeds.world;
   // The six roster tracks (#33) are the world's crises (#69). Each rolls its hidden tipping point now and stays
   // closed until its opening time; Doom Clock fragility lowers that roll from day one, so a late track opens fragile.
   if (resume) roster = slot.peek()?.parts?.world?.roster ?? roster;
@@ -224,6 +228,8 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => crisis.advanceWeek() });
   crisis.on('week', () => mapScreen.refresh());
   slot.register('sales', mapSales);
+  slot.register('market', market);
+  slot.register('schemes', schemes);
   // Telemetry (#78): weekly meters and every event, exportable as CSV (TELEMETRY button).
   const telemetry = new Telemetry({ getTime: () => ({ quarter: clock.quarter, week: crisis.week, minutes: (clock.total / clock.quarterSeconds) * 27 }) });
   telemetry.attach({ crisis, pushback: pb, ledger, tree, schemes, mapSales });
@@ -237,7 +243,6 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   const world = { roster: [...roster], opened: [] };
   slot.register('crisis', crisis);
   slot.register('world', { toJSON: () => ({ roster: world.roster, opened: world.opened }), load: (d) => { if (d.roster?.length === 6) world.roster = d.roster; world.opened = d.opened ?? []; } });
-  if (resume) slot.load(); else slot.clear();
   delete doom.tensions.world; // saves from before #69 carried pushback's stand-in track
   for (const id of world.opened) crisis.openTrack(id); // already a no-op for tracks the crisis save reopened
   ledger.setQuarter(clock.quarter);
@@ -263,20 +268,19 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     speeds.append(b);
     return b;
   });
-  const saveBtn = el('button', null, 'SAVE');
-  saveBtn.onclick = () => toast(slot.save() ? 'Campaign saved.' : 'Could not save: browser storage is unavailable.');
   const telemetryBtn = el('button', null, 'TELEMETRY');
   telemetryBtn.title = 'Download this campaign\'s weekly meters and event log as CSV';
   telemetryBtn.onclick = () => { telemetry.download(); toast(`Telemetry: ${telemetry.weeks.length} weeks, ${telemetry.events.length} events saved as CSV.`); };
   const menuBtn = el('button', null, 'MENU');
-  menuBtn.onclick = () => { slot.save(); session.destroy(); showMainMenu(); };
+  menuBtn.title = 'Back to the title screen. Your campaign autosaves at the start of every quarter; Continue resumes from there.';
+  menuBtn.onclick = () => { session.destroy(); showMainMenu(); };
   const endBtn = el('button', null, 'END QUARTER');
   endBtn.title = 'Close the books now (N)';
   endBtn.onclick = () => clock.skipQuarter();
   const threatsBtn = el('button', null, 'THREATS [T]');
   threatsBtn.title = 'The six threat tracks in this world, when they open, and every scheme';
   threatsBtn.onclick = () => threats.toggle();
-  bar.append(label, time, track, speeds, threatsBtn, endBtn, saveBtn, telemetryBtn, menuBtn);
+  bar.append(label, time, track, speeds, threatsBtn, endBtn, telemetryBtn, menuBtn);
   root.append(bar);
 
   function renderBar() {
@@ -342,7 +346,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     leads.expire(quarter); // unused leads go cold on schedule
     const chapter = CHAPTER_STARTS[quarter]; // GDD Pacing: chapters 2-5 start at Q3, Q5, Q8 and Q11
     if (chapter) doom.chapterStart(chapter);
-    slot.save(); // autosave at every quarter close
+    slot.save(); // autosave at every quarter start: the one checkpoint Continue resumes from (#80)
     ui.update(hudState());
   });
   let midnightStarted = false;
@@ -391,7 +395,6 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   // First-breach nudge (#68): no breach by 2:30, and a wildcard pushes a Brink track over.
   const firstBreach = new FirstBreachNudge({ crisis, minutes: () => campaignMinutes() });
   slot.register('firstBreach', firstBreach);
-  if (resume) { const saved = slot.peek(); if (saved?.parts?.firstBreach) firstBreach.load(saved.parts.firstBreach); }
   const cardQueue = [];
   let cardOpen = false;
   const campaignWeek = () => (clock.quarter - 1) * 13 + Math.floor(clock.elapsed / WEEK_SECONDS);
@@ -521,6 +524,15 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
   };
   window.__game = session;
   // Debug presets for a NEW campaign: ?preset=countdown | clockzero | breach (add &qs=26 for 2-second weeks).
+  // ---------- save slot (#80): every system is registered by now ----------
+  // RNG positions: the dice a resumed campaign rolls next are the ones it would have rolled.
+  slot.register('rng', {
+    toJSON: () => ({ pushback: pb.rng.state, crisis: crisis.rng.state, deck: deck.rng.state }),
+    load: (d) => { if (d.pushback != null) pb.rng.state = d.pushback; if (d.crisis != null) crisis.rng.state = d.crisis; if (d.deck != null) deck.rng.state = d.deck; },
+  });
+  if (resume) slot.load();
+  else { slot.clear(); slot.save(); } // a new campaign's first checkpoint is the start of Q1
+  ledger.setQuarter(clock.quarter);
   const preset = DEBUG_PRESETS[params.get('preset')];
   if (!resume && preset) preset(session);
 }

@@ -26,6 +26,7 @@ import { apocalypseFor } from '../midnight/engineered.js';
 import { survival } from '../shelter/life.js';
 import { REGIONS as SALES_REGIONS } from '../demand/demand.js';
 import { BREACH, TUNING } from '../config/tuning.js';
+import { seededRng } from '../campaign/rng.js';
 
 export { BREACH }; // lives in the single tuning table (#77)
 
@@ -51,16 +52,7 @@ export const TRACKS = Object.freeze([
   { id: 'war', name: 'War' },
 ]);
 
-function rngFrom(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+const rngFrom = seededRng; // saveable state (#80)
 
 const clamp = (v, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
 
