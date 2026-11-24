@@ -28,6 +28,7 @@ import { TRACK_BY_ID, CLASSIC_ROSTER, rosterLinks } from '../world/tracks.js';
 import { showWorldSetup, createThreatsPanel } from '../world/world-ui.js';
 import { CampaignClock, SPEEDS, formatClock, QUARTER_SECONDS } from './clock.js';
 import { createSaveSlot, ledgerSaveable, pushbackSaveable, doomClockSaveable } from './save.js';
+import { finaleArgs } from '../midnight/finale.js';
 import { LeadInventory } from '../leads/leads.js';
 import { loadVenueCatalog } from '../events/venues.js';
 import { EventCircuit } from '../events/attend.js';
@@ -324,7 +325,8 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER] }) {
     clock.hold('midnight');
     slot.clear();
     renderBar();
-    const result = computeMidnight({ shelters: shelters(), world: { tension: pb.tension, heat: pb.heat, runaways: pb.runaways }, cash: ledger.cash,
+    // #17: the apocalypse the world was heading for, judged against the real crisis tracks.
+    const result = computeMidnight({ ...finaleArgs({ crisis, pushback: pb, shelters: shelters(), cash: ledger.cash }),
       ...(cause ? { forceType: 'failed', cause } : {}) });
     const { tolls, boom } = midnightTimes();
     audio.midnight(result.type);
