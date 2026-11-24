@@ -1,7 +1,8 @@
 import { TUNING } from '../src/config/tuning.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CrisisSystem, DOMINO_LINKS, BREACH } from '../src/crisis/breach.js';
+import { CrisisSystem, BREACH, slotLinks } from '../src/crisis/breach.js';
+import { SLOT_LINKS, TRACK_BY_ID, CLASSIC_ROSTER, selectRoster } from '../src/world/tracks.js';
 import { Pushback } from '../src/pushback/pushback.js';
 import { Ledger } from '../src/ledger/ledger.js';
 import { DoomClock } from '../src/doomclock/doomclock.js';
@@ -30,9 +31,75 @@ test('hidden tipping points roll at 90 + (-8..+4)', () => {
   assert.deepEqual(cs.visibleTip('war'), { range: [82, 94] }); // hidden until revealed
 });
 
-test('the domino map has 10 links, every pair of the five tracks once', () => {
-  assert.equal(DOMINO_LINKS.length, 10);
-  assert.equal(new Set(DOMINO_LINKS.map(([a, b]) => [a, b].sort().join('-'))).size, 10);
+// The GDD domino map (#65): 6 tracks by slot, 10 directed links (docs/gdd-figures/04-domino-map.png).
+const GDD_MAP = [
+  ['atomic', 'pitchforks', 'strong'], ['pitchforks', 'atomic', 'medium'], ['optimizer', 'atomic', 'strong'], ['optimizer', 'pitchforks', 'medium'],
+  ['atomic', 'superstorm', 'weak'], ['superstorm', 'bloom', 'medium'], ['superstorm', 'hush', 'strong'], ['bloom', 'hush', 'strong'],
+  ['bloom', 'pitchforks', 'medium'], ['hush', 'pitchforks', 'strong'],
+];
+function slotWorld(roster = CLASSIC_ROSTER, tension = 20) {
+  const tips = Object.fromEntries(roster.map((id) => [id, 90]));
+  const cs = new CrisisSystem({ tips, tracks: roster.map((id) => ({ id, name: TRACK_BY_ID[id].name })) });
+  for (const id of roster) cs.setTension(id, tension);
+  return cs;
+}
+const spillsFrom = (cs, id) => {
+  const out = [];
+  const off = cs.on('spillover', (e) => { if (e.from === id) out.push([e.to, e.momentum]); });
+  cs.advanceWeek();
+  off();
+  return out.sort();
+};
+
+test('the domino map is the GDD picture: 10 directed links by slot, every track feeds The Pitchforks', () => {
+  assert.equal(SLOT_LINKS.length, 10);
+  const classic = slotLinks(CLASSIC_ROSTER).map((l) => [l.from, l.to, l.strength]);
+  assert.deepEqual(classic.map((l) => l.join()).sort(), GDD_MAP.map((l) => l.join()).sort());
+  for (const id of CLASSIC_ROSTER.filter((x) => x !== 'pitchforks')) {
+    // every road leads to The Pitchforks: directly, or through a track that does
+    const reach = (from, seen = new Set()) => GDD_MAP.filter(([a]) => a === from).some(([, b]) => b === 'pitchforks' || (!seen.has(b) && reach(b, seen.add(b))));
+    assert.ok(reach(id), id);
+  }
+  assert.deepEqual(new CrisisSystem().links, [], 'the old generic demo tracks have no slots, so no links');
+});
+
+test('breach spillover follows every link at its weight: +6 strong, +3 medium, +1.5 weak momentum a week', () => {
+  const W = { strong: 6, medium: 3, weak: 1.5 };
+  for (const from of CLASSIC_ROSTER) {
+    const cs = slotWorld();
+    cs.setTension(from, 95); // breach
+    const expected = GDD_MAP.filter(([a]) => a === from).map(([, b, w]) => [b, W[w]]).sort();
+    assert.deepEqual(spillsFrom(cs, from), expected, from);
+  }
+});
+
+test('alternates inherit their slot\'s links: The Grey Goo spills exactly like The Bloom', () => {
+  const goo = selectRoster({ mode: 'custom', picks: { 2: 'greygoo' } });
+  const a = slotWorld(); a.setTension('bloom', 95);
+  const b = slotWorld(goo); b.setTension('greygoo', 95);
+  assert.deepEqual(spillsFrom(b, 'greygoo'), spillsFrom(a, 'bloom'));
+  const kessler = selectRoster({ mode: 'custom', picks: { 4: 'kessler' } });
+  const k = slotWorld(kessler); k.setTension('kessler', 95);
+  assert.deepEqual(spillsFrom(k, 'kessler'), [['atomic', 6], ['pitchforks', 3]], 'Kessler Rain takes The Optimizer\'s links');
+});
+
+test('a Bloom breach pushes The Hush: momentum arrives and a quarter of it turns into tension each week', () => {
+  const cs = slotWorld();
+  cs.setTension('bloom', 95);
+  cs.advanceWeek();
+  assert.equal(cs.tracks.hush.momentum, 4.5); // +6, then 1.5 released
+  assert.equal(cs.tracks.hush.tension, 21.5);
+  cs.advanceWeek();
+  assert.ok(cs.tracks.hush.tension > 21.5 && cs.tracks.hush.momentum > 4.5);
+});
+
+test('a collapsed track keeps spilling for good, doubled', () => {
+  const cs = slotWorld();
+  cs.setTension('bloom', 95);
+  for (let i = 0; i < 6 && cs.tracks.bloom.state === 'breach'; i++) cs.advanceWeek();
+  assert.equal(cs.tracks.bloom.state, 'collapsed');
+  const after = spillsFrom(cs, 'bloom').filter(([to]) => cs.tracks[to].state !== 'collapsed');
+  assert.deepEqual(after.find(([to]) => to === 'pitchforks'), ['pitchforks', 6]); // medium 3 x 2
 });
 
 test('breach auto-pauses and opens a 6, then 4, then 3-week window', () => {
@@ -105,30 +172,32 @@ test('successful containment: tension 60 and locked 3 weeks, scar -3, exact tipp
   assert.equal(cs.paused, false);
 });
 
-test('failed containment: pinned at 100 and linked tracks shoved +15/+8/+4', () => {
-  const { cs, clock } = world();
-  for (const id of ['pandemic', 'climate', 'unrest', 'war']) cs.setTension(id, 20);
-  cs.setTension('markets', 90);
+test('failed containment: pinned at 100 and the tracks it links to are shoved +15 / +8 / +4', () => {
+  const tips = Object.fromEntries(CLASSIC_ROSTER.map((id) => [id, 90]));
+  const clock = new DoomClock();
+  const cs = new CrisisSystem({ tips, doomClock: clock, tracks: CLASSIC_ROSTER.map((id) => ({ id, name: TRACK_BY_ID[id].name })) });
+  for (const id of CLASSIC_ROSTER) cs.setTension(id, 10);
+  const shoves = [];
+  cs.on('domino', (e) => shoves.push([e.from, e.to, e.shove]));
+  cs.setTension('atomic', 90);
   for (let i = 0; i < 6; i++) cs.advanceWeek();
-  assert.equal(cs.tracks.markets.state, 'collapsed');
-  assert.equal(cs.tracks.markets.tension, 100);
-  assert.equal(cs.tracks.pandemic.tension, 35); // strong
-  assert.equal(cs.tracks.unrest.tension, 35); // strong
-  assert.equal(cs.tracks.war.tension, 35); // strong
-  assert.equal(cs.tracks.climate.tension, 28); // medium
-  cs.setTension('markets', 10);
-  assert.equal(cs.tracks.markets.tension, 100); // pinned
+  assert.equal(cs.tracks.atomic.state, 'collapsed');
+  assert.equal(cs.tracks.atomic.tension, 100);
+  assert.deepEqual(shoves.sort(), [['atomic', 'pitchforks', 15], ['atomic', 'superstorm', 4]]); // strong, weak; links are one-way
+  assert.ok(!shoves.some(([, to]) => to === 'optimizer'), 'Optimizer feeds Atomic, not the other way round');
+  cs.setTension('atomic', 10);
+  assert.equal(cs.tracks.atomic.tension, 100); // pinned
   assert.equal(clock.collapses.length, 1);
 });
 
-test('domino spillover can trigger the next breach', () => {
-  const { cs } = world();
-  cs.setTension('unrest', 80);
-  let breached = [];
+test('a domino can trigger the next breach: a collapsing Bloom tips a hot Hush', () => {
+  const cs = slotWorld();
+  cs.setTension('hush', 70);
+  const breached = [];
   cs.on('breach', (e) => breached.push(e.track));
-  cs.setTension('markets', 90);
+  cs.setTension('bloom', 90);
   for (let i = 0; i < 6; i++) cs.advanceWeek();
-  assert.deepEqual(breached, ['markets', 'unrest']); // 80 + 15 = 95 >= tipping point (lowered by fragility)
+  assert.deepEqual(breached.slice(0, 2), ['bloom', 'hush']);
 });
 
 test('shelter-in-place: pass +2 reputation; fail -5 reputation and +15 leverage', () => {
