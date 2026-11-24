@@ -240,9 +240,22 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
   function sync() {
     for (const [id, b] of Object.entries(toolBtns)) b.classList.toggle('on', id === tool);
     for (const [id, b] of Object.entries(palBtns)) b.classList.toggle('on', id === tool);
+    syncLocks();
     if ((DECOR_TOOLS.has(tool) && tool !== 'look') && overlay === 'rooms') { overlay = 'decor'; overlaySel.value = 'decor'; }
     renderSwatches();
     draw();
+  }
+
+  // Research locks (#16): locked objects stay visible but greyed, with what unlocks them.
+  function syncLocks() {
+    const r = site.research;
+    for (const [id, b] of Object.entries(palBtns)) {
+      const locked = !!r && !r.canBuild(id);
+      b.dataset.locked = String(locked);
+      b.title = locked ? (r.lockedReason?.('object', id) ?? 'Needs research') : describe(OBJECTS[id]);
+    }
+    if (toolBtns.spine) { const locked = !!r && !r.canBuildStructure('spine'); toolBtns.spine.dataset.locked = String(locked); if (locked) toolBtns.spine.title = r.lockedReason?.('structure', 'spine') ?? 'Needs research'; }
+    if (r && OBJECTS[tool] && !r.canBuild(tool)) tool = 'dig';
   }
 
   // ---------- drawing ----------
@@ -519,7 +532,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     fit,
     select: (id) => { tool = id; sync(); },
     chromeHeight: () => toolbar.offsetHeight + info.offsetHeight + 24,
-    refresh() { dirty = true; render(); },
+    refresh() { dirty = true; syncLocks(); render(); },
     destroy() { offChange(); removeEventListener('keydown', onKey); removeEventListener('mouseup', onUp); wrap.remove(); },
   };
 }
