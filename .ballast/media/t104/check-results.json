@@ -1,0 +1,431 @@
+{
+ "results": [
+  {
+   "region": "nam",
+   "name": "North America",
+   "state": "uneasy",
+   "pass": true,
+   "fails": [],
+   "changedPct": 6.3,
+   "bleedPx": 0,
+   "cells": "44/35",
+   "labelBg": [
+    95,
+    101,
+    78
+   ]
+  },
+  {
+   "region": "nam",
+   "name": "North America",
+   "state": "edge",
+   "pass": true,
+   "fails": [],
+   "changedPct": 22.9,
+   "bleedPx": 0,
+   "cells": "47/35",
+   "labelBg": [
+    95,
+    101,
+    78
+   ]
+  },
+  {
+   "region": "nam",
+   "name": "North America",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 45.3,
+   "bleedPx": 0,
+   "cells": "47/35",
+   "labelBg": [
+    95,
+    101,
+    78
+   ]
+  },
+  {
+   "region": "nam",
+   "name": "North America",
+   "state": "selected",
+   "pass": true,
+   "fails": [],
+   "bleedPx": 0
+  },
+  {
+   "region": "lat",
+   "name": "Latin America",
+   "state": "uneasy",
+   "pass": true,
+   "fails": [],
+   "changedPct": 6.7,
+   "bleedPx": 0,
+   "cells": "31/25",
+   "labelBg": [
+    99,
+    105,
+    80
+   ]
+  },
+  {
+   "region": "lat",
+   "name": "Latin America",
+   "state": "edge",
+   "pass": true,
+   "fails": [],
+   "changedPct": 23.2,
+   "bleedPx": 0,
+   "cells": "33/25",
+   "labelBg": [
+    99,
+    105,
+    80
+   ]
+  },
+  {
+   "region": "lat",
+   "name": "Latin America",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 45.4,
+   "bleedPx": 0,
+   "cells": "33/25",
+   "labelBg": [
+    99,
+    105,
+    80
+   ]
+  },
+  {
+   "region": "lat",
+   "name": "Latin America",
+   "state": "selected",
+   "pass": true,
+   "fails": [],
+   "bleedPx": 0
+  },
+  {
+   "region": "eur",
+   "name": "Europe",
+   "state": "uneasy",
+   "pass": true,
+   "fails": [],
+   "changedPct": 8,
+   "bleedPx": 0,
+   "cells": "20/14",
+   "labelBg": [
+    93,
+    95,
+    77
+   ]
+  },
+  {
+   "region": "eur",
+   "name": "Europe",
+   "state": "edge",
+   "pass": true,
+   "fails": [],
+   "changedPct": 25.8,
+   "bleedPx": 0,
+   "cells": "20/14",
+   "labelBg": [
+    93,
+    95,
+    77
+   ]
+  },
+  {
+   "region": "eur",
+   "name": "Europe",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 49.5,
+   "bleedPx": 0,
+   "cells": "20/14",
+   "labelBg": [
+    93,
+    95,
+    77
+   ]
+  },
+  {
+   "region": "eur",
+   "name": "Europe",
+   "state": "selected",
+   "pass": true,
+   "fails": [],
+   "bleedPx": 0
+  },
+  {
+   "region": "mea",
+   "name": "Middle East",
+   "state": "uneasy",
+   "pass": true,
+   "fails": [],
+   "changedPct": 6.3,
+   "bleedPx": 0,
+   "cells": "20/13",
+   "labelBg": [
+    87,
+    87,
+    70
+   ]
+  },
+  {
+   "region": "mea",
+   "name": "Middle East",
+   "state": "edge",
+   "pass": true,
+   "fails": [],
+   "changedPct": 20.9,
+   "bleedPx": 0,
+   "cells": "22/13",
+   "labelBg": [
+    87,
+    87,
+    70
+   ]
+  },
+  {
+   "region": "mea",
+   "name": "Middle East",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 41,
+   "bleedPx": 0,
+   "cells": "23/13",
+   "labelBg": [
+    87,
+    87,
+    70
+   ]
+  },
+  {
+   "region": "mea",
+   "name": "Middle East",
+   "state": "selected",
+   "pass": true,
+   "fails": [],
+   "bleedPx": 0
+  },
+  {
+   "region": "afr",
+   "name": "Africa",
+   "state": "uneasy",
+   "pass": true,
+   "fails": [],
+   "changedPct": 6.5,
+   "bleedPx": 0,
+   "cells": "46/38",
+   "labelBg": [
+    88,
+    89,
+    71
+   ]
+  },
+  {
+   "region": "afr",
+   "name": "Africa",
+   "state": "edge",
+   "pass": true,
+   "fails": [],
+   "changedPct": 23.5,
+   "bleedPx": 0,
+   "cells": "48/38",
+   "labelBg": [
+    88,
+    89,
+    71
+   ]
+  },
+  {
+   "region": "afr",
+   "name": "Africa",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 46.4,
+   "bleedPx": 0,
+   "cells": "48/38",
+   "labelBg": [
+    88,
+    89,
+    71
+   ]
+  },
+  {
+   "region": "afr",
+   "name": "Africa",
+   "state": "selected",
+   "pass": true,
+   "fails": [],
+   "bleedPx": 0
+  },
+  {
+   "region": "sas",
+   "name": "South Asia",
+   "state": "uneasy",
+   "pass": true,
+   "fails": [],
+   "changedPct": 7.2,
+   "bleedPx": 0,
+   "cells": "17/11",
+   "labelBg": [
+    86,
+    92,
+    72
+   ]
+  },
+  {
+   "region": "sas",
+   "name": "South Asia",
+   "state": "edge",
+   "pass": true,
+   "fails": [],
+   "changedPct": 23,
+   "bleedPx": 0,
+   "cells": "19/11",
+   "labelBg": [
+    86,
+    92,
+    72
+   ]
+  },
+  {
+   "region": "sas",
+   "name": "South Asia",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 44.2,
+   "bleedPx": 0,
+   "cells": "19/11",
+   "labelBg": [
+    86,
+    92,
+    72
+   ]
+  },
+  {
+   "region": "sas",
+   "name": "South Asia",
+   "state": "selected",
+   "pass": true,
+   "fails": [],
+   "bleedPx": 0
+  },
+  {
+   "region": "eas",
+   "name": "East Asia",
+   "state": "uneasy",
+   "pass": true,
+   "fails": [],
+   "changedPct": 6.5,
+   "bleedPx": 0,
+   "cells": "50/42",
+   "labelBg": [
+    85,
+    89,
+    70
+   ]
+  },
+  {
+   "region": "eas",
+   "name": "East Asia",
+   "state": "edge",
+   "pass": true,
+   "fails": [],
+   "changedPct": 23.6,
+   "bleedPx": 0,
+   "cells": "52/42",
+   "labelBg": [
+    85,
+    89,
+    70
+   ]
+  },
+  {
+   "region": "eas",
+   "name": "East Asia",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 46.7,
+   "bleedPx": 0,
+   "cells": "52/42",
+   "labelBg": [
+    85,
+    89,
+    70
+   ]
+  },
+  {
+   "region": "eas",
+   "name": "East Asia",
+   "state": "selected",
+   "pass": true,
+   "fails": [],
+   "bleedPx": 0
+  },
+  {
+   "region": "oce",
+   "name": "Oceania",
+   "state": "uneasy",
+   "pass": true,
+   "fails": [],
+   "changedPct": 6.7,
+   "bleedPx": 0,
+   "cells": "16/9",
+   "labelBg": [
+    90,
+    93,
+    84
+   ]
+  },
+  {
+   "region": "oce",
+   "name": "Oceania",
+   "state": "edge",
+   "pass": true,
+   "fails": [],
+   "changedPct": 20.8,
+   "bleedPx": 0,
+   "cells": "19/9",
+   "labelBg": [
+    90,
+    93,
+    84
+   ]
+  },
+  {
+   "region": "oce",
+   "name": "Oceania",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 40.1,
+   "bleedPx": 0,
+   "cells": "19/9",
+   "labelBg": [
+    90,
+    93,
+    84
+   ]
+  },
+  {
+   "region": "oce",
+   "name": "Oceania",
+   "state": "selected",
+   "pass": true,
+   "fails": [],
+   "bleedPx": 0
+  }
+ ],
+ "passed": 32,
+ "total": 32,
+ "errs": []
+}
