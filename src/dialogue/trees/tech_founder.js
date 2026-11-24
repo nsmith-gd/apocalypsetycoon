@@ -6,6 +6,10 @@ export default {
   start: 'open',
   nodes: {
     open: {
+      alt: [
+        { when: { suspicious: true }, text: "{name} squints at you. \"Weird. {fear} trended right before your company showed up here. Coincidence is a bad prior.\"" },
+        { when: { band: 'brink' }, text: "{name} is refreshing a dashboard. \"{fear} just went {level}. My model said eighteen months. Talk fast.\"" },
+      ],
       speaker: 'guest',
       text: '{name} is wearing a hoodie that costs more than your car. "Bunkers are legacy tech. I\'m planning to upload. Pitch me why I shouldn\'t."',
       choices: [
@@ -40,6 +44,7 @@ export default {
         { text: 'Your board will be in Lisbon when it hits. You can be under four metres of granite.', next: 'won_fear', effects: { fear: '$guest', trust: 6 } },
         { text: 'Your model is right. Ours just runs a little ahead of yours.', next: 'won_tip', effects: { slip: true } },
         { text: "Honestly, I'd worry more about {otherFear}.", next: 'bored', effects: { fear: '$other' } },
+        { when: { headline: true }, text: 'You saw {headline}. Your model is running behind the news now.', next: 'won_fear', effects: { fear: '$guest', trust: 4 } },
       ],
     },
     bored: {

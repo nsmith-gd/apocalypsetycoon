@@ -6,6 +6,9 @@ export default {
   start: 'open',
   nodes: {
     open: {
+      alt: [
+        { when: { anyBreach: true }, text: "{name} is on his third phone call. \"There's a breach on and the civilians are still eating canapés. State your business, son. Quickly.\"" },
+      ],
       speaker: 'guest',
       text: '{name} is standing with his back to the wall, facing every exit at once. "Last Resort. Civilians building bunkers. State your business, son."',
       choices: [
@@ -39,6 +42,7 @@ export default {
       choices: [
         { text: 'Scratch the portrait. What do you actually need down there?', next: 'brief', effects: { trust: 3 } },
         { text: 'Understood. My card, General, for when the flags go to half-mast.', next: 'exit', effects: { trust: 2 } },
+        { when: { band: 'boil' }, text: 'With {fear} {level}, General, the portrait can wait. The perimeter cannot.', next: 'brief', effects: { fear: '$guest', trust: 4 } },
       ],
     },
     won_fear: { ending: 'sold_fear', text: '{name} pockets your card in a breast pocket, then moves it to a different one. "Send the schematics. Encrypted."' },

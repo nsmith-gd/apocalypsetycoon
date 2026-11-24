@@ -6,6 +6,9 @@ export default {
   start: 'open',
   nodes: {
     open: {
+      alt: [
+        { when: { headline: true }, text: "{name} has a newspaper folded under one arm: {headline}. \"Before you ask: no, I won't comment. Your brochure claims ninety days. Sample size?\"" },
+      ],
       speaker: 'guest',
       text: '{name} does not shake your hand. "Your brochure claims ninety-day survivability. Sample size? Control group? Who funded the study?"',
       choices: [
@@ -29,6 +32,7 @@ export default {
         { text: "Then don't. Private contract, private site, no board minutes. It never happened.", next: 'won_fear', effects: { trait: 'discreet', trust: 6 } },
         { text: "Between us, the timeline your board's using is optimistic. By about a year.", next: 'probe', effects: { slip: true } },
         { text: "Sign tonight or I'll let your board know you shopped around.", next: 'backfire', effects: { aggressive: true, trait: 'ruthless' } },
+        { when: { breach: true }, text: 'Your contingency assumes containment. {fear} is already in breach.', next: 'won_fear', effects: { fear: '$guest', trust: 6 } },
       ],
     },
     scoff: {
@@ -45,6 +49,7 @@ export default {
       choices: [
         { text: 'Same way you knew about the recall before the recall. We listen. Deposit by Friday.', next: 'won_tip', effects: { slip: true, aggressive: true } },
         { text: 'Lucky guess. I read a lot of forums.', next: 'rebuffed', effects: { trust: -6 } },
+        { when: { suspicious: true }, text: 'The leak last month? Ask who benefits from it. Not me. I just dig.', next: 'backfire', effects: { slip: true, aggressive: true } },
       ],
     },
     won_fear: { ending: 'sold_fear', text: '{name} takes the spec sheet, not the brochure. "I\'ll have my people check every number." They will. The numbers hold.' },

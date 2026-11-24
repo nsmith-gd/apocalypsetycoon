@@ -97,7 +97,7 @@ export function showMidnight({ root = document.body, result, onRestart } = {}) {
   const canvas = el('canvas', 'mn-scene');
   canvas.width = 192;
   canvas.height = 64 + Math.max(0, Math.ceil(result.shelters.length / 12) - 1) * 9;
-  const kind = el('div', 'mn-kind', result.type === 'engineered' ? 'AN ENGINEERED MIDNIGHT' : 'MIDNIGHT, FAILED TO CONTAIN');
+  const kind = el('div', 'mn-kind', result.endingName ? `${result.endingName}${result.apocalypse ? ` · ${result.apocalypse.name.toUpperCase()}` : ''}` : result.type === 'engineered' ? 'AN ENGINEERED MIDNIGHT' : 'MIDNIGHT, FAILED TO CONTAIN');
   const kindWhy = el(
     'div',
     'mn-kind-why',

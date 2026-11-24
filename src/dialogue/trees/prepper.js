@@ -6,12 +6,17 @@ export default {
   start: 'open',
   nodes: {
     open: {
+      alt: [
+        { when: { suspicious: true }, text: "{name} taps a folded newspaper: {headline}. \"Funny. Every time this happens, your people are already at the party.\"" },
+        { when: { band: 'boil' }, text: "{name} hasn't touched the jerky. \"{fear} is {level}. I don't need the brochure. I need a date.\"" },
+      ],
       speaker: 'guest',
       text: "{name} sizes you up over a paper plate of jerky. \"Last Resort. You're the gold-tap people. I've seen the brochures.\"",
       choices: [
         { text: 'The gold taps are for the brochures. Ask me about the air scrubbers.', next: 'spec', effects: { trait: 'practical' } },
         { text: "You're worried about {fear}. Of course you are. That's why you're here.", next: 'fear', effects: { fear: '$guest' } },
         { text: "Everyone's losing sleep over {otherFear} this season.", next: 'doubt', effects: { fear: '$other' } },
+        { when: { band: 'boil' }, text: 'You read the news. {fear} is {level}. I can have crews digging on Monday.', next: 'won_fear', effects: { fear: '$guest', trust: 4 } },
       ],
     },
     spec: {
