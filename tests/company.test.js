@@ -64,3 +64,42 @@ test('save/load', () => {
   c2.load(JSON.parse(JSON.stringify(co)));
   assert.equal(c2.level('sales'), 2);
 });
+
+test('#72: level-ups cost the GDD $2/4/8/16M at the bunker price scale', () => {
+  const co = new Company({ ledger: new Ledger({ startingCash: 1e9 }) });
+  co.setTier('last_resort');
+  const costs = [];
+  for (let i = 0; i < 4; i++) { costs.push(co.levelCost('engineering')); co.levelUp('engineering'); }
+  assert.deepEqual(costs, [200_000, 400_000, 800_000, 1_600_000]);
+  assert.equal(co.level('engineering'), 5);
+});
+
+test('#72: each Engineering level adds a crew (and its slot); R&D adds 3 RP a week per level', () => {
+  const co = new Company({ ledger: new Ledger({ startingCash: 1e9 }), getPlayMinutes: () => 60 });
+  assert.equal(co.crews(2), 2);
+  co.levelUp('engineering');
+  assert.equal(co.extraCrews, 1);
+  assert.equal(co.crewCap, 3);
+  assert.equal(co.crews(2), 3);
+  assert.equal(co.rpPerWeek, 0, 'R&D opens at Boutique');
+  co.setTier('boutique');
+  assert.equal(co.rpPerWeek, 3);
+  co.levelUp('rnd');
+  assert.equal(co.rpPerWeek, 6);
+});
+
+test('#72: a live build with Engineering 2 gets 2.3x the work done (15% faster crews, plus one)', () => {
+  const work = (co) => {
+    const site = new BunkerSite({ surveyed: true, crews: () => co.crews(1), crewSpeed: () => co.crewSpeed });
+    for (let x = 0; x < 24; x++) site.dig(x, 0);
+    const left = () => site.jobs.reduce((s, j) => s + (j.days - j.progress), 0);
+    const l0 = left();
+    site.tick(5);
+    return l0 - left();
+  };
+  const co = new Company({ ledger: new Ledger({ startingCash: 1e9 }) });
+  const before = work(co);
+  co.levelUp('engineering');
+  const after = work(co);
+  assert.ok(Math.abs(after / before - 2.3) < 0.05, `${after / before}`);
+});
