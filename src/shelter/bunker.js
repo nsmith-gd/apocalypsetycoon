@@ -346,6 +346,12 @@ export class BunkerSite {
       this.pressureTest.daysLeft -= days;
       if (this.pressureTest.daysLeft <= 0) { this.pressureTest.result = this.simulate(); this._changed({ type: 'pressureTest' }); }
     }
+    if (this.stallDays > 0) { // a breach sent the crew home (shelter-in-place)
+      const use = Math.min(days, this.stallDays);
+      this.stallDays -= use;
+      days -= use;
+      if (days <= 1e-9) return;
+    }
     if (!this.surveyed) {
       const use = Math.min(days, this.surveyLeft);
       this.surveyLeft -= use;
@@ -372,6 +378,12 @@ export class BunkerSite {
         else taken.add(j); // another crew picks a different job
       }
     }
+  }
+
+  /** Construction stops for `days` (a breach's shelter-in-place sends the crews home). */
+  delay(days = 7) {
+    this.stallDays = (this.stallDays ?? 0) + days;
+    this._changed({ type: 'delay', days });
   }
 
   /** Finish everything instantly (debug / tests). */
@@ -741,7 +753,7 @@ export class BunkerSite {
       v: 2, W: this.W, H: this.H, S: this.S,
       dug: Array.from(this.dug), structure: this.structure, conduit: Array.from(this.conduits),
       objects: [...this.objects.values()], jobs: this.jobs, id: this._id, finish: this.finish,
-      surveyed: this.surveyed, surveyLeft: this.surveyLeft, pressureTest: this.pressureTest, day: this.day, handedOver: this.handedOver,
+      surveyed: this.surveyed, surveyLeft: this.surveyLeft, pressureTest: this.pressureTest, day: this.day, handedOver: this.handedOver, stallDays: this.stallDays ?? 0,
     };
   }
 
@@ -760,6 +772,7 @@ export class BunkerSite {
     this.surveyed = d.surveyed;
     this.surveyLeft = d.surveyLeft;
     this.pressureTest = d.pressureTest;
+    this.stallDays = d.stallDays ?? 0;
     this.day = d.day;
     this.handedOver = d.handedOver ?? 0;
     this._changed({ type: 'load' });
