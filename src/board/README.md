@@ -13,6 +13,7 @@
 - Quota: `quotaFor(n)` = $6M x 1.3^(n-1) x `BOARD.quotaScale` (0.025 while the economy runs in $K; 1 at GDD scale).
   Revenue = all ledger income that quarter except investment rounds (`quarterRevenue`).
 - `refuse(id)` (-3, one per meeting), `vote(need, { spendFavours })`, `toJSON()/load()`.
+- `react(id, amount, why)` (#67): a member reacts mid-quarter (contained breaches); listed at the next review.
 - Facts used by directives: revenue, heat, tensions, openTracks, brinkTracks, breaches, handovers, schemesRun,
   arkStarted. Only directives whose facts are in `supports` are issued.
 
