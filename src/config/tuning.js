@@ -90,6 +90,7 @@ export const BREACH = {
     constructionDelayDays: 7, // (stand-in)
   },
   perBreachWeek: { heat: 2, boardConfidence: -2, panicMultiplier: 2 }, // (stand-in)
+  controlledBurnHeat: 10, // heat for deliberately tipping a track (#93; stand-in: the GDD only says "heat")
   recovery: { tension: 60, lockWeeks: 3 }, // (stand-in)
   collapseTension: 100,
   brinkMargin: 10, // (stand-in)

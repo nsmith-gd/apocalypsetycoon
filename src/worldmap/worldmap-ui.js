@@ -247,9 +247,28 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       const tipTxt = tv.zone === 'breach' ? 'BREACHED' : tv.zone === 'collapsed' ? 'COLLAPSED' : tv.zone === 'locked' ? `recovering ${tv.lockWeeks}wk` : tv.exact != null ? `tips at ${tv.exact}` : `tips ${tv.tipLow}-${tv.tipHigh}?`;
       row.innerHTML = `<div class="wm-track-lbl"><span>${tv.name} <em data-x="${region.exposure[id]}">${region.exposure[id].toUpperCase()}</em></span><span><b>${tv.tension}</b> · ${tipTxt}</span></div>
         <div class="wm-tbar"><span class="wm-tedge" style="left:${tv.edgeFrom}%;width:${tv.tipLow - tv.edgeFrom}%"></span><span class="wm-ttip" style="left:${tv.tipLow}%;width:${Math.max(1, tv.tipHigh - tv.tipLow)}%"></span><i style="width:${tv.tension}%"></i></div>`;
+      // Controlled burn (#93): at the Brink you may tip it on purpose for a window of doubled premiums.
+      if (tv.state === 'brink' && schemes.crisis.controlledBurn) {
+        const t = schemes.crisis.tracks[id];
+        const next = schemes.crisis.cfg.windowWeeks[Math.min(t.breaches + 2, schemes.crisis.cfg.windowWeeks.length) - 1];
+        const now = schemes.crisis.cfg.windowWeeks[Math.min(t.breaches + 1, schemes.crisis.cfg.windowWeeks.length) - 1];
+        const burn = el('button', 'wm-burn', 'CONTROLLED BURN');
+        burn.type = 'button';
+        burn.title = `Tip ${tv.name} on purpose: panic premiums double for the breach (${now} weeks to contain it). Costs heat +${schemes.crisis.cfg.controlledBurnHeat ?? 10}, a scar when contained, and a ${next}-week window next time.`;
+        burn.onclick = () => {
+          const r = schemes.crisis.controlledBurn(id);
+          flash = r.ok ? { kind: 'err', msg: `CONTROLLED BURN: ${tv.name} breached on your schedule. Panic premiums doubled for up to ${r.weeks} weeks. Heat +${r.heat}. Next time it breaches you'll get ${r.nextWindow} weeks.` } : { kind: 'err', msg: r.reason };
+          onScheme?.(r);
+          refresh();
+        };
+        row.append(burn);
+      }
       wrap.append(row);
     }
-    if (v.edgeBonus) wrap.append(el('div', 'wm-edge-note', `AT THE EDGE: prices here +${Math.round(v.edgeBonus * 100)}%. One more push could tip it.`));
+    const burning = ids.some((id) => schemes.crisis.tracks[id]?.state === 'breach');
+    if (v.edgeBonus) wrap.append(el('div', 'wm-edge-note', burning
+      ? `BREACH: premiums doubled while it burns (edge +${Math.round(v.edgeBonus * 100)}%, prices x${v.premium.toFixed(2)}). Contain it before the window closes.`
+      : `AT THE EDGE: prices here +${Math.round(v.edgeBonus * 100)}%. One more push could tip it.`));
     return wrap;
   }
 
