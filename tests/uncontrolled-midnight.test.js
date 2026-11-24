@@ -33,9 +33,13 @@ test('the Final Countdown road: the two collapsed tracks become a combined apoca
   for (let i = 0; i < 4; i++) crisis.advanceWeek();
   assert.equal(struck.reason, 'countdown');
   const road = uncontrolledRoad({ reason: struck.reason, crisis, doom });
-  assert.deepEqual([...road.target].sort(), ['atomic', 'bloom']);
+  // Spillover (#65) can collapse a linked track first (Bloom feeds The Hush strongly): the road takes the two
+  // tracks that collapsed last before Midnight.
+  const collapsed = [...new Set(doom.collapses.map((c) => c.track))].slice(-2);
+  assert.equal(collapsed.length, 2);
+  assert.deepEqual([...road.target].sort(), [...collapsed].sort());
   assert.equal(road.apocalypse.combined, true);
-  assert.equal(road.apocalypse.days, Math.max(APOCALYPSES.atomic.days, APOCALYPSES.bloom.days) + 180);
+  assert.equal(road.apocalypse.days, Math.max(...collapsed.map((id) => APOCALYPSES[id].days)) + 180);
   assert.match(road.cause, /Final Countdown/);
 });
 

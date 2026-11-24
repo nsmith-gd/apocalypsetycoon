@@ -28,6 +28,7 @@ import { REGIONS as SALES_REGIONS } from '../demand/demand.js';
 import { BREACH, TUNING } from '../config/tuning.js';
 import { seededRng } from '../campaign/rng.js';
 import { SCHEME_BY_ID } from '../world/schemeCatalog.js';
+import { TRACK_BY_ID, SLOT_LINKS } from '../world/tracks.js';
 
 /** Executives who can each pull off one heroic save per campaign (GDD: Breach and containment). */
 export const HEROICS = Object.freeze([
@@ -38,19 +39,17 @@ export const HEROICS = Object.freeze([
 
 export { BREACH }; // lives in the single tuning table (#77)
 
-/** The domino map: 10 links over the five crisis tracks (every pair once). Provisional pairing. */
-export const DOMINO_LINKS = Object.freeze([
-  ['pandemic', 'markets', 'strong'],
-  ['markets', 'unrest', 'strong'],
-  ['war', 'markets', 'strong'],
-  ['climate', 'unrest', 'medium'],
-  ['war', 'unrest', 'medium'],
-  ['pandemic', 'unrest', 'medium'],
-  ['climate', 'markets', 'medium'],
-  ['climate', 'pandemic', 'weak'],
-  ['war', 'climate', 'weak'],
-  ['war', 'pandemic', 'weak'],
-]);
+/**
+ * The domino map by slot (#65; GDD: Crises and tipping points > The domino map). Links belong to slots, so a
+ * track that sits in a slot (Classic or alternate) takes that slot's links. Tracks without a slot (the old
+ * five generic demo tracks below) are not on the map. Returns directed links { from, to, strength }.
+ */
+export function slotLinks(trackIds) {
+  const bySlot = {};
+  for (const id of trackIds) { const slot = TRACK_BY_ID[id]?.slot; if (slot) bySlot[slot] = id; }
+  return SLOT_LINKS.filter((l) => bySlot[l.from] && bySlot[l.to]).map((l) => ({ from: bySlot[l.from], to: bySlot[l.to], strength: l.strength }));
+}
+const normLink = (l) => (Array.isArray(l) ? { from: l[0], to: l[1], strength: l[2] } : l);
 
 export const TRACKS = Object.freeze([
   { id: 'pandemic', name: 'Pandemic' },
@@ -94,10 +93,11 @@ export function highlyExposed(regionId, trackId, regions = SALES_REGIONS) {
 }
 
 export class CrisisSystem {
-  constructor({ seed = 1, tracks = TRACKS, links = DOMINO_LINKS, config = {}, pushback = null, doomClock = null, ledger = null, shelters = () => [], shelterTest = defaultShelterTest, tips = null, clockWeeks = false, construction = () => [], rdLevel = null, spendRp = null } = {}) {
+  constructor({ seed = 1, tracks = TRACKS, links = null, config = {}, pushback = null, doomClock = null, ledger = null, shelters = () => [], shelterTest = defaultShelterTest, tips = null, clockWeeks = false, construction = () => [], rdLevel = null, spendRp = null } = {}) {
     this.cfg = { ...BREACH, ...config, sources: { ...BREACH.sources, ...(config.sources ?? {}) } };
     this.rng = rngFrom(seed);
-    this.links = links;
+    // Directed domino links: given ([from, to, strength] or objects) or resolved from the tracks' slots.
+    this.links = (links ?? slotLinks(tracks.map((t) => t.id))).map(normLink);
     this.pb = pushback;
     this.clock = doomClock;
     this.clockWeeks = clockWeeks; // true: each advanceWeek() also advances the Doom Clock a week (campaign)
@@ -126,6 +126,7 @@ export class CrisisSystem {
         scars: 0, revealed: false, breaches: 0,
         state: 'calm', // calm | brink | breach | locked | collapsed
         lockWeeks: 0, window: null,
+        momentum: 0, // spillover arrives as momentum; a quarter of it turns into tension each week (#65)
         open: t.open ?? true, // a closed track waits for its opening time (openTrack); its tip still rolls now
       };
     }
@@ -390,16 +391,40 @@ export class CrisisSystem {
     this._note(`${t.name} COLLAPSED. Pinned at 100.`, { type: 'collapse', track: t.id });
     this._emit('collapse', { track: t.id });
     this._afterWindow();
-    // Domino: shove every linked track.
-    for (const [a, b, strength] of this.links) {
-      const other = a === t.id ? b : b === t.id ? a : null;
-      if (!other || !this.tracks[other]) continue;
+    // Domino: shove every track this one links TO (links are directed).
+    for (const { from, to: other, strength } of this.links) {
+      if (from !== t.id || !this.tracks[other]?.open) continue; // a track that hasn't opened can't be shoved
       const shove = this.cfg.shove[strength];
       this._note(`Domino: ${t.name} → ${this.tracks[other].name} +${shove} (${strength} link).`, { type: 'domino', from: t.id, to: other, shove });
       this._emit('domino', { from: t.id, to: other, shove, strength });
       this.addTension(other, shove, `domino from ${t.name}`);
     }
     this._sync();
+  }
+
+  /**
+   * Weekly spillover (GDD): a track in breach pushes momentum into every track it links to: +6 / +3 / +1.5
+   * (strong / medium / weak, TUNING.breachSpillover). A collapsed track keeps spilling for good, doubled.
+   * Then every open track that can move releases a quarter of its momentum as tension (TUNING.momentum).
+   */
+  _spillover() {
+    for (const t of Object.values(this.tracks)) {
+      if (t.state !== 'breach' && t.state !== 'collapsed') continue;
+      const mult = t.state === 'collapsed' ? 2 : 1;
+      for (const { from, to, strength } of this.links) {
+        const target = this.tracks[to];
+        if (from !== t.id || !target?.open || target.state === 'collapsed') continue;
+        const m = TUNING.breachSpillover[strength] * mult;
+        target.momentum = (target.momentum ?? 0) + m;
+        this._emit('spillover', { from, to, strength, momentum: m });
+      }
+    }
+    for (const t of Object.values(this.tracks)) {
+      if (!t.open || !t.momentum || t.state === 'collapsed' || t.state === 'breach' || t.state === 'locked') continue;
+      const release = t.momentum * TUNING.momentum.release;
+      t.momentum -= release;
+      if (release > 0.001) this.addTension(t.id, Math.round(release * 100) / 100, 'spillover');
+    }
   }
 
   _afterWindow() {
@@ -459,6 +484,7 @@ export class CrisisSystem {
     // The clock's week turns first, so a countdown started by this week's collapse gets its full 4 weeks.
     if (this.clockWeeks) this.clock?.advanceWeeks(1);
     const W = this.cfg.perBreachWeek;
+    this._spillover(); // breached and collapsed tracks feed their linked tracks, before windows close
     const breaches = this.activeBreaches;
     for (const t of breaches) {
       this._tickSources(t); // ops land and crash research drips before the window closes

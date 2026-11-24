@@ -50,7 +50,7 @@
     </div>
     <div>
       <div class="panel stats" id="stats"></div>
-      <div class="panel" style="margin-top:12px"><h2>DOMINO MAP · 10 LINKS</h2><div id="domino"></div></div>
+      <div class="panel" style="margin-top:12px"><h2>DOMINO MAP · 10 LINKS BY SLOT</h2><div id="domino"></div></div>
     </div>
   </div>
 </div>
@@ -60,7 +60,8 @@ import { createGameUI } from '../src/ui/hud.js';
 import { Pushback } from '../src/pushback/pushback.js';
 import { DoomClock } from '../src/doomclock/doomclock.js';
 import { createDoomClockHud } from '../src/doomclock/doomclock-hud.js';
-import { CrisisSystem, DOMINO_LINKS } from '../src/crisis/breach.js';
+import { CrisisSystem } from '../src/crisis/breach.js';
+import { CLASSIC_ROSTER, TRACK_BY_ID } from '../src/world/tracks.js';
 import { createContainmentUI } from '../src/crisis/breach-ui.js';
 
 const params = new URLSearchParams(location.search);
@@ -77,8 +78,10 @@ const shelters = [
 ];
 pb.onSale({ client: 'Mr. Vance', price: 400_000 });
 pb.onSale({ client: 'Duchess Okoro', price: 600_000 });
-const crisis = new CrisisSystem({ seed: Number(params.get('seed') ?? 11), pushback: pb, doomClock: clock, ledger, shelters: () => shelters });
-const START = { pandemic: 55, climate: 62, unrest: 70, markets: 66, war: 40 };
+// The Classic six by slot: the domino map comes from their slots (#65).
+const crisis = new CrisisSystem({ seed: Number(params.get('seed') ?? 11), pushback: pb, doomClock: clock, ledger, shelters: () => shelters,
+  tracks: CLASSIC_ROSTER.map((id) => ({ id, name: TRACK_BY_ID[id].name })) });
+const START = { atomic: 66, bloom: 62, superstorm: 40, optimizer: 55, hush: 70, pitchforks: 45 };
 for (const [id, v] of Object.entries(START)) crisis.setTension(id, v);
 
 const logEl = document.getElementById('log');
@@ -87,17 +90,19 @@ crisis.on('log', (e) => { const d = document.createElement('div'); d.dataset.typ
 function advanceWeek() { crisis.advanceWeek(); clock.advanceWeeks(1); render(); }
 createContainmentUI({ root: document.body, crisis, onAdvanceWeek: advanceWeek });
 
-const POS = { pandemic: [60, 18], climate: [200, 18], unrest: [230, 110], markets: [130, 170], war: [30, 110] };
+// Laid out like the GDD picture.
+const POS = { optimizer: [45, 20], atomic: [140, 20], pitchforks: [235, 95], bloom: [140, 95], superstorm: [45, 170], hush: [140, 170] };
 function renderDomino() {
   const col = (s) => ({ strong: '#ff5a4f', medium: '#ff9f1c', weak: '#a8977a' })[s];
   const w = (s) => ({ strong: 4, medium: 2.5, weak: 1.2 })[s];
-  const lines = DOMINO_LINKS.map(([a, b, s]) => `<line x1="${POS[a][0]}" y1="${POS[a][1]}" x2="${POS[b][0]}" y2="${POS[b][1]}" stroke="${col(s)}" stroke-width="${w(s)}" />`).join('');
+  const lines = crisis.links.map(({ from: a, to: b, strength: s }) => `<line x1="${POS[a][0]}" y1="${POS[a][1]}" x2="${POS[b][0]}" y2="${POS[b][1]}" stroke="${col(s)}" stroke-width="${w(s)}" marker-end="url(#arr-${s})" />`).join('');
+  const marks = ['strong', 'medium', 'weak'].map((s) => `<marker id="arr-${s}" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${col(s)}"/></marker>`).join('');
   const nodes = Object.values(crisis.tracks).map((t) => {
     const [x, y] = POS[t.id];
     const fill = t.state === 'collapsed' ? '#7a2a3a' : t.state === 'breach' ? '#ff5a4f' : t.state === 'locked' ? '#8fd3ff' : t.state === 'brink' ? '#ff9f1c' : '#2f2821';
     return `<rect x="${x - 34}" y="${y - 11}" width="68" height="22" fill="${fill}" stroke="#0a0807" stroke-width="2"/><text x="${x}" y="${y + 4}" text-anchor="middle" font-size="10" font-family="Courier New" font-weight="700" fill="#f2e6c9">${t.name.split(' ').pop().toUpperCase()}</text>`;
   }).join('');
-  document.getElementById('domino').innerHTML = `<svg class="domino" viewBox="0 0 270 190">${lines}${nodes}</svg><div class="info">Collapse shoves linked tracks: <span style="color:#ff5a4f">strong +15</span> · <span style="color:#ff9f1c">medium +8</span> · weak +4</div>`;
+  document.getElementById('domino').innerHTML = `<svg class="domino" viewBox="0 0 280 190"><defs>${marks}</defs>${lines}${nodes}</svg><div class="info">Each breach week spills momentum along the arrows (<span style="color:#ff5a4f">strong +6</span> · <span style="color:#ff9f1c">medium +3</span> · weak +1.5, doubled once collapsed); a collapse shoves +15 / +8 / +4.</div>`;
 }
 
 function render() {
@@ -120,7 +125,7 @@ function render() {
     Heat <b>${Math.round(pb.heat)}</b> · Panic premium <b>x${s.panicMultiplier}</b><br>
     Breaches so far <b>${s.breachCount}</b> (next op ${'$' + (10 * (s.breachCount + 1))}M)<br>
     Clients: ${pb.clients.map((c) => `${c.name} lev ${c.leverage}`).join(', ')}`;
-  ui.update({ quarter: 1 + Math.floor(s.week / 13), totalQuarters: 12, heat: pb.heat, tension: Math.round(s.tracks.reduce((a, t) => a + t.tension, 0) / 5), boardTarget: 0 });
+  ui.update({ quarter: 1 + Math.floor(s.week / 13), totalQuarters: 12, heat: pb.heat, tension: Math.round(Math.max(...s.tracks.map((t) => t.tension))), boardTarget: 0 });
   renderDomino();
 }
 document.getElementById('week').onclick = advanceWeek;
