@@ -67,6 +67,22 @@ export const PALETTE = Object.freeze({
   A: { hex: '#6e4428', name: 'Walnut' },
 });
 
+// ---------------- World map extension (#99; docs/art/style-guide.md "World map") ----------------
+// The base map paints only from these ramps (plus K for the coast outline). Values are the director's
+// pixel-earth reference ramps at about 80% brightness: the reference's richness, dark enough that the
+// amber and red crisis overlays still pop. Ramps run dark -> light.
+export const MAP_PALETTE = Object.freeze({
+  ocean: Object.freeze(['#002e59', '#00548a', '#007ab0']), // trench, deep (the sea itself), shelf
+  forest: Object.freeze(['#0f3d3d', '#185a42', '#297a3c', '#489e3f']), // dark core -> open grass
+  meadow: Object.freeze(['#7ab84c', '#a9cf65']), // brightest grass and highlight, used sparingly
+  desert: Object.freeze(['#6e3a2b', '#995a3b', '#b87d54', '#c5a27f', '#d4c2ad']), // rust ridge -> pale sand
+  rock: Object.freeze(['#3a3f46', '#5a5f6e', '#8a8f9c']), // mountain shadow, face, lit ridge
+  snow: Object.freeze(['#9aa1b0', '#d0d4dc']), // shadow edge, cap
+  water: Object.freeze(['#007ab0']), // lakes and rivers: the shelf blue
+  outline: '#0a0807', // = K: the 1px coast outline
+});
+export const MAP_COLOURS = Object.freeze([...new Set(Object.values(MAP_PALETTE).flat())]);
+
 export const HEX = Object.fromEntries(Object.entries(PALETTE).map(([k, v]) => [k, v.hex]));
 
 /** Hex -> [r,g,b] */
