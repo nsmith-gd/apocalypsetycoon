@@ -25,6 +25,9 @@ import { identifyRoom } from '../catalog/identify.js';
 import { plotOf, productUnlocked, FLOOR_M } from '../catalog/products.js';
 import { STRATA, stratumAt, STRUCTURES, CONDUITS, OBJECTS, NEEDS, ROOM_DEPTH_M, WATER_TABLE_M, fitDays, LAYERS, layerOf, FINISHES, variantsFor, familyOf, STYLE_KITS } from './bunker-catalog.js';
 
+// Room special rules (#142, GDD room catalog).
+export const ROOM_RULES = Object.freeze({ artDecayPerWeek: 0.02, stylePerNeighbour: 0.1, styleCap: 0.3 });
+
 export const BUNKER = Object.freeze({
   width: 24, // Family Vault plot
   depth: 96, // #140: deep enough for every catalog room (Aquifer Well 80 m+, Micro-reactor 60 m+, Geothermal 50 m+)
@@ -64,6 +67,7 @@ export class BunkerSite {
 
   reset(surveyed = false) {
     this.product = null; // #141: each new plot gets its product from its contract
+    this.artDecay = {}; // #142: weeks each Art Vault has gone without climate power
     const n = this.W * (this.H + this.S);
     this.dug = new Uint8Array(n); // 1 = excavated
     this.structure = new Array(n).fill(null); // 'wall' | 'spine'
@@ -443,7 +447,9 @@ export class BunkerSite {
   tick(seconds) {
     this.people.tick(seconds);
     let days = seconds / this.cfg.daySeconds;
+    const week0 = Math.floor(this.day / 7);
     this.day += days;
+    for (let w = week0; w < Math.floor(this.day / 7); w++) this._ruleWeek(); // #142: weekly room rules
     if (this.pressureTest && this.pressureTest.daysLeft > 0) {
       this.pressureTest.daysLeft -= days;
       if (this.pressureTest.daysLeft <= 0) { this.pressureTest.result = this.simulate(); this._changed({ type: 'pressureTest' }); }
@@ -756,8 +762,10 @@ export class BunkerSite {
       r.beauty += r.finishBeauty;
       r.prestige = Math.max(0, r.prestige - (r.type.tier === 'status' ? r.noise : 0));
       r.impressiveness = Math.round(r.beauty + Math.min(10, r.size / 4) - (r.beds ? r.noise : 0) - (r.rough ? 3 : 0) - (r.cramped ? 5 : 0) - (r.seeps ? 4 : 0));
-      prestige += r.prestige;
     }
+    // Room special rules (#142, GDD room catalog)
+    this._roomRules(rooms, roomOf, { objs, isOn, powerReport, notes });
+    for (const r of rooms) prestige += r.prestige;
 
     // Ratings
     const sump = objs.some((o) => OBJECTS[o.kind].sump && isOn(o));
@@ -795,6 +803,75 @@ export class BunkerSite {
       sealParts, prestige: Math.round(prestige), visibility, notes,
     };
     return this._cache;
+  }
+
+  /** Rooms that share a wall, slab or door with room r (two tiles apart, the tile between not part of a room). */
+  neighbours(r, roomOf, rooms) {
+    const out = new Set();
+    for (const [x, y] of r.tiles) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const mx = x + dx, my = y + dy, nx = x + 2 * dx, ny = y + 2 * dy;
+      if (ny < 0 || my < 0 || !this.inside(nx, ny)) continue;
+      if (roomOf[this.idx(mx, my)] >= 0) continue; // still inside the room
+      const k = roomOf[this.idx(nx, ny)];
+      if (k >= 0 && k !== r.id) out.add(rooms[k]);
+    }
+    return [...out];
+  }
+
+  /**
+   * The GDD's room special rules (#142):
+   *   Panic Room        must touch the Master Suite, or it is worth nothing
+   *   Wine Cellar       +50% prestige at 10 m or deeper (applied per rack above)
+   *   Art Vault         loses 2% prestige a week without climate power (a powered network through the room)
+   *   Fuel Depot        can never sit beside a bedroom: fire risk, and the shelter can't be handed over
+   *   Infinity Pool     needs the Deep Water Recycler running, or it is worth nothing
+   *   Same style        each neighbouring room in the same style adds +10% prestige, up to +30%
+   */
+  _roomRules(rooms, roomOf, { objs, isOn, powerReport, notes }) {
+    const RULE = ROOM_RULES;
+    const real = rooms.filter((r) => !r.touchesSky);
+    for (const r of real) { r.rule = null; r.neighbours = this.neighbours(r, roomOf, rooms); }
+    const powered = new Set();
+    for (const p of powerReport) if (p.supply > 0) for (const t of p.comp.tiles) powered.add(t);
+    const recycler = objs.some((o) => o.kind === 'recycler' && isOn(o));
+    this.artDecay ??= {};
+    for (const r of real) {
+      const id = r.type.id;
+      if (id === 'panic_room' && !r.neighbours.some((n) => n.type.id === 'master_suite')) {
+        r.prestige = 0; r.rule = 'Must touch the Master Suite';
+        notes.push(`The Panic Room at ${r.minY} m doesn't touch the Master Suite, so it's worth nothing.`);
+      }
+      if (id === 'art_vault') {
+        r.climate = r.tiles.some(([x, y]) => powered.has(this.idx(x, y)));
+        const weeks = this.artDecay[`${r.minX},${r.minY}`] ?? 0;
+        if (weeks) r.prestige *= (1 - RULE.artDecayPerWeek) ** weeks;
+        if (!r.climate) { r.rule = `No climate power: -${Math.round(RULE.artDecayPerWeek * 100)}% prestige a week`; notes.push(`The Art Vault has no climate power: the art loses ${Math.round(RULE.artDecayPerWeek * 100)}% of its prestige every week. Run a powered cable through it.`); }
+      }
+      if (id === 'fuel_depot' && r.neighbours.some((n) => n.beds > 0)) {
+        r.rule = 'Fire risk: beside a bedroom';
+        notes.push(`The Fuel Depot at ${r.minY} m is beside a bedroom. Fire risk: no client will take the shelter until it moves.`);
+      }
+      if (id === 'infinity_pool' && !recycler) {
+        r.prestige = 0; r.rule = 'Needs the Deep Water Recycler';
+        notes.push('The Infinity Pool needs a running Deep Water Recycler, or it stays drained.');
+      }
+    }
+    // same-style neighbours, after every other rule
+    const base = new Map(real.map((r) => [r, r.prestige]));
+    for (const r of real) {
+      if (!r.style || !base.get(r)) continue;
+      const same = r.neighbours.filter((n) => n.style === r.style).length;
+      r.styleBonus = Math.min(RULE.styleCap, RULE.stylePerNeighbour * same);
+      r.prestige = base.get(r) * (1 + r.styleBonus);
+    }
+  }
+
+  /** One week passes for the room rules: unpowered Art Vaults decay. */
+  _ruleWeek() {
+    const s = this.simulate();
+    this.artDecay ??= {};
+    for (const r of s.rooms) if (r.type.id === 'art_vault' && !r.climate) { const k = `${r.minX},${r.minY}`; this.artDecay[k] = (this.artDecay[k] ?? 0) + 1; }
+    this._cache = null;
   }
 
   _touching(a, b) {
@@ -850,6 +927,8 @@ export class BunkerSite {
     if (!this.objects.size) return { ok: false, reason: 'Build something first' };
     const p = this.plot;
     const used = this.floorsUsed();
+    const fire = this.simulate().rooms.find((r) => r.type.id === 'fuel_depot' && r.rule);
+    if (fire) return { ok: false, reason: 'The Fuel Depot sits beside a bedroom: fire risk' };
     if (p && used.deepest < p.minFloors) return { ok: false, reason: `A ${p.name} needs at least ${p.minFloors} floors (it has ${used.deepest})` };
     if (p?.households && (used.units < p.households.min || used.units > p.households.max)) return { ok: false, reason: `A ${p.name} is ${p.households.min}-${p.households.max} household units: floors with beds (it has ${used.units})` };
     const sh = this.toShelter();
@@ -866,7 +945,7 @@ export class BunkerSite {
       v: 2, W: this.W, H: this.H, S: this.S,
       dug: Array.from(this.dug), structure: this.structure, conduit: Array.from(this.conduits),
       objects: [...this.objects.values()], jobs: this.jobs, id: this._id, finish: this.finish,
-      product: this.product ?? null, surveyed: this.surveyed, surveyLeft: this.surveyLeft, pressureTest: this.pressureTest, day: this.day, handedOver: this.handedOver, stallDays: this.stallDays ?? 0, spent: this.spent ?? 0,
+      artDecay: this.artDecay ?? {}, product: this.product ?? null, surveyed: this.surveyed, surveyLeft: this.surveyLeft, pressureTest: this.pressureTest, day: this.day, handedOver: this.handedOver, stallDays: this.stallDays ?? 0, spent: this.spent ?? 0,
     };
   }
 
@@ -884,6 +963,7 @@ export class BunkerSite {
     this._id = d.id;
     this.surveyed = d.surveyed;
     this.product = d.product ?? null;
+    this.artDecay = d.artDecay ?? {};
     this.surveyLeft = d.surveyLeft;
     this.pressureTest = d.pressureTest;
     this.stallDays = d.stallDays ?? 0;

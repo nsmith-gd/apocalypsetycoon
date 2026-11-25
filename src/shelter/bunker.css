@@ -69,3 +69,4 @@ body.at-photo .gs > *:not(.stage):not(.stage-grid), body.at-photo .pg-panel, bod
 .bk-product { font-size: 11px; }
 .bk-product b { color: var(--at-gold); }
 .bk-product small { color: var(--at-dim); }
+.bk-rule { color: var(--at-red); font-size: 11px; }
