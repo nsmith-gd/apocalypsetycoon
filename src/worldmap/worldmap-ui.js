@@ -10,7 +10,7 @@
 // Middle East / South Asia / East Asia, so all eight demand regions are clickable.
 
 import { quoteLead, redeemLead } from '../leads/redeem.js';
-import { drawWorldMap, regionAt as artRegionAt, crisisOverlay, MAP_W, MAP_H, MAP_COLS, MAP_ROWS, CELL, WORLD_LAYOUT } from '../art/worldmap.js';
+import { regionAt as artRegionAt, crisisOverlay, MAP_W, MAP_H, MAP_COLS, MAP_ROWS, CELL, WORLD_LAYOUT } from '../art/worldmap.js';
 import { MAP_MARKERS, CRISIS_OVERLAYS } from '../art/sprites-map.js';
 import { drawSprite } from '../art/render.js';
 import { drawText, textWidth } from '../art/font.js';
@@ -20,7 +20,7 @@ import { CLIENT_TYPES } from '../clients/clients.js';
 import { ROOM_CATALOG } from '../clients/rooms.js';
 import { settings } from '../settings/settings.js';
 import { buildRegionMask, drawRegionLayer } from '../art/map-regions.js';
-import { mapBase } from '../art/map-base.js';
+import { mapBase, mapBaseCanvas } from '../art/map-base.js';
 import { drawMarker, drawLabelPlate, drawCountTag } from '../art/map-markers.js';
 import { drawHeatLayer } from '../art/map-heat.js';
 
@@ -73,15 +73,22 @@ const el = (tag, cls, text) => {
 export function createWorldMapScreen({ root, sales, schemes = null, leads = null, onSold, onScheme, initial = null }) {
   root.classList.add('wm');
   const mapWrap = el('div', 'wm-map');
-  const canvas = el('canvas');
+  // #109: two stacked canvases. Underneath, the terrain painted at a higher resolution (each terrain pixel is 2
+  // screen pixels, like the reference, so the map gains detail as it grows); on top, a transparent 320x192 canvas
+  // for borders, heat, cities, markers and labels at a whole-number zoom. Clicks land on the top canvas.
+  const stage = el('div', 'wm-stage');
+  const baseCanvas = el('canvas', 'wm-base');
+  baseCanvas.setAttribute('aria-hidden', 'true');
+  const canvas = el('canvas', 'wm-over');
   canvas.width = MAP_W;
   canvas.height = MAP_H;
   canvas.setAttribute('aria-label', 'World map. Click a region to see its buyers.');
+  stage.append(baseCanvas, canvas);
   const legend = el('div', 'wm-legend');
   legend.innerHTML = '<span><i class="wm-ico wm-ico-buyer"></i>buyers waiting</span><span><i class="wm-ico" style="background:var(--at-gold)"></i>uneasy 40+</span><span><i class="wm-ico" style="background:var(--at-amber)"></i>edge 70+</span><span><i class="wm-ico" style="background:var(--at-red)"></i>tipping 90+</span>';
   const toast = el('div', 'wm-toast');
   toast.hidden = true;
-  mapWrap.append(canvas, toast, legend);
+  mapWrap.append(stage, toast, legend);
   // #102 legibility + #105: the map shows at a whole-number zoom (2x, 3x...) so every pixel of the labels and
   // icons stays crisp; fractional scales smear the 3x5 font. fitMap() below does it (width AND height, so the
   // aspect and the click mapping stay exact).
@@ -99,8 +106,29 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     const scale = Math.max(1, Math.floor(Math.min(availW / MAP_W, availH / MAP_H)));
     const w = `${MAP_W * scale}px`;
     const h = `${MAP_H * scale}px`;
-    if (canvas.style.width !== w || canvas.style.height !== h) { canvas.style.width = w; canvas.style.height = h; } // always both: aspect = click mapping
+    for (const cv of [stage, baseCanvas, canvas]) if (cv.style.width !== w || cv.style.height !== h) { cv.style.width = w; cv.style.height = h; } // always both: aspect = click mapping
     canvas.dataset.scale = String(scale);
+    paintBase(scale);
+  }
+  // terrain resolution: half the zoom (2 screen px per terrain pixel), at least the 320x192 map
+  let baseScale = 0;
+  let baseTimer = 0;
+  function paintBase(zoom) {
+    const want = zoom >= 2 ? zoom / 2 : 1;
+    if (want === baseScale) return;
+    if (!baseScale) blitBase(1); // something right away; the finer paint follows
+    clearTimeout(baseTimer);
+    baseTimer = setTimeout(() => blitBase(want), 0); // painting a big map takes a few hundred ms
+  }
+  function blitBase(s) {
+    const src = mapBaseCanvas(s, document);
+    baseCanvas.width = src.width;
+    baseCanvas.height = src.height;
+    const b = baseCanvas.getContext('2d');
+    b.imageSmoothingEnabled = false;
+    b.drawImage(src, 0, 0);
+    baseCanvas.dataset.artScale = String(s);
+    baseScale = s;
   }
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => fitMap()) : null;
   ro?.observe(mapWrap);
@@ -139,9 +167,8 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
 
   function drawMap() {
     const anim = Math.floor(frame / 20) % 2;
-    ctx.fillStyle = HEX.K;
-    ctx.fillRect(0, 0, MAP_W, MAP_H);
-    drawWorldMap(ctx, { frame: anim, labels: false });
+    ctx.clearRect(0, 0, MAP_W, MAP_H); // the terrain is on the canvas underneath
+    ctx.imageSmoothingEnabled = false;
     // demand heat (#103): veil + wash + texture + rim per region, readable on busy terrain. The textures
     // are always on now; Crisis patterns (#94) makes them bolder, Reduced flashing stops the tipping pulse.
     const levels = Object.fromEntries(rows.map((r) => [r.id, crisisOverlay(r.crisis ?? 0)]));
@@ -459,6 +486,15 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     select,
     get selected() { return selected; },
     canvas,
-    destroy() { cancelAnimationFrame(raf); ro?.disconnect(); removeEventListener('resize', fitMap); off(); offLeads?.(); offMarket(); offSchemes?.(); root.replaceChildren(); },
+    /** The map as one 320x192 canvas: terrain at map size with everything drawn on top (checks, thumbnails). */
+    snapshot() {
+      const c = Object.assign(document.createElement('canvas'), { width: MAP_W, height: MAP_H });
+      const x = c.getContext('2d');
+      x.imageSmoothingEnabled = false;
+      x.drawImage(mapBaseCanvas(1, document), 0, 0);
+      x.drawImage(canvas, 0, 0);
+      return c;
+    },
+    destroy() { cancelAnimationFrame(raf); clearTimeout(baseTimer); ro?.disconnect(); removeEventListener('resize', fitMap); off(); offLeads?.(); offMarket(); offSchemes?.(); root.replaceChildren(); },
   };
 }

@@ -3,6 +3,7 @@
 //   - hit areas: clicking the middle of each region's land selects that region
 //   - layering: labels and markers are drawn last (sampled pixels match the label colours on top of the art)
 //   - seams: every on-screen map pixel row/column maps to exactly `scale` screen pixels
+//   - terrain (#109): the terrain canvas under the map covers it exactly, at 2 screen px per terrain pixel
 // and saves screenshots at the default zoom for before/after comparisons.
 //   python3 -m http.server 8123 &      (repo root)
 //   node tools/map-ingame-check.cjs <outDir> [label=before] [baseUrl]
@@ -62,7 +63,16 @@ const VIEWPORTS = [{ w: 1440, h: 900 }, { w: 1920, h: 1080 }, { w: 1280, h: 720 
     await p.waitForTimeout(300);
     const shot = path.join(out, `${label}-${vp.w}x${vp.h}.png`);
     await p.screenshot({ path: shot });
-    await p.locator('.wm-map canvas').screenshot({ path: path.join(out, `${label}-map-${vp.w}x${vp.h}.png`) });
+    await p.waitForTimeout(1500); // the finer terrain paints just after the map opens
+    r.terrain = await p.evaluate(() => {
+      const base = document.querySelector('.wm-map .wm-base');
+      if (!base) return null;
+      const cv = __game.mapScreen.canvas;
+      const a = base.getBoundingClientRect(), o = cv.getBoundingClientRect();
+      return { artW: base.width, artH: base.height, screenPerArtPx: a.width / base.width, aligned: Math.abs(a.left - o.left) < 0.5 && Math.abs(a.top - o.top) < 0.5 && Math.abs(a.width - o.width) < 0.5 && Math.abs(a.height - o.height) < 0.5 };
+    });
+    r.terrainOk = !r.terrain || (r.terrain.aligned && Math.abs(r.terrain.screenPerArtPx - Math.round(r.terrain.screenPerArtPx)) < 1e-6);
+    await p.locator(await p.$('.wm-stage') ? '.wm-stage' : '.wm-map canvas').screenshot({ path: path.join(out, `${label}-map-${vp.w}x${vp.h}.png`) });
     const widths = await p.evaluate(() => {
       const cv = __game.mapScreen.canvas;
       const rect = cv.getBoundingClientRect();
@@ -79,9 +89,9 @@ const VIEWPORTS = [{ w: 1440, h: 900 }, { w: 1920, h: 1080 }, { w: 1280, h: 720 
     report.viewports.push(r);
     await p.close();
   }
-  report.pass = report.viewports.every((v) => v.integerScale && v.hitAreasOk && v.seamFree && v.aspectOk && v.rendering === 'pixelated' && !v.errs.length);
+  report.pass = report.viewports.every((v) => v.integerScale && v.terrainOk !== false && v.hitAreasOk && v.seamFree && v.aspectOk && v.rendering === 'pixelated' && !v.errs.length);
   fs.writeFileSync(path.join(out, `${label}-check.json`), JSON.stringify(report, null, 1));
-  for (const v of report.viewports) console.log(v.viewport, `scale ${v.scale.toFixed(3)}`, v.integerScale ? 'integer' : 'FRACTIONAL', `columns ${v.columnWidths.join('/')}px`, v.hitAreasOk ? 'hits ok' : `HITS ${JSON.stringify(v.hits)}`, v.errs.join(' '));
+  for (const v of report.viewports) console.log(v.viewport, `scale ${v.scale.toFixed(3)}`, v.integerScale ? 'integer' : 'FRACTIONAL', `columns ${v.columnWidths.join('/')}px`, v.terrain ? `terrain ${v.terrain.artW}x${v.terrain.artH} @${v.terrain.screenPerArtPx}px${v.terrain.aligned ? '' : ' MISALIGNED'}` : '', v.hitAreasOk ? 'hits ok' : `HITS ${JSON.stringify(v.hits)}`, v.errs.join(' '));
   console.log(report.pass ? 'PASS' : 'FAIL');
   await b.close();
 })();
