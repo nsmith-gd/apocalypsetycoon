@@ -8,6 +8,7 @@
 import { drawSprite } from './render.js';
 import { drawText, textWidth } from './font.js';
 import { HEX } from './palette.js';
+import { drawMarker64, MARKER64_KINDS } from './hd/markers64.js';
 
 export const MARKERS = {
   // a skyline: three towers, lit windows, a mast
@@ -91,9 +92,13 @@ export const MARKERS = {
 };
 
 /** A sprite with a 1px soft shadow down-right, so it lifts off busy terrain. */
-export function drawMarker(ctx, id, x, y, { frame = 0 } = {}) {
+export function drawMarker(ctx, id, x, y, { frame = 0, scale = 1 } = {}) {
   const s = MARKERS[id];
   if (!s) return;
+  // #24: markers are authored at 64 px (src/art/hd/markers64.js) and drawn reduced to their footprint (the old
+  // icon's size here) times `scale` = art pixels per map pixel of the target canvas. The pixel maps above now only
+  // give each marker its footprint on the map.
+  if (MARKER64_KINDS.includes(id)) { drawMarker64(ctx, id, Math.round(x * scale), Math.round(y * scale), { frame, size: s.w * scale }); return; }
   ctx.globalAlpha = 0.45;
   drawSilhouette(ctx, s, x + 1, y + 1, HEX.K);
   ctx.globalAlpha = 1;

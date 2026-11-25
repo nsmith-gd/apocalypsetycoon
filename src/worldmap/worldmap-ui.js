@@ -225,7 +225,9 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     }
     // cities (#102): a skyline icon over each city cell, sitting on its cell's bottom edge
     // #139: each skyline stands on its real city (it was snapped to the old 8 px cells: up to 8 px off, some in the sea)
-    for (const city of CITIES) { const [fx, fy] = mapXY(city.lon, city.lat); drawMarker(ctx, 'city', Math.round(fx * MAP_W) - 4, Math.round(fy * MAP_H) - 9); }
+    // #24: markers go on the terrain-resolution layer, so their 64 px art shows at the zoom's real detail
+    const mk = layers && baseScale > 1 ? (id, x, y) => drawMarker(lctx, id, x, y, { frame: anim, scale: layers.w / MAP_W }) : (id, x, y) => drawMarker(ctx, id, x, y);
+    for (const city of CITIES) { const [fx, fy] = mapXY(city.lon, city.lat); mk('city', Math.round(fx * MAP_W) - 4, Math.round(fy * MAP_H) - 9); }
     // sold bunkers
     const soldIn = {};
     for (const s of sales.sold) soldIn[s.region] = (soldIn[s.region] ?? 0) + 1;
@@ -239,14 +241,14 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       drawLabelPlate(ctx, p.short, x - 2, y - 11, { num: row.crisis, numColor: crisisColor(row.crisis), selected: row.id === selected });
       const bob = row.buyers > 0 && anim ? -1 : 0;
       let cx = x;
-      drawMarker(ctx, 'client', cx, y + bob);
+      mk('client', cx, y + bob);
       cx += 9 + drawCountTag(ctx, row.buyers, cx + 9, y + 1, row.buyers > 0 ? HEX.G : HEX.S);
       if (soldIn[row.id]) {
-        drawMarker(ctx, 'bunker', cx + 2, y - 1);
+        mk('bunker', cx + 2, y - 1);
         cx += 13;
         if (soldIn[row.id] > 1) cx += drawCountTag(ctx, soldIn[row.id], cx, y + 1, HEX.Y);
       }
-      if (row.siteOwned) drawMarker(ctx, 'site', cx + 2, y - 2);
+      if (row.siteOwned) mk('site', cx + 2, y - 2);
     }
     // floating sale text
     floaters = floaters.filter((f) => f.t < 70);

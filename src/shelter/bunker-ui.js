@@ -10,7 +10,7 @@ import { OBJECTS, STRUCTURES, CONDUITS, STRATA, TIER_COLORS, WATER_TABLE_M, FINI
 import { drawWallPiece, drawFloorPiece } from '../art/finish-art.js';
 import { drawText } from '../art/font.js';
 import { drawRoomTile, ROOM_TILE_IDS, DESIGN_STYLES } from '../art/hd/room-tiles.js'; // the room card shows the room in its style (#120)
-import { drawStratumTile, drawDigStage, drawShellStage, drawFitoutStage } from '../art/bunker-tiles.js';
+import { drawStrata64, drawDig64, drawShell64, drawFitout64 } from '../art/hd/grid-tiles64.js'; // #24: ground and build stages authored at 64 px
 import { drawObjectSprite, drawResident, drawThought, hasSprite } from './bunker-sprites.js';
 import { daysSealedCanvas } from '../art/hd/shelter-life64.js';
 import { NEED_IDS } from './bunker-catalog.js';
@@ -328,7 +328,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const i = site.idx(x, y);
       if (!site.dug[i]) {
-        drawStratumTile(ctx, site.stratum(y).id, PX(x), PY(y), x, y); // R32 strata tiles
+        drawStrata64(ctx, site.stratum(y).id, PX(x), PY(y), x, y, { tile: T }); // R32 strata, redrawn at 64 px (#24)
         if (y === 0) { ctx.fillStyle = '#4a7a2a'; ctx.fillRect(PX(x), PY(y), T, 3); }
       } else if (site.finish?.wall[i]) wallFinish(x, y, FINISHES.wall[site.finish.wall[i]]);
       else {
@@ -448,13 +448,13 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       if (j.type === 'object') {
         const o = OBJECTS[j.kind];
         drawObject(j, 0.4 + 0.5 * t, true, frame);
-        drawFitoutStage(ctx, PX(j.x), PY(j.y - o.h + 1), o.w * T, o.h * T, t, frame); // R32 fit-out stage
+        drawFitout64(ctx, PX(j.x), PY(j.y - o.h + 1), o.w, o.h, t, Math.floor(frame / 4), { tile: T }); // R32 fit-out stage (64 px, #24)
         if (t > 0) { ctx.fillStyle = '#7ed957'; ctx.fillRect(PX(j.x) + 1, PY(j.y) + T - 3, Math.round((o.w * T - 2) * t), 2); }
         continue;
       }
       const x = PX(j.x), y = PY(j.y);
-      if (j.type === 'dig') { drawDigStage(ctx, x, y, t, site.stratum(j.y).id, j.x, j.y); if (t > 0) { ctx.fillStyle = '#7ed957'; ctx.fillRect(x + 1, y + T - 3, Math.round((T - 2) * t), 2); } continue; }
-      if (j.type === 'build') { drawShellStage(ctx, x, y, t, j.kind ?? j.structure); if (t > 0) { ctx.fillStyle = '#7ed957'; ctx.fillRect(x + 1, y + T - 3, Math.round((T - 2) * t), 2); } continue; }
+      if (j.type === 'dig') { drawDig64(ctx, x, y, t, site.stratum(j.y).id, j.x, j.y, { tile: T }); if (t > 0) { ctx.fillStyle = '#7ed957'; ctx.fillRect(x + 1, y + T - 3, Math.round((T - 2) * t), 2); } continue; }
+      if (j.type === 'build') { drawShell64(ctx, x, y, t, j.kind ?? j.structure, { tile: T }); if (t > 0) { ctx.fillStyle = '#7ed957'; ctx.fillRect(x + 1, y + T - 3, Math.round((T - 2) * t), 2); } continue; }
       ctx.strokeStyle = j.type === 'dig' ? 'rgba(245,197,66,.9)' : j.type === 'build' ? 'rgba(220,220,220,.8)' : CONDUITS[j.net].color;
       ctx.lineWidth = 1;
       ctx.strokeRect(x + 1.5, y + 1.5, T - 3, T - 3);
