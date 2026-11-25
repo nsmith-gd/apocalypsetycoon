@@ -84,6 +84,13 @@ Nine-slice frames in `src/art/sprites-ui.js` (`UI_FRAMES`) are drawn with `drawN
 - `button`, `buttonPressed` and `buttonActive` are the button states.
 - `meter` is the bar track, and `tooltip` is a small dark box with a gold border.
 
+## UI theme (#126)
+DOM screens share one theme: `src/ui/theme.js` (installed at boot) + `src/ui/theme.css` (loaded last). `?theme=off` shows the old look.
+- **Font:** `AT Pixel`, the 3x5 glyphs above (plus wider `$ M W`) built into a web font at runtime (`src/ui/pixel-font.js`). Only at whole-number scales: 12px = 2x, 18px = 3x, 24px = 4x (`--th-x2..x4`). Labels, numbers, titles and buttons use it; sentences stay in the mono body font at 12px / 11px.
+- **Frames:** the `UI_FRAMES` nine-slices above, as CSS border images: `panel` at 2x for side panels and modals, 1x for HUD tiles; `button` / `buttonPressed` / `buttonActive` for buttons; `meter` for bars.
+- **Spacing:** a 4px grid (`--th-1..4`).
+- **Meaning colours** (one each, everywhere): money `Y` gold, gain `G`, loss `R`, heat `v` neon, tension `C` ice, crisis `p` -> `O` -> `R` (uneasy, edge, tipping), research `T`.
+
 ## Files
 - `src/art/palette.js`: the palette
 - `src/art/render.js`: sprite cache, `drawSprite`, `tileSprite`, `drawNineSlice`, `fitIntegerScale`
