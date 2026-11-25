@@ -119,3 +119,22 @@ The world map is the one place where these rules replace the general ones above:
 
 **7. Readable beside the shelter grid.** The map is the world above: cooler and calmer than the warm, lit bunker. Its brightest land tone stays below the bunker's gold and lamp colours, so a glance tells the two canvases apart. The crisis overlays (gold, amber, red tints and rims) must read on every biome at 1×; check any new biome against all three.
 ![readability](world-map-rules/07-readability.png)
+
+## Room tiles at 64 px (#117)
+Room tiles follow the "64" rule above (#113): **64 px per metre, never under 64 px on a side**, and in-world text at least 8 px tall (the 3×5 glyphs drawn at 2× or more). A 4 × 3 m Bunk Room tile is 256 × 192 px.
+
+At this size flat fills look like vector art, so 64 px art follows these rules (`src/art/hd/`):
+1. **Ramps, not colours.** Every material is a 5–8 step ramp in `HD_RAMPS` (`src/art/hd/raster.js`): steel, teal lab tile, concrete, walnut, plaster, gold, velvet, marble, emerald, violet and so on. No colour outside them can be drawn.
+2. **Light is a pass, not a paint job.** Props are painted at full tone. Then the room sinks one step into shadow, darker toward the side walls, and each lamp throws a cone that lifts pixels one or two steps, dithered (4×4 Bayer) only at the cone's edges. Glowing pixels (screens, LEDs, grow lights, the cryo glow) are flagged and never darkened. Ref bf67f06d5b is the target for this mood.
+3. **Shared room template.** Tier-trim beam (8 px; never restyled), ceiling (18 px; survive rooms carry the bunker's air, water and power conduits in their system colours), back wall, props on the floor line, floor (12 px), and 6 px side walls.
+4. **Tier materials.** Survive: riveted steel, cracked teal lab tile or board-formed concrete, with stencilled room names and hazard tape. Comfort: plaster over walnut wainscot, oak floor, pendant lamps. Status: emerald silk in gold frames, marble checker, brass sconces. Delusion: violet damask, gold pilasters, gilded marble, chandeliers.
+5. **Wear in clusters.** Grime streaks run down from seams in 2–3 px columns, and cracks are 1 px lines. No single-pixel noise.
+6. **Two frames** at 500 ms, as before: LEDs, fans, screens, flames and pod glow.
+
+Tiles: `renderRoomTile(id)` headless or `drawRoomTile(ctx, id, x, y)` in the browser; `node tools/export-room-tiles.mjs` writes `assets/art/room-tiles.png` and its atlas. `tests/room-tiles.test.js` checks that every room has a tile at 64 px per metre, uses palette colours only, is fully painted and is distinct from every other tile. Each tile is also listed in the asset inventory, so `node tools/check-asset-minimum.mjs` measures it.
+
+## Luxury amenities at 64 px (#118)
+The client-facing furniture in the bunker builder: 44 pieces across beds, bath, kitchen and dining, comfort, decor and the status pieces (gold taps, cryo pod, four-poster, chandelier, grand piano, wine rack, cinema, bar, neon...). They live in `src/art/hd/amenities64.js` and are drawn at 64 px per metre of the piece's footprint. They use the same kit as the room tiles: a 1 px outline, top-left light, ramps, 2 frames.
+- **Recolour stays.** The piece's colour variant (`a` main, `b` trim) becomes a 7-step ramp (`rampFromHex`). Shadows drift cool and highlights warm, so a velvet, gold or ebony version shades as well as the default. Fixed materials stay fixed: marble basins, glass, flame, water, books.
+- **In the 16 px grid** (until the director confirms the 64 grid), each piece draws a level-of-detail copy: blocks are averaged and snapped back to a colour the piece already uses, with outlines kept, the same way #119's fixtures do.
+- Sheet: `node tools/export-amenities.mjs` writes `assets/art/amenities-64.png`. Tests: `tests/amenities64.test.js`.

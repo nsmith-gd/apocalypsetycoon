@@ -51,3 +51,7 @@
 /* #16: research-locked palette entries */
 .bk-obj[data-locked='true'], .bk-tool[data-locked='true'] { opacity: 0.4; }
 .bk-obj[data-locked='true']::after { content: 'R&D'; font-size: 9px; font-weight: 900; color: var(--at-amber, #ff9f1c); margin-left: auto; }
+
+/* #117: the selected room's 64 px tile, shown at 1x (scrolls sideways for the big rooms) */
+.bk-room-tile { overflow-x: auto; margin: 0 0 6px; background: #0a0807; line-height: 0; }
+.bk-room-tile canvas { image-rendering: pixelated; display: block; }

@@ -70,13 +70,17 @@ export async function inventory() {
   proc('bunker-tiles/stage-fitout', 'rooms and grid tiles', 'src/art/bunker-tiles.js', 16, 16, 'scaffold drawn at the object size (16 px per metre)');
   const { OBJECTS } = await import(new URL('../src/shelter/bunker-catalog.js', import.meta.url));
   const fx = await art('fixtures64.js');
+  const am = await art('hd/amenities64.js');
   for (const [id, o] of Object.entries(OBJECTS)) {
+    if (am.hasAmenity(id)) { proc(`bunker-objects/${id}`, 'amenities and fixtures', 'src/art/hd/amenities64.js', o.w * am.AMENITY_PX, o.h * am.AMENITY_PX, `${o.w}x${o.h} m at ${am.AMENITY_PX} px per metre (native, #118); drawn reduced while the editor is 16 px per metre`); continue; }
     if (fx.hasFixture(id)) { proc(`bunker-objects/${id}`, 'amenities and fixtures', 'src/art/fixtures64.js', o.w * fx.FIXTURE_PX, o.h * fx.FIXTURE_PX, `${o.w}x${o.h} m at ${fx.FIXTURE_PX} px per metre (native); drawn reduced while the editor is 16 px per metre`); continue; }
     proc(`bunker-objects/${id}`, 'amenities and fixtures', 'src/shelter/bunker-sprites.js', o.w * 16, o.h * 16, `${o.w}x${o.h} m at 16 px per metre`);
   }
   proc('bunker-residents/resident', 'characters', 'src/shelter/bunker-sprites.js', 10, 16, 'per pose');
   const style = await art('styleArt.js');
   proc('styled-rooms/room', 'rooms and grid tiles', 'src/art/styleArt.js', style.ROOM_PX, style.ROOM_PX, 'one room template, every style');
+  const rooms = await art('hd/room-tiles.js');
+  for (const id of rooms.ROOM_TILE_IDS) { const { w, h } = rooms.roomTileSize(id); proc(`room-tiles/${id}`, 'rooms and grid tiles', 'src/art/hd/room-tiles.js', w * rooms.TILE_PX_PER_M, h * rooms.TILE_PX_PER_M, `${w}x${h} m at ${rooms.TILE_PX_PER_M} px per metre (#117), 2 frames`); }
   const base = await art('map-base.js');
   proc('map-base/world', 'map', 'src/art/map-base.js', base.BASE_W, base.BASE_H, 'painted per pixel; terrain detail on an 8 px cell layout');
   proc('map-regions/state-layer', 'map', 'src/art/map-regions.js', base.BASE_W, base.BASE_H, 'full-map overlay');
