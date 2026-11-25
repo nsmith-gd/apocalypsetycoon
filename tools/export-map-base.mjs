@@ -1,5 +1,6 @@
 // Exports the world map base layer (#100) to assets/art/map-base.png (320x192, 1x) plus a x3 preview.
-//   node tools/export-map-base.mjs
+//   node tools/export-map-base.mjs [preview.png]
+//   node tools/export-map-base.mjs --scale 1.5 out.png   (the terrain as the game paints it at that size, 1x; #112)
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
 import { paintMapBase } from '../src/art/map-base.js';
@@ -26,6 +27,13 @@ export function png(w, h, rgba, scale = 1) {
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
 }
 
+const si = process.argv.indexOf('--scale');
+if (si > 0) {
+  const b = paintMapBase({ scale: Number(process.argv[si + 1]) });
+  writeFileSync(process.argv[si + 2], png(b.w, b.h, b.rgba));
+  console.log(`${process.argv[si + 2]} ${b.w}x${b.h}, ${new Set(b.colours).size} colours`);
+  process.exit(0);
+}
 const b = paintMapBase();
 mkdirSync('assets/art', { recursive: true });
 writeFileSync('assets/art/map-base.png', png(b.w, b.h, b.rgba));
