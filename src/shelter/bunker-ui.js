@@ -8,6 +8,7 @@
 
 import { OBJECTS, STRUCTURES, CONDUITS, STRATA, TIER_COLORS, WATER_TABLE_M, FINISHES, variantsFor, layerOf } from './bunker-catalog.js';
 import { drawText } from '../art/font.js';
+import { drawRoomTile, ROOM_TILE_IDS } from '../art/hd/room-tiles.js';
 import { drawStratumTile, drawDigStage, drawShellStage, drawFitoutStage } from '../art/bunker-tiles.js';
 import { drawObjectSprite, drawResident, drawThought, hasSprite } from './bunker-sprites.js';
 import { NEED_IDS } from './bunker-catalog.js';
@@ -500,13 +501,15 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       ${sys('FOOD', s.days.food, `${f.food.stock.toLocaleString()} meals · grows ${f.food.production} of ${f.food.need}/day`)}
       ${sys('POWER', s.days.power, `${f.power.supply ?? 0} kW for ${f.power.demand} kW · ${f.power.fuel ?? 0} L fuel · ${f.power.battery ?? 0} kWh`)}
       <div class="bk-rat">${['seal', 'blast', 'security'].map((key) => `<span>${key.toUpperCase()} <b>${s.ratings[key]}</b>/5</span>`).join('')}<span>MORALE <b>${s.ratings.morale}</b></span><span>PRESTIGE <b>${s.prestige}</b></span></div>
-      ${r ? `<div class="bk-room"><b style="color:${TIER_COLORS[r.type.tier]}">${r.type.name.toUpperCase()}</b> ${r.width}x${r.height} m · ${r.size} tiles<br>
+      ${r ? `<div class="bk-room"><div class="bk-room-tile"><canvas data-room="${r.type.id}" title="${r.type.name}"></canvas></div><b style="color:${TIER_COLORS[r.type.tier]}">${r.type.name.toUpperCase()}</b> ${r.width}x${r.height} m · ${r.size} tiles<br>
         Impressiveness <b>${r.impressiveness}</b> · beauty ${r.beauty}${r.finishBeauty ? ` (finishes +${r.finishBeauty})` : ''} · prestige ${Math.round(r.prestige)}${r.beds ? ` · beds ${r.beds}` : ''}<br>
         ${[r.noise ? `noise -${r.noise}` : '', r.rough ? 'raw rock walls -3' : '', r.cramped ? `cramped (needs ${r.type.minW} wide)` : '', r.seeps ? 'SEEPING' : ''].filter(Boolean).join(' · ') || 'No complaints.'}<br>
         <small>${Object.entries(r.counts).map(([kk, n]) => `${n}x ${OBJECTS[kk].name}`).join(', ') || 'Empty'}</small>${r.hint ? `<br><small class="bk-hint">Add ${r.hint.missing.map((m) => m.orAny ? m.orAny.filter((o) => OBJECTS[o]).map((o) => OBJECTS[o].name).join(' or ') : `${m.count}x ${OBJECTS[m.object]?.name ?? m.object}`).join(' and ')} to make it ${/^[AEIOU]/.test(r.hint.name) ? 'an' : 'a'} ${r.hint.name}.</small>` : ''}</div>` : '<div class="bk-room"><small>Click inside a room to inspect it.</small></div>'}
       <div class="bk-phase"><b>${ph.name.toUpperCase()}</b> · ${ph.detail}<br><small>${site.crews()} crew${site.crews() === 1 ? '' : 's'} · ${site.jobs.length} job${site.jobs.length === 1 ? '' : 's'} queued${site.jobs.some((j) => !site._workable(j, site.reachable())) ? ' · some unreachable: dig a way in' : ''}</small>
         <div class="bk-actions"><button class="bk-test" ${ph.id === 'ready' || ph.id === 'walkthrough' ? '' : 'disabled'}>30-DAY PRESSURE TEST</button>${onHandOver ? `<button class="bk-hand" ${site.jobs.length || !site.objects.size ? 'disabled' : ''}>HAND OVER</button>` : ''}</div></div>
       <div class="bk-notes">${s.notes.slice(0, 6).map((n) => `<div>${n}</div>`).join('')}</div>`;
+    const tileCv = side.querySelector('.bk-room-tile canvas'); // #117: the room's 64 px tile
+    if (tileCv) { const id = tileCv.dataset.room; if (ROOM_TILE_IDS.includes(id)) { const t = drawRoomTile(tileCv.getContext('2d'), id, 0, 0, { frame: Math.floor(getFrame() / 30) }); if (tileCv.width !== t.width) { tileCv.width = t.width; tileCv.height = t.height; drawRoomTile(tileCv.getContext('2d'), id, 0, 0, { frame: Math.floor(getFrame() / 30) }); } } else tileCv.parentElement.remove(); }
     side.querySelector('.bk-rat').after(resBox);
     renderResidents();
     side.querySelector('.bk-test').onclick = () => { const res = site.startPressureTest(); toast(res.ok ? 'Pressure test running: 30 days sealed.' : res.reason); render(); };
