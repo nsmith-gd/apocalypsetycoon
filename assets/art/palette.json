@@ -138,5 +138,80 @@
   "x": 216,
   "hex": "#b8e0c8",
   "name": "Clean air"
+ },
+ "a": {
+  "x": 224,
+  "hex": "#262426",
+  "name": "Concrete shadow"
+ },
+ "f": {
+  "x": 232,
+  "hex": "#3a3738",
+  "name": "Concrete dark"
+ },
+ "h": {
+  "x": 240,
+  "hex": "#524d4b",
+  "name": "Concrete"
+ },
+ "i": {
+  "x": 248,
+  "hex": "#6c655f",
+  "name": "Concrete lit"
+ },
+ "j": {
+  "x": 256,
+  "hex": "#8b8179",
+  "name": "Concrete pale"
+ },
+ "l": {
+  "x": 264,
+  "hex": "#ab9f92",
+  "name": "Concrete highlight"
+ },
+ "o": {
+  "x": 272,
+  "hex": "#b8742a",
+  "name": "Sodium glow"
+ },
+ "p": {
+  "x": 280,
+  "hex": "#f0b052",
+  "name": "Sodium lamp"
+ },
+ "q": {
+  "x": 288,
+  "hex": "#3e1230",
+  "name": "Velvet shadow"
+ },
+ "s": {
+  "x": 296,
+  "hex": "#a2407a",
+  "name": "Velvet sheen"
+ },
+ "t": {
+  "x": 304,
+  "hex": "#c79430",
+  "name": "Gold leaf"
+ },
+ "u": {
+  "x": 312,
+  "hex": "#ddd3c0",
+  "name": "Marble"
+ },
+ "x": {
+  "x": 320,
+  "hex": "#b3a68f",
+  "name": "Marble vein"
+ },
+ "z": {
+  "x": 328,
+  "hex": "#3e2414",
+  "name": "Walnut dark"
+ },
+ "A": {
+  "x": 336,
+  "hex": "#6e4428",
+  "name": "Walnut"
  }
 }

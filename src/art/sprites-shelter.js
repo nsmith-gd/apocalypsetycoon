@@ -1,6 +1,8 @@
 // Shelter sprites: terrain tiles and bunker amenities (16x16, palette keys from palette.js).
 // Generated pixel maps. Amenities sit on top of TILES.roomEmpty, resting on row 13.
 
+import { remaster, remasterSet } from './remaster.js';
+
 const AIR_VENT_FRAMES = [
   [
     '..KKKKKKKKKKKK..',
@@ -118,7 +120,7 @@ const AI_BUTLER_FRAMES = [
   ],
 ];
 
-export const TILES = {
+export const TILES_SRC = {
   earth: { w: 16, h: 16, rows: [
     'EEEEEEEEEEEEEEEE',
     'EEEbBEEEEEEEEEEE',
@@ -229,7 +231,7 @@ export const TILES = {
   ] },
 };
 
-export const AMENITIES = {
+export const AMENITIES_SRC = {
   bunk: { w: 16, h: 16, rows: [
     '.KK..........KK.',
     'KMkK........KMkK',
@@ -378,3 +380,7 @@ export const AMENITIES = {
   ] },
   ai_butler: { w: 16, h: 16, frames: AI_BUTLER_FRAMES, rows: AI_BUTLER_FRAMES[0] },
 };
+
+// #116: the game uses these 64 px+ remasters; the hand-made masters above stay as *_SRC.
+export const TILES = remasterSet(TILES_SRC);
+export const AMENITIES = remasterSet(AMENITIES_SRC);

@@ -4,30 +4,39 @@ Art note D4 (director): "all assets need to be 64bit now minimum."
 
 **Spec used:** every asset is at least **64 x 64 pixels at its native resolution** (shortest side >= 64 px; animation frames count individually; sprite sheets are judged by their frames). This is the most likely reading of "64bit" for pixel art ("64-bit sprites" = 64 px sprites). #113 is pinning the exact definition into the style guide; the minimum is one constant in `tools/check-asset-minimum.mjs` (#115), so a different number re-runs this audit unchanged. Under the other reading (64 bits per pixel, i.e. 16 bits per colour channel) every PNG we export fails: they are all 8 bits per channel.
 
-**Result:** 218 assets scanned, **166 fall short**, 52 pass (the full-map layers and the map base, all 320 x 192). Generated from `node tools/asset-inventory.mjs`; owners come from the commit that created / last changed each source file.
+**Result (after #116 rebuilt the placeholder tileset):** 218 assets scanned, **99 fall short**, 119 pass (the full-map layers and the map base, all 320 x 192). Generated from `node tools/asset-inventory.mjs`; owners come from the commit that created / last changed each source file.
 
 **Owning tasks:** the board tickets #40–#49, #97 and #110 aren't visible to agents (docs/board-audit.md), so each asset lists the ticket that made it and the redo ticket that now picks it up: #116 rebuilds the #9 placeholder tileset (grid, map, UI); the rest are proposed tickets R40–R44 in .ballast/proposed-tickets.json.
 
 | Category | Failing | Passing |
 |---|---|---|
-| rooms and grid tiles | 15 | 0 |
-| amenities and fixtures | 89 | 0 |
-| map | 20 | 3 |
-| icons | 19 | 0 |
-| UI | 9 | 0 |
+| map | 5 | 18 |
+| UI | 1 | 8 |
+| rooms and grid tiles | 9 | 6 |
+| amenities and fixtures | 78 | 11 |
 | characters | 1 | 0 |
-| exported file | 13 | 49 |
+| exported file | 5 | 57 |
+
+## map
+
+| | Asset | Current spec | Source | Made by / last changed | Picked up by |
+|---|---|---|---|---|---|
+| [ ] | `map-markers/city` | 9 x 10 px | `src/art/map-markers.js` | #102 / #102 | R42 (proposed: map markers and icons at 64) |
+| [ ] | `map-markers/client` | 8 x 9 px | `src/art/map-markers.js` | #102 / #102 | R42 (proposed: map markers and icons at 64) |
+| [ ] | `map-markers/bunker` | 10 x 11 px | `src/art/map-markers.js` | #102 / #102 | R42 (proposed: map markers and icons at 64) |
+| [ ] | `map-markers/site` | 9 x 11 px | `src/art/map-markers.js` | #102 / #102 | R42 (proposed: map markers and icons at 64) |
+| [ ] | `map-markers/hq` | 12 x 12 px | `src/art/map-markers.js` | #102 / #102 | R42 (proposed: map markers and icons at 64) |
+
+## UI
+
+| | Asset | Current spec | Source | Made by / last changed | Picked up by |
+|---|---|---|---|---|---|
+| [ ] | `font/glyph` | 3 x 5 px (bitmap font, 3x5 per glyph) | `src/art/font.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
 
 ## rooms and grid tiles
 
 | | Asset | Current spec | Source | Made by / last changed | Picked up by |
 |---|---|---|---|---|---|
-| [ ] | `shelter-tiles/earth` | 16 x 16 px | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `shelter-tiles/earthDeep` | 16 x 16 px | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `shelter-tiles/rock` | 16 x 16 px | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `shelter-tiles/surface` | 16 x 16 px | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `shelter-tiles/roomEmpty` | 16 x 16 px | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `shelter-tiles/shaft` | 16 x 16 px | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
 | [ ] | `bunker-tiles/strata-topsoil` | 16 x 16 px | `src/art/bunker-tiles.js` | R32 / R32 | R40 (proposed: strata and stage tiles at 64) |
 | [ ] | `bunker-tiles/strata-clay` | 16 x 16 px | `src/art/bunker-tiles.js` | R32 / R32 | R40 (proposed: strata and stage tiles at 64) |
 | [ ] | `bunker-tiles/strata-bedrock` | 16 x 16 px | `src/art/bunker-tiles.js` | R32 / R32 | R40 (proposed: strata and stage tiles at 64) |
@@ -42,17 +51,6 @@ Art note D4 (director): "all assets need to be 64bit now minimum."
 
 | | Asset | Current spec | Source | Made by / last changed | Picked up by |
 |---|---|---|---|---|---|
-| [ ] | `shelter-amenities/bunk` | 16 x 16 px | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `shelter-amenities/gold_taps` | 16 x 16 px | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `shelter-amenities/air_vent` | 16 x 16 px, 2 frames | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `shelter-amenities/water_tank` | 16 x 16 px | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `shelter-amenities/pantry` | 16 x 16 px | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `shelter-amenities/hydroponics` | 16 x 16 px | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `shelter-amenities/water_recycler` | 16 x 16 px | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `shelter-amenities/cryo_pod` | 16 x 16 px, 2 frames | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `shelter-amenities/mil_scrubber` | 16 x 16 px | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `shelter-amenities/wine_cellar` | 16 x 16 px | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `shelter-amenities/ai_butler` | 16 x 16 px, 2 frames | `src/art/sprites-shelter.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
 | [ ] | `bunker-objects/door` | 16 x 48 px (1x3 m at 16 px per metre) | `src/shelter/bunker-sprites.js` | #84 / #84 | R41 (proposed: bunker furniture and residents at 64) |
 | [ ] | `bunker-objects/airlock` | 16 x 48 px (1x3 m at 16 px per metre) | `src/shelter/bunker-sprites.js` | #84 / #84 | R41 (proposed: bunker furniture and residents at 64) |
 | [ ] | `bunker-objects/blast_1` | 16 x 48 px (1x3 m at 16 px per metre) | `src/shelter/bunker-sprites.js` | #84 / #84 | R41 (proposed: bunker furniture and residents at 64) |
@@ -132,69 +130,6 @@ Art note D4 (director): "all assets need to be 64bit now minimum."
 | [ ] | `bunker-objects/chandelier` | 32 x 16 px (2x1 m at 16 px per metre) | `src/shelter/bunker-sprites.js` | #84 / #84 | R41 (proposed: bunker furniture and residents at 64) |
 | [ ] | `bunker-objects/pendant` | 16 x 16 px (1x1 m at 16 px per metre) | `src/shelter/bunker-sprites.js` | #84 / #84 | R41 (proposed: bunker furniture and residents at 64) |
 
-## map
-
-| | Asset | Current spec | Source | Made by / last changed | Picked up by |
-|---|---|---|---|---|---|
-| [ ] | `map-tiles/ocean` | 8 x 8 px, 2 frames | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `map-tiles/shallows` | 8 x 8 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `map-tiles/land` | 8 x 8 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `map-tiles/forest` | 8 x 8 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `map-tiles/desert` | 8 x 8 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `map-tiles/ice` | 8 x 8 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `map-tiles/mountain` | 8 x 8 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `map-tiles/city` | 8 x 8 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `map-markers-old/bunker` | 10 x 10 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `map-markers-old/client` | 8 x 8 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `map-markers-old/hq` | 12 x 12 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `crisis-overlays/uneasy` | 8 x 8 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `crisis-overlays/edge` | 8 x 8 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `crisis-overlays/tipping` | 8 x 8 px, 2 frames | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `crisis-overlays/selected` | 8 x 8 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `map-markers/city` | 9 x 10 px | `src/art/map-markers.js` | #102 / #102 | R42 (proposed: map markers and icons at 64) |
-| [ ] | `map-markers/client` | 8 x 9 px | `src/art/map-markers.js` | #102 / #102 | R42 (proposed: map markers and icons at 64) |
-| [ ] | `map-markers/bunker` | 10 x 11 px | `src/art/map-markers.js` | #102 / #102 | R42 (proposed: map markers and icons at 64) |
-| [ ] | `map-markers/site` | 9 x 11 px | `src/art/map-markers.js` | #102 / #102 | R42 (proposed: map markers and icons at 64) |
-| [ ] | `map-markers/hq` | 12 x 12 px | `src/art/map-markers.js` | #102 / #102 | R42 (proposed: map markers and icons at 64) |
-
-## icons
-
-| | Asset | Current spec | Source | Made by / last changed | Picked up by |
-|---|---|---|---|---|---|
-| [ ] | `crisis-icons/pandemic` | 10 x 10 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `crisis-icons/fire` | 10 x 10 px, 2 frames | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `crisis-icons/radiation` | 10 x 10 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `crisis-icons/unrest` | 10 x 10 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `crisis-icons/flood` | 10 x 10 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `crisis-icons/crash` | 10 x 10 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `crisis-icons/blackout` | 10 x 10 px | `src/art/sprites-map.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-icons/cash` | 12 x 12 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-icons/quarter` | 12 x 12 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-icons/heat` | 12 x 12 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-icons/tension` | 12 x 12 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-icons/board` | 12 x 12 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-icons/research` | 12 x 12 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-icons/crew` | 12 x 12 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-icons/lock` | 12 x 12 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-icons/alarm` | 12 x 12 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-icons/midnight` | 12 x 12 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-icons/map` | 12 x 12 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-icons/shelter` | 12 x 12 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-
-## UI
-
-| | Asset | Current spec | Source | Made by / last changed | Picked up by |
-|---|---|---|---|---|---|
-| [ ] | `ui-frames/panel` | 24 x 24 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-frames/paper` | 24 x 24 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-frames/button` | 16 x 16 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-frames/buttonPressed` | 16 x 16 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-frames/buttonActive` | 16 x 16 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-frames/meter` | 12 x 8 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui-frames/tooltip` | 12 x 12 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `ui/logo` | 48 x 16 px | `src/art/sprites-ui.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `font/glyph` | 3 x 5 px (bitmap font, 3x5 per glyph) | `src/art/font.js` | #9 / #9 | #116 (placeholder tileset rebuild) |
-
 ## characters
 
 | | Asset | Current spec | Source | Made by / last changed | Picked up by |
@@ -205,25 +140,78 @@ Art note D4 (director): "all assets need to be 64bit now minimum."
 
 | | Asset | Current spec | Source | Made by / last changed | Picked up by |
 |---|---|---|---|---|---|
-| [ ] | `assets/art/crisis-icons.png` | 21 x 76 px (sprite sheet; each frame is listed with its sprite) | `assets/art/crisis-icons.png` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `assets/art/crisis-overlays.png` | 17 x 35 px (sprite sheet; each frame is listed with its sprite) | `assets/art/crisis-overlays.png` | #9 / #9 | #116 (placeholder tileset rebuild) |
 | [ ] | `assets/art/map-markers/bunker.png` | 11 x 12 px | `assets/art/map-markers/bunker.png` | #102 / #102 | #116 (placeholder tileset rebuild) |
 | [ ] | `assets/art/map-markers/city.png` | 10 x 11 px | `assets/art/map-markers/city.png` | #102 / #102 | #116 (placeholder tileset rebuild) |
 | [ ] | `assets/art/map-markers/client.png` | 9 x 10 px | `assets/art/map-markers/client.png` | #102 / #102 | #116 (placeholder tileset rebuild) |
 | [ ] | `assets/art/map-markers/hq.png` | 13 x 13 px | `assets/art/map-markers/hq.png` | #102 / #102 | #116 (placeholder tileset rebuild) |
 | [ ] | `assets/art/map-markers/site.png` | 10 x 12 px | `assets/art/map-markers/site.png` | #102 / #102 | #116 (placeholder tileset rebuild) |
-| [ ] | `assets/art/map-markers.png` | 12 x 38 px (sprite sheet; each frame is listed with its sprite) | `assets/art/map-markers.png` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `assets/art/map-tiles.png` | 17 x 71 px (sprite sheet; each frame is listed with its sprite) | `assets/art/map-tiles.png` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `assets/art/shelter-amenities.png` | 33 x 186 px (sprite sheet; each frame is listed with its sprite) | `assets/art/shelter-amenities.png` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `assets/art/shelter-tiles.png` | 16 x 101 px (sprite sheet; each frame is listed with its sprite) | `assets/art/shelter-tiles.png` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `assets/art/ui-frames.png` | 24 x 174 px (sprite sheet; each frame is listed with its sprite) | `assets/art/ui-frames.png` | #9 / #9 | #116 (placeholder tileset rebuild) |
-| [ ] | `assets/art/ui-icons.png` | 48 x 254 px (sprite sheet; each frame is listed with its sprite) | `assets/art/ui-icons.png` | #9 / #9 | #116 (placeholder tileset rebuild) |
 
 ## Passing
 
+- `shelter-tiles/earth`: 64 x 64 px
+- `shelter-tiles/earthDeep`: 64 x 64 px
+- `shelter-tiles/rock`: 64 x 64 px
+- `shelter-tiles/surface`: 64 x 64 px
+- `shelter-tiles/roomEmpty`: 64 x 64 px
+- `shelter-tiles/shaft`: 64 x 64 px
+- `shelter-amenities/bunk`: 64 x 64 px
+- `shelter-amenities/gold_taps`: 64 x 64 px
+- `shelter-amenities/air_vent`: 64 x 64 px
+- `shelter-amenities/water_tank`: 64 x 64 px
+- `shelter-amenities/pantry`: 64 x 64 px
+- `shelter-amenities/hydroponics`: 64 x 64 px
+- `shelter-amenities/water_recycler`: 64 x 64 px
+- `shelter-amenities/cryo_pod`: 64 x 64 px
+- `shelter-amenities/mil_scrubber`: 64 x 64 px
+- `shelter-amenities/wine_cellar`: 64 x 64 px
+- `shelter-amenities/ai_butler`: 64 x 64 px
+- `map-tiles/ocean`: 64 x 64 px
+- `map-tiles/shallows`: 64 x 64 px
+- `map-tiles/land`: 64 x 64 px
+- `map-tiles/forest`: 64 x 64 px
+- `map-tiles/desert`: 64 x 64 px
+- `map-tiles/ice`: 64 x 64 px
+- `map-tiles/mountain`: 64 x 64 px
+- `map-tiles/city`: 64 x 64 px
+- `map-markers-old/bunker`: 80 x 80 px
+- `map-markers-old/client`: 64 x 64 px
+- `map-markers-old/hq`: 96 x 96 px
+- `crisis-icons/pandemic`: 80 x 80 px
+- `crisis-icons/fire`: 80 x 80 px
+- `crisis-icons/radiation`: 80 x 80 px
+- `crisis-icons/unrest`: 80 x 80 px
+- `crisis-icons/flood`: 80 x 80 px
+- `crisis-icons/crash`: 80 x 80 px
+- `crisis-icons/blackout`: 80 x 80 px
+- `crisis-overlays/uneasy`: 64 x 64 px
+- `crisis-overlays/edge`: 64 x 64 px
+- `crisis-overlays/tipping`: 64 x 64 px
+- `crisis-overlays/selected`: 64 x 64 px
+- `ui-frames/panel`: 96 x 96 px
+- `ui-frames/paper`: 96 x 96 px
+- `ui-frames/button`: 64 x 64 px
+- `ui-frames/buttonPressed`: 64 x 64 px
+- `ui-frames/buttonActive`: 64 x 64 px
+- `ui-frames/meter`: 96 x 64 px
+- `ui-frames/tooltip`: 96 x 96 px
+- `ui-icons/cash`: 96 x 96 px
+- `ui-icons/quarter`: 96 x 96 px
+- `ui-icons/heat`: 96 x 96 px
+- `ui-icons/tension`: 96 x 96 px
+- `ui-icons/board`: 96 x 96 px
+- `ui-icons/research`: 96 x 96 px
+- `ui-icons/crew`: 96 x 96 px
+- `ui-icons/lock`: 96 x 96 px
+- `ui-icons/alarm`: 96 x 96 px
+- `ui-icons/midnight`: 96 x 96 px
+- `ui-icons/map`: 96 x 96 px
+- `ui-icons/shelter`: 96 x 96 px
+- `ui/logo`: 192 x 64 px
 - `map-base/world`: 320 x 192 px
 - `map-regions/state-layer`: 320 x 192 px
 - `map-heat/heat-layer`: 320 x 192 px
+- `assets/art/crisis-icons.png`: 161 x 566 px
+- `assets/art/crisis-overlays.png`: 129 x 259 px
 - `assets/art/map-base.png`: 320 x 192 px
 - `assets/art/map-heat/afr-edge.png`: 320 x 192 px
 - `assets/art/map-heat/afr-tipping.png`: 320 x 192 px
@@ -249,6 +237,7 @@ Art note D4 (director): "all assets need to be 64bit now minimum."
 - `assets/art/map-heat/sas-edge.png`: 320 x 192 px
 - `assets/art/map-heat/sas-tipping.png`: 320 x 192 px
 - `assets/art/map-heat/sas-uneasy.png`: 320 x 192 px
+- `assets/art/map-markers.png`: 96 x 290 px
 - `assets/art/map-regions/afr-hover.png`: 320 x 192 px
 - `assets/art/map-regions/afr-idle.png`: 320 x 192 px
 - `assets/art/map-regions/afr-selected.png`: 320 x 192 px
@@ -273,5 +262,10 @@ Art note D4 (director): "all assets need to be 64bit now minimum."
 - `assets/art/map-regions/sas-hover.png`: 320 x 192 px
 - `assets/art/map-regions/sas-idle.png`: 320 x 192 px
 - `assets/art/map-regions/sas-selected.png`: 320 x 192 px
+- `assets/art/map-tiles.png`: 129 x 519 px
+- `assets/art/shelter-amenities.png`: 129 x 714 px
+- `assets/art/shelter-tiles.png`: 64 x 389 px
+- `assets/art/ui-frames.png`: 96 x 678 px
+- `assets/art/ui-icons.png`: 192 x 1454 px
 
 Note: the map base passes as one 320 x 192 image, but its terrain still follows an 8 px cell layout; if #113 decides the minimum applies to map cells too, the map base and its overlays fail as well.
