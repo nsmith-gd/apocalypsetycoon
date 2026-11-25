@@ -163,13 +163,17 @@ function canvasOf(key, make, tile) {
     const r = reduceRaster(make(), Math.max(1, Math.round(P / tile)));
     cv = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(r.w, r.h) : Object.assign(document.createElement('canvas'), { width: r.w, height: r.h });
     cv.getContext('2d').putImageData(new ImageData(r.rgba(), r.w, r.h), 0, 0);
-    if (cache.size > 4000) cache.clear();
+    if (cache.size > 24000) cache.clear(); // an Ark plot is 64 x 135 tiles: the cap must hold a whole plot or every frame rebuilds (#143)
     cache.set(key, cv);
   }
   return cv;
 }
 const put = (ctx, cv, px, py) => { ctx.imageSmoothingEnabled = false; ctx.drawImage(cv, px, py); };
-export const drawStrata64 = (ctx, id, px, py, x, y, { tile = 16 } = {}) => put(ctx, canvasOf(`s|${id}|${x}|${y}|${tile}`, () => strataRaster(id, x, y), tile), px, py);
+// Ground repeats every STRATA_PERIOD metres, so a plot of any size needs at most PERIOD^2 textures per stratum
+// (an Ark is 64 x 135 tiles; generating every tile froze the editor for ~13 s) (#143).
+const STRATA_PERIOD = 16;
+const wrap = (v) => ((v % STRATA_PERIOD) + STRATA_PERIOD) % STRATA_PERIOD;
+export const drawStrata64 = (ctx, id, px, py, x, y, { tile = 16 } = {}) => { const wx = wrap(x), wy = wrap(y); put(ctx, canvasOf(`s|${id}|${wx}|${wy}|${tile}`, () => strataRaster(id, wx, wy), tile), px, py); };
 export const drawDig64 = (ctx, px, py, t, id, x, y, { tile = 16 } = {}) => put(ctx, canvasOf(`d|${id}|${Math.round(t * 8)}|${x}|${y}|${tile}`, () => digRaster(id, Math.round(t * 8) / 8, x, y), tile), px, py);
 export const drawShell64 = (ctx, px, py, t, kind = 'wall', { tile = 16 } = {}) => put(ctx, canvasOf(`h|${kind}|${Math.round(t * 8)}|${tile}`, () => shellRaster(Math.round(t * 8) / 8, kind), tile), px, py);
 // the dust sheet reads as a sheet, not a crate: the fit-out stage is drawn see-through

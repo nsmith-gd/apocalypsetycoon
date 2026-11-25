@@ -67,3 +67,15 @@
   vote per kit-coloured piece; 2+ votes and a clear lead = that style. `styles.js` `satisfaction()` reads `room.style`.
 - Editor: STYLE tool [Y] (pick a kit, click a room); the inspector shows the room's style and votes.
 - `src/art/finish-art.js`: detailed per-pixel board concrete, damask, polished slab and marble checker, laid in world pixels.
+
+## Megaprojects: Compound and Ark (#143, greybox)
+- `megaprojects.js`: `MegaprojectBoard({ ledger, isUnlocked, seed, crews, siteOpts })`. Numbers in `MEGAPROJECTS` (tuning.js).
+  - `startCompound()` (4:20): three BunkerSites A, B, C; tunnels A-B and B-C dug at a depth (`digTunnel(id, m)`); below the
+    12 m water table a tunnel can flood each week, and next to a besieged site it can be breached (`besieged` set);
+    `repairTunnel` pumps out / reseals. `summary()`: linked sites pool their stores; the Compound lasts as long as its
+    weakest linked group.
+  - `startArk(lead)` (5:00): only a Table (C5) lead commissions it; more Table leads join the consortium. A 64-wide,
+    130 m-deep BunkerSite. `checklist()`: Abyss depth (120 m), Governance Hall and Schoolhouse (greybox: a room of a
+    minimum width holding listed pieces), sleeps 200. `handOver()` pays the consortium price.
+- `megaprojects-ui.js` + `.css`: PROJECTS screen (top bar) with a bunker editor per Compound site plus the tunnel panel,
+  and the Ark editor plus checklist. World map: a Table lead card offers BEGIN THE ARK.
