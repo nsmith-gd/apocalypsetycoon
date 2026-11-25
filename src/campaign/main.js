@@ -25,6 +25,7 @@ import { uncontrolledRoad, sealOrderClients, resolveUncontrolled } from '../midn
 import { REGIONS as SALES_REGIONS } from '../demand/demand.js';
 import { BunkerSite } from '../shelter/bunker.js';
 import { createBunkerUI } from '../shelter/bunker-ui.js';
+import { moodOf } from '../art/atmosphere.js';
 import { CrisisSystem } from '../crisis/breach.js';
 import { CrisisConsequences } from '../crisis/consequences.js';
 import { createContainmentUI } from '../crisis/breach-ui.js';
@@ -229,6 +230,10 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   const pbui = createPushbackUI({ root, pushback: pb });
   // Doom Clock: fed by the crisis system's open roster tracks (below); a Final Countdown can bring Midnight early.
   const doom = new DoomClock();
+  // #130: the mood of the whole game (lighting and colour grade): tension and the Doom Clock, or a forced preset
+  // for comparisons (?mood=calm|edge|runaway, or __game.setMood('edge') from the console; null goes back to live).
+  let moodForce = new URLSearchParams(location.search).get('mood');
+  const mood = () => moodOf({ tension: pb.tension, minutes: doom.minutes, startMinutes: doom.cfg.startMinutes, force: moodForce });
   createDoomClockHud({ clock: doom, hud: root.querySelector('.hud') });
   const gauge = createPressureGauge({ root, pushback: pb, getQuarterProfit: () => ledger.summary(ledger.quarter).net,
     getBoard: () => ({ progress: quarterRevenue(ledger, ledger.quarter), target: board.quota, ousted: board.ousted,
@@ -259,7 +264,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   const companyPanel = createCompanyPanel({ root, company, getWorkingCrews: workingCrews });
   root.querySelector('.hud')?.insertBefore(companyPanel.chip, root.querySelector('.view-toggle'));
   const grid = new BunkerSite({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: workingCrews, crewSpeed: () => company.crewSpeed, research: tree });
-  const gridUI = createBunkerUI({ mount: gridView, grid, getFrame: () => frame, onHandOver: (sh) => { qStats.handovers += 1; mapSales.addFinished(sh); mapScreen.refresh(); } });
+  const gridUI = createBunkerUI({ mount: gridView, grid, getFrame: () => frame, getMood: () => mood(), onHandOver: (sh) => { qStats.handovers += 1; mapSales.addFinished(sh); mapScreen.refresh(); } });
   slot.register('grid', grid);
 
   // ---------- the world: crisis tracks, weekly leads, schemes and map sales ----------
@@ -327,7 +332,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     social.session.onChange(() => ui.update(hudState()));
     eventsBtn.disabled = false;
   }).catch((err) => { eventsBtn.title = `Events unavailable: ${err.message}`; });
-  const mapScreen = createWorldMapScreen({ root: mapView, sales: mapSales, schemes, leads, initial: 'nam', onScheme: () => ui.update(hudState()), onSold: () => ui.update(hudState()) });
+  const mapScreen = createWorldMapScreen({ root: mapView, sales: mapSales, schemes, leads, initial: 'nam', getMood: () => mood(), onScheme: () => ui.update(hudState()), onSold: () => ui.update(hudState()) });
   createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => crisis.advanceWeek() });
   crisis.on('week', () => mapScreen.refresh());
   crisis.on('breach', () => { qStats.breaches += 1; });
@@ -639,6 +644,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   }
 
   session = {
+    mood, setMood: (m) => { moodForce = m; }, // #130
     difficulty: diff, clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, board, consequences, market, schemes, mapSales, mapScreen, slot, leads, social, company, story, telemetry, firstBreach,
     destroy() {
       cancelAnimationFrame(raf);

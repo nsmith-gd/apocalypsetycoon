@@ -33,10 +33,11 @@ export const DEFAULTS = Object.freeze({
   trackPatterns: false, // hatching on crisis gauges and map regions, so zones don't rely on colour
   reducedFlash: false, // no blinking or shaking; a calmer breach alert
   cleanFont: false, // a plain sans-serif font instead of the typewriter one
+  reducedLighting: false, // #130: no flicker or vignette, half the mood grade, soft glows only
   keys: Object.fromEntries(ACTIONS.map((a) => [a.id, a.key])),
 });
 
-const OPTION_CLASSES = { trackPatterns: 'a11y-patterns', reducedFlash: 'a11y-reduced-flash', cleanFont: 'a11y-clean-font' };
+const OPTION_CLASSES = { trackPatterns: 'a11y-patterns', reducedFlash: 'a11y-reduced-flash', cleanFont: 'a11y-clean-font', reducedLighting: 'a11y-reduced-lighting' };
 const ALIASES = { spacebar: ' ', space: ' ', '>': '.', '<': ',' }; // shifted variants keep working
 
 /** Normalise a KeyboardEvent (or a key string) to the stored form. */
