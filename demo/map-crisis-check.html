@@ -25,7 +25,7 @@
 // state art composes over the map layers. Re-run it when the redone map (base, borders, markers, heat) lands:
 //   demo/map-crisis-check.html            -> table here; window.__check holds the numbers
 //   node tools/map-crisis-check.cjs       -> screenshots + JSON into .ballast/media/t104/
-import { createWorldMapScreen, MAP_PLACES, regionAtCell } from '../src/worldmap/worldmap-ui.js';
+import { createWorldMapScreen, MAP_PLACES, regionAtPx } from '../src/worldmap/worldmap-ui.js'; // #134: regions are painted land pixels
 import { MAP_W, MAP_H, MAP_COLS, MAP_ROWS, CELL } from '../src/art/worldmap.js';
 import { REGIONS } from '../src/demand/demand.js';
 import { textWidth } from '../src/art/font.js';
@@ -89,7 +89,7 @@ function checkState(id, state, base) {
   const cellsHit = new Set();
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const c = Math.floor(x / CELL), r = Math.floor(y / CELL);
-    const mine = regionAtCell(c, r) === id;
+    const mine = regionAtPx(x, y) === id;
     if (mine) { inside++; if (!inBox(box, x, y)) cells.add(`${c},${r}`); } // cells hidden under the label/marker can't show it
     const a = px(img, x, y), o = px(base, x, y);
     if (same(a, o)) continue;
@@ -131,10 +131,10 @@ for (const r of REGIONS) {
   const box = labelBox(r.id);
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     if (same(px(sel, x, y), px(base, x, y))) continue;
-    if (regionAtCell(Math.floor(x / CELL), Math.floor(y / CELL)) === r.id || inBox(box, x, y)) continue;
+    if (regionAtPx(x, y) === r.id || inBox(box, x, y)) continue;
     // the selected outline has a dark outer edge by design (#101): allow 2px around the region
     let near = false;
-    for (let dy = -2; dy <= 2 && !near; dy++) for (let dx = -2; dx <= 2 && !near; dx++) near = regionAtCell(Math.floor((x + dx) / CELL), Math.floor((y + dy) / CELL)) === r.id;
+    for (let dy = -2; dy <= 2 && !near; dy++) for (let dx = -2; dx <= 2 && !near; dx++) near = regionAtPx(x + dx, y + dy) === r.id;
     if (!near) bleed++;
   }
   results.push({ region: r.id, name: r.name, state: 'selected', pass: bleed === 0, fails: bleed ? [`${bleed}px outside the region`] : [], bleedPx: bleed });
