@@ -73,6 +73,8 @@ This writes `metrics.json` and these images.
 
 ![Palettes](world-map-target/05-palettes.png)
 
+**#138 update (director: "That looks nothing like the Earth, more pixels"):** the map is now the real Earth. Coastlines and countries come from Natural Earth (`tools/build-earth.mjs`); biomes come from physical geography (`src/art/earth.js`). The region layout and click areas follow the real countries, which supersedes the "fictional with real echoes" and "region layout unchanged" lines below. The terrain is painted at one art pixel per screen pixel (960x576 at 1440x900), which supersedes target 2.
+
 ## Must not change (so the game keeps working)
 
 - The 40x24 region hit grid (`MAP_REGIONS`, `regionAt`) and the region layout. Terrain resolution is free; hit areas are not.

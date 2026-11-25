@@ -21,47 +21,27 @@ import { ROOM_CATALOG } from '../clients/rooms.js';
 import { settings } from '../settings/settings.js';
 import { buildRegionMask, drawRegionLayer } from '../art/map-regions.js';
 import { mapBase, mapBaseCanvas } from '../art/map-base.js';
+import { CELL_REGIONS, earthRegionAt, mapXY } from '../art/earth.js';
 import { drawMarker, drawLabelPlate, drawCountTag } from '../art/map-markers.js';
 import { drawHeatLayer } from '../art/map-heat.js';
 
 let MASK = null;
 let PX = null;
-export const REGION_REACH_PX = 12; // painted land this close to a region (1.5 cells) belongs to it: coastal islands, not mid-ocean ones
+export const REGION_REACH_PX = 12; // (#134) kept for callers; since #138 regions come from the real countries
 
-/**
- * Which region each painted land pixel belongs to (#134). The redone base layer (#109, #136) paints coasts,
- * capes and island chains that spill past the old 8px click cells; following the cells left straight-edged tint
- * boxes and regionless islands. Land pixels inside a region's cells keep that region; every other land pixel
- * within REGION_REACH_PX joins the nearest region (a breadth-first walk out from the cells). Ice and open sea
- * belong to nobody.
- */
+/** Which region each painted land pixel belongs to: #134 grew regions out of the click cells; #138 reads them off the
+ *  real Earth (the country under the pixel). */
 function regionPixels() {
   if (PX) return PX;
-  const base = mapBase();
+  // #138: the map is the real Earth, so every land pixel belongs to the region of the country under it (islands
+  // included: Hawaii is N.America, the Falklands LatAm). Ice and open sea belong to nobody.
   const ids = Object.keys(MAP_PLACES);
-  const lab = new Uint8Array(MAP_W * MAP_H); // 0 = none, else index+1 into ids
-  const dist = new Uint16Array(MAP_W * MAP_H).fill(65535);
-  let frontier = [];
+  const lab = new Uint8Array(MAP_W * MAP_H);
+  const base = mapBase();
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
-    const id = regionAtCell(Math.floor(x / CELL), Math.floor(y / CELL));
-    if (!id || !base.isLandPx(x, y)) continue;
-    const i = y * MAP_W + x;
-    lab[i] = ids.indexOf(id) + 1; dist[i] = 0; frontier.push(i);
+    const id = earthRegionAt((x + 0.5) / MAP_W, (y + 0.5) / MAP_H);
+    if (id && id !== 'ice' && base.isLandPx(x, y)) lab[y * MAP_W + x] = ids.indexOf(id) + 1;
   }
-  for (let d = 1; d <= REGION_REACH_PX && frontier.length; d++) {
-    const next = [];
-    for (const i of frontier) {
-      const x = i % MAP_W, y = (i - x) / MAP_W;
-      for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
-        if (nx < 0 || ny < 0 || nx >= MAP_W || ny >= MAP_H) continue;
-        const j = ny * MAP_W + nx;
-        if (dist[j] <= d) continue;
-        dist[j] = d; lab[j] = lab[i]; next.push(j);
-      }
-    }
-    frontier = next;
-  }
-  for (let i = 0; i < lab.length; i++) if (lab[i] && !base.isLandPx(i % MAP_W, Math.floor(i / MAP_W))) lab[i] = 0;
   return (PX = { ids, lab });
 }
 /** The region a map pixel's painted land belongs to, or null (sea, ice, far islands). */
@@ -75,27 +55,23 @@ export function regionAtPx(x, y) {
 export const regionMask = () => (MASK ??= buildRegionMask({ w: MAP_W, h: MAP_H, cell: 1, regionAtCell: regionAtPx }));
 
 // Short map labels (the 3x5 font is 4px a letter) and marker anchors, in cells.
+// #138: anchored on the real continents (longitude, latitude), converted to cells.
+const PLACE_AT = { nam: [-112, 55], lat: [-64, -6], eur: [8, 55], afr: [14, 10], mea: [36, 34], sas: [79, 17], eas: [98, 52], oce: [124, -20] };
+const cellAt = ([lon, lat]) => { const [fx, fy] = mapXY(lon, lat); return [Math.floor(fx * MAP_COLS), Math.floor(fy * MAP_ROWS)]; };
 export const MAP_PLACES = Object.freeze({
-  nam: { short: 'N.AMERICA', at: [4, 5] },
-  lat: { short: 'LATAM', at: [10, 13] },
-  eur: { short: 'EUROPE', at: [18, 3] },
-  afr: { short: 'AFRICA', at: [19, 11] },
-  mea: { short: 'MID-EAST', at: [25, 7] },
-  sas: { short: 'S.ASIA', at: [30, 10] },
-  eas: { short: 'E.ASIA', at: [30, 3] },
-  oce: { short: 'OCEANIA', at: [33, 16] },
+  nam: { short: 'N.AMERICA', at: cellAt(PLACE_AT.nam) },
+  lat: { short: 'LATAM', at: cellAt(PLACE_AT.lat) },
+  eur: { short: 'EUROPE', at: cellAt(PLACE_AT.eur) },
+  afr: { short: 'AFRICA', at: cellAt(PLACE_AT.afr) },
+  mea: { short: 'MID-EAST', at: cellAt(PLACE_AT.mea) },
+  sas: { short: 'S.ASIA', at: cellAt(PLACE_AT.sas) },
+  eas: { short: 'E.ASIA', at: cellAt(PLACE_AT.eas) },
+  oce: { short: 'OCEANIA', at: cellAt(PLACE_AT.oce) },
 });
 
-const ART_TO_REGION = { na: 'nam', sa: 'lat', eu: 'eur', af: 'afr', oc: 'oce' };
-
-/** Which of the eight demand regions a map cell belongs to (null for sea and ice). */
+/** Which of the eight demand regions a map cell belongs to (null for sea and ice): the country under most of it. */
 export function regionAtCell(col, row) {
-  const art = artRegionAt(col, row);
-  if (!art) return null;
-  if (art.id !== 'as') return ART_TO_REGION[art.id];
-  if (row >= 5 && col <= 29) return 'mea';
-  if (row >= 7 && col >= 30 && col <= 34) return 'sas';
-  return 'eas';
+  return CELL_REGIONS[row]?.[col] ?? null;
 }
 
 const TRACK_NAMES = { pandemic: 'Pandemic', climate: 'Climate', unrest: 'Civil unrest', markets: 'Market crash', war: 'War' };
@@ -159,7 +135,8 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   let baseScale = 0;
   let baseTimer = 0;
   function paintBase(zoom) {
-    const want = zoom >= 2 ? zoom / 2 : 1;
+    // #138: one terrain pixel per screen pixel ("more pixels"); past 6x, two screen pixels per terrain pixel
+    const want = zoom <= 6 ? zoom : zoom % 2 === 0 ? zoom / 2 : zoom;
     if (want === baseScale) return;
     if (!baseScale) blitBase(1); // something right away; the finer paint follows
     clearTimeout(baseTimer);
