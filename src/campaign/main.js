@@ -14,6 +14,8 @@ import { Pushback } from '../pushback/pushback.js';
 import { Board, quarterRevenue } from '../board/board.js';
 import { createPushbackUI } from '../pushback/pushback-ui.js';
 import { createPressureGauge } from '../pushback/pressure-gauge.js';
+import { Press } from '../pushback/press.js';
+import { createPressDesk, createReputationChip, createFrontPage } from '../pushback/press-ui.js';
 import { DoomClock } from '../doomclock/doomclock.js';
 import { createDoomClockHud } from '../doomclock/doomclock-hud.js';
 import { ResearchTree } from '../research/research.js';
@@ -306,8 +308,57 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     for (const id of Object.keys(board.confidence ?? {})) board.react(id, e.boardConfidence, 'Public hearing');
     toast(`PUBLIC HEARING: reputation ${e.reputation}, board confidence ${e.boardConfidence}, new leads ${Math.round(e.newLeads * 100)}%.`);
   });
-  pb.on('whispers', () => toast('WHISPERS: a journalist has started asking questions. Schemes cost 10% more.'));
   pb.on('indictment', (e) => { if (e.weeksLeft > 0) toast(`EXPOSED: indictment proceedings. ${e.weeksLeft} week${e.weeksLeft === 1 ? '' : 's'} to get heat below 95.`); });
+
+  // ---------- journalists (#149) ----------
+  // Iris Kemp and Gil Marsh build stories every week: 2% + 1% per 10 heat (Gil 2.5x as fast). At 100% the story
+  // runs: heat +25, reputation -15, every client +10 leverage, and Gil's scare also pushes a random open track +5.
+  // Reputation is the crisis system's, the one that sets lead quality. Nobody digs before 1:00, when Iris calls for
+  // comment (GDD unlock row 12). Counters are paid from the ledger. Sieges come with #150.
+  const press = new Press({ pushback: pb, crisis, seed: seeds.world + 7, reputationStore: crisis, sieges: false,
+    getMinutes: () => (clock.total / clock.quarterSeconds) * 27 });
+  pb.press = press; // endings read Iris's trust from here
+  crisis.on('week', () => press.tickWeek());
+  pb.on('whispers', () => { const who = press.startStory(); toast(`WHISPERS: ${who ? `${who === 'iris' ? 'Iris Kemp' : 'Gil Marsh'} has started a story about you` : 'the press is asking questions'}. Schemes cost 10% more.`); });
+  const pressOverlay = el('div', 'report-overlay press-overlay');
+  pressOverlay.hidden = true;
+  const pressClose = el('button', 'report-continue', 'CLOSE [P]');
+  pressClose.type = 'button';
+  const pressDesk = createPressDesk({ press, pushback: pb, showSites: false,
+    onAction: (r) => { if (r && !r.ok) toast(r.reason); else if (r?.notes?.length) toast(r.notes.join(' ')); ui.update(hudState()); } });
+  pressOverlay.append(pressDesk.el, pressClose);
+  document.body.append(pressOverlay);
+  const togglePress = (open = pressOverlay.hidden) => { pressOverlay.hidden = !open; if (open) pressDesk.render(); };
+  pressClose.onclick = () => togglePress(false);
+  const repChip = createReputationChip({ press, onOpen: () => togglePress(true) });
+  root.querySelector('.hud')?.insertBefore(repChip.el, root.querySelector('.view-toggle'));
+  crisis.on('week', () => repChip.render()); // reputation also moves outside the press (events, breaches)
+  createFrontPage({ root: document.body, press });
+  press.on('call', (c) => showPressCall(c));
+  function showPressCall(c) {
+    const overlay = el('div', 'report-overlay pr-fp-overlay');
+    const paper = el('section', 'pr-fp pr-fp-iris pr-call');
+    paper.setAttribute('role', 'dialog');
+    paper.append(el('div', 'pr-fp-mast', c.outlet.toUpperCase()), el('div', 'pr-fp-date', `${c.name} is on the line`),
+      el('h2', 'pr-fp-head', `"${c.angle}"`),
+      el('div', 'pr-fp-sub', `${c.name} is calling for comment. She has started a story. Every week it grows (faster when your heat is high); at 100% it runs: heat +25, reputation -15, every client +10 leverage. Answer her now, or manage it from the press desk (P).`));
+    const row = el('div', 'pr-call-actions');
+    const close = () => { overlay.remove(); ui.update(hudState()); };
+    const talk = el('button', 'report-continue', 'TAKE THE INTERVIEW');
+    talk.type = 'button';
+    talk.onclick = () => { const r = press.counter('iris', 'interview'); close(); toast(r.ok ? r.notes.join(' ') : r.reason); };
+    const none = el('button', 'report-continue', 'NO COMMENT');
+    none.type = 'button';
+    none.onclick = close;
+    const desk = el('button', 'report-continue', 'PRESS DESK');
+    desk.type = 'button';
+    desk.onclick = () => { close(); togglePress(true); };
+    row.append(talk, none, desk);
+    paper.append(row);
+    overlay.append(paper);
+    document.body.append(overlay);
+    talk.focus();
+  }
   const tensions = () => Object.fromEntries(Object.values(crisis.tracks).map((t) => [t.id, t.tension]));
   const market = new LeadMarket({ seed: worldSeed + 1, reputation: () => crisis.reputation, leadMultiplier: () => pb.leadMultiplier });
   market.ownSite('nam'); // HQ
@@ -401,6 +452,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   // The threat roster this campaign runs (6 slots; alternates chosen at the world setup screen).
   const world = { roster: [...roster], opened: [] };
   slot.register('crisis', crisis);
+  slot.register('press', press);
   slot.register('world', { toJSON: () => ({ roster: world.roster, opened: world.opened }), load: (d) => { if (d.roster?.length === 6) world.roster = d.roster; world.opened = d.opened ?? []; } });
   delete doom.tensions.world; // saves from before #69 carried pushback's stand-in track
   for (const id of world.opened) crisis.openTrack(id); // already a no-op for tracks the crisis save reopened
@@ -656,6 +708,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     else if (settings.matches(e, 'speedDown')) clock.setSpeed(SPEEDS[Math.max(0, SPEEDS.indexOf(clock.speed) - 1)] ?? 1);
     else if (settings.matches(e, 'endQuarter')) { if (!modalOpen()) clock.skipQuarter(); }
     else if (settings.matches(e, 'events') && social.screens && !modalOpen()) social.screens.toggle();
+    else if (settings.matches(e, 'press') && (!modalOpen() || !pressOverlay.hidden)) togglePress();
   };
   addEventListener('keydown', onKey);
 
@@ -708,6 +761,8 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);
       social.screens?.destroy();
+      pressOverlay.remove();
+      document.querySelectorAll('.pr-fp-overlay').forEach((n) => n.remove());
       companyPanel.destroy();
       removeEventListener('resize', fit);
       gridUI.destroy();

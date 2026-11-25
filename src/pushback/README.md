@@ -50,6 +50,13 @@
 - Provisional (GDD body not readable here): speeds, start-heat thresholds, cooldowns, every counter's price and effect,
   the Inspector pass rule, the Pitchforks trigger, siege chance, occupation, retake and decoy numbers. All in `PRESS`.
 - Demo: `demo/pushback-demo.html` (+1 WEEK / PLAY WEEKS, PRESS DESK).
+- In the campaign (#149, `src/campaign/main.js`): `new Press({ pushback, crisis, reputationStore: crisis, sieges: false,
+  getMinutes })`, ticked on every crisis week and saved as `press` (`press.load(saved)`). `reputationStore` makes the
+  press read and write the crisis system's reputation, the single one that sets lead quality. `getMinutes` keeps every
+  journalist quiet until 1:00 (`PRESS.story.firstStoryAt`, GDD unlock row 12); at 1:00 Iris calls for comment
+  (`'call'` event, a dialog with Interview / No comment / Press desk) and opens her first story whatever the heat.
+  Gil's track shove only picks open tracks. HUD: the REPUTATION [P] chip opens the press desk (journalists and
+  counters; the sites section stays hidden until sieges are wired, #150). Front page when a story runs.
 
 ## GDD heat bands, decay and Notoriety (#148)
 - `TUNING.heatBands` (tuning.js): Unnoticed 0, Whispers 30 (schemes +10%, a story starts), Investigation 55 (one audit a

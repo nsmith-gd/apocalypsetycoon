@@ -95,7 +95,7 @@ export function createReputationChip({ press, onOpen }) {
 }
 
 // ---------------------------------------------------------------- press desk
-export function createPressDesk({ press, pushback, onAction = () => {} }) {
+export function createPressDesk({ press, pushback, onAction = () => {}, showSites = true }) {
   const desk = el('section', 'pr-desk');
   const head = el('div', 'pr-head');
   const title = el('div', 'pr-title', 'PRESS DESK');
@@ -156,7 +156,8 @@ export function createPressDesk({ press, pushback, onAction = () => {} }) {
     } else {
       storyBox.dataset.zone = 'idle';
       const need = PRESS.journalists[j.id].startHeat;
-      storyBox.append(el('div', 'pr-quiet', `Not digging yet. Starts when heat reaches ${need}.`));
+      storyBox.append(el('div', 'pr-quiet', press.getMinutes && press.getMinutes() < PRESS.story.firstStoryAt
+        ? 'Not on your trail yet.' : `Not digging yet. Starts when heat reaches ${need}.`));
     }
     card.append(storyBox);
 
@@ -219,7 +220,7 @@ export function createPressDesk({ press, pushback, onAction = () => {} }) {
     week.textContent = `WEEK ${s.week}${s.intel ? ` · INTEL ${s.intel}` : ''}`;
     renderRep(s);
     journos.replaceChildren(...s.journalists.map(renderJourno));
-    renderSites(s);
+    if (showSites) renderSites(s); else sitesBox.remove();
   }
   press.on('change', render);
   pushback.on('change', render);
@@ -248,7 +249,7 @@ export function createFrontPage({ root, press, onClose }) {
       el('li', null, `Reputation ${evt.reputation}`),
       el('li', null, `Every client +${evt.leverage} leverage`),
     );
-    if (evt.track) fx.append(el('li', null, `${evt.track === 'world' ? 'World tension' : `${evt.track} track`} +${PRESS.journalists.gil.trackShove}: the scare spreads`));
+    if (evt.track) fx.append(el('li', null, `${evt.track === 'world' ? 'World tension' : evt.trackName ?? evt.track} +${PRESS.journalists.gil.trackShove}: the scare spreads`));
     paper.append(fx);
     const ok = btn('report-continue', 'NO COMMENT', () => {
       overlay.remove();
