@@ -22,6 +22,7 @@ import { settings } from '../settings/settings.js';
 import { buildRegionMask, drawRegionLayer } from '../art/map-regions.js';
 import { mapBase, mapBaseAt, mapBaseCanvas } from '../art/map-base.js';
 import { createMapLayers } from '../art/map-layers-hd.js';
+import { moodOf } from '../art/atmosphere.js';
 import { CELL_REGIONS, CITIES, earthRegionAt, mapXY } from '../art/earth.js';
 import { drawMarker, drawLabelPlate, drawCountTag } from '../art/map-markers.js';
 import { drawHeatLayer } from '../art/map-heat.js';
@@ -100,7 +101,7 @@ function layersAt(s) {
   return LAYERS.get(s);
 }
 
-export function createWorldMapScreen({ root, sales, schemes = null, leads = null, onSold, onScheme, initial = null }) {
+export function createWorldMapScreen({ root, sales, schemes = null, leads = null, onSold, onScheme, initial = null, getMood = () => moodOf() }) {
   root.classList.add('wm');
   const mapWrap = el('div', 'wm-map');
   // #109: two stacked canvases. Underneath, the terrain painted at a higher resolution (each terrain pixel is 2
@@ -119,7 +120,12 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   layerCanvas.setAttribute('aria-hidden', 'true');
   const lctx = layerCanvas.getContext('2d');
   let layers = null;
-  stage.append(baseCanvas, layerCanvas, canvas);
+  // #130: the mood's grade between the heat and the labels (labels and pins stay crisp)
+  const gradeCanvas = el('canvas', 'wm-grade');
+  gradeCanvas.width = MAP_W; gradeCanvas.height = MAP_H;
+  gradeCanvas.setAttribute('aria-hidden', 'true');
+  const gctx = gradeCanvas.getContext('2d');
+  stage.append(baseCanvas, layerCanvas, gradeCanvas, canvas);
   const legend = el('div', 'wm-legend');
   legend.innerHTML = '<span><i class="wm-ico wm-ico-buyer"></i>buyers waiting</span><span><i class="wm-ico" style="background:var(--at-gold)"></i>uneasy 40+</span><span><i class="wm-ico" style="background:var(--at-amber)"></i>edge 70+</span><span><i class="wm-ico" style="background:var(--at-red)"></i>tipping 90+</span>';
   const toast = el('div', 'wm-toast');
@@ -143,7 +149,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     const scale = deviceScale(MAP_W, MAP_H, availW, availH);
     const w = `${cssLen(MAP_W, scale)}px`;
     const h = `${cssLen(MAP_H, scale)}px`;
-    for (const cv of [stage, baseCanvas, layerCanvas, canvas]) if (cv.style.width !== w || cv.style.height !== h) { cv.style.width = w; cv.style.height = h; } // always both: aspect = click mapping
+    for (const cv of [stage, baseCanvas, layerCanvas, gradeCanvas, canvas]) if (cv.style.width !== w || cv.style.height !== h) { cv.style.width = w; cv.style.height = h; } // always both: aspect = click mapping
     canvas.dataset.scale = String(scale);
     paintBase(scale);
     requestAnimationFrame(() => snapToDevice(stage));
@@ -217,6 +223,22 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   canvas.addEventListener('mouseleave', () => { hover = null; });
   canvas.addEventListener('click', (e) => { const id = regionFromEvent(e); if (id) select(id); });
 
+  // #130: the map takes the mood as a CSS filter on the terrain and heat (desaturate, darken) plus a tint, vignette
+  // and power flicker on the grade canvas. Reduced lighting halves it and drops the flicker and vignette.
+  let lastFilter = '';
+  function gradeMap() {
+    const g = getMood().grade, reduced = settings.get('reducedLighting'), k = reduced ? 0.5 : 1, now = performance.now();
+    const f = `saturate(${(1 - g.desat * k).toFixed(2)}) brightness(${(1 - g.dark * 0.8 * k).toFixed(2)})`;
+    if (f !== lastFilter) { baseCanvas.style.filter = f; layerCanvas.style.filter = f; lastFilter = f; }
+    gctx.clearRect(0, 0, MAP_W, MAP_H);
+    gctx.fillStyle = `rgba(${g.tint.join(',')},${(g.tintA * 0.9 * k).toFixed(3)})`; gctx.fillRect(0, 0, MAP_W, MAP_H);
+    if (!reduced) {
+      const r = Math.hypot(MAP_W, MAP_H) / 2, grad = gctx.createRadialGradient(MAP_W / 2, MAP_H / 2, r * 0.5, MAP_W / 2, MAP_H / 2, r);
+      grad.addColorStop(0, 'rgba(10,8,7,0)'); grad.addColorStop(1, `rgba(10,8,7,${(g.vignette * 0.8).toFixed(3)})`);
+      gctx.fillStyle = grad; gctx.fillRect(0, 0, MAP_W, MAP_H);
+      if (g.flicker) { const h = ((Math.floor(now / 90) * 2654435761) >>> 0) / 4294967296; if (h > 0.93) { gctx.fillStyle = `rgba(10,8,7,${(g.flicker * 0.45).toFixed(3)})`; gctx.fillRect(0, 0, MAP_W, MAP_H); } }
+    }
+  }
   const heatLevels = () => Object.fromEntries(rows.map((r) => [r.id, crisisOverlay(r.crisis ?? 0)]));
   function drawMap() {
     const anim = Math.floor(frame / 20) % 2;
@@ -224,13 +246,16 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     ctx.imageSmoothingEnabled = false;
     // demand heat (#103/#111) and region borders and states (#101), at the terrain's resolution (#123): Crisis
     // patterns (#94) adds the textures, Reduced flashing stops the tipping breath.
+    gradeMap();
     if (layers) {
       lctx.clearRect(0, 0, layerCanvas.width, layerCanvas.height);
       layers.draw(lctx, { levels: heatLevels(), crisis: Object.fromEntries(rows.map((r) => [r.id, r.crisis ?? 0])), hover, selected, frame: Math.floor(frame / 3), time: performance.now(), strong: settings.get('trackPatterns'), steady: settings.get('reducedFlash') }); // #129: animated by the clock
     }
     // cities (#102): a skyline icon over each city cell, sitting on its cell's bottom edge
     // #139: each skyline stands on its real city (it was snapped to the old 8 px cells: up to 8 px off, some in the sea)
-    for (const city of CITIES) { const [fx, fy] = mapXY(city.lon, city.lat); drawMarker(ctx, 'city', Math.round(fx * MAP_W) - 4, Math.round(fy * MAP_H) - 9); }
+    // #24: markers go on the terrain-resolution layer, so their 64 px art shows at the zoom's real detail
+    const mk = layers && baseScale > 1 ? (id, x, y) => drawMarker(lctx, id, x, y, { frame: anim, scale: layers.w / MAP_W }) : (id, x, y) => drawMarker(ctx, id, x, y);
+    for (const city of CITIES) { const [fx, fy] = mapXY(city.lon, city.lat); mk('city', Math.round(fx * MAP_W) - 4, Math.round(fy * MAP_H) - 9); }
     // sold bunkers
     const soldIn = {};
     for (const s of sales.sold) soldIn[s.region] = (soldIn[s.region] ?? 0) + 1;
@@ -244,14 +269,14 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       drawLabelPlate(ctx, p.short, x - 2, y - 11, { num: row.crisis, numColor: crisisColor(row.crisis), selected: row.id === selected });
       const bob = row.buyers > 0 && anim ? -1 : 0;
       let cx = x;
-      drawMarker(ctx, 'client', cx, y + bob);
+      mk('client', cx, y + bob);
       cx += 9 + drawCountTag(ctx, row.buyers, cx + 9, y + 1, row.buyers > 0 ? HEX.G : HEX.S);
       if (soldIn[row.id]) {
-        drawMarker(ctx, 'bunker', cx + 2, y - 1);
+        mk('bunker', cx + 2, y - 1);
         cx += 13;
         if (soldIn[row.id] > 1) cx += drawCountTag(ctx, soldIn[row.id], cx, y + 1, HEX.Y);
       }
-      if (row.siteOwned) drawMarker(ctx, 'site', cx + 2, y - 2);
+      if (row.siteOwned) mk('site', cx + 2, y - 2);
     }
     // floating sale text
     floaters = floaters.filter((f) => f.t < 70);

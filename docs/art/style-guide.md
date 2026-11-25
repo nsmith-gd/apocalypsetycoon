@@ -51,12 +51,23 @@ machines 70-100 px, with lit, worn surfaces. Match that density of detail, not j
 **Open:** the GDD's "16 x 16 px = 1 m x 1 m" (Shelter canvas) conflicts with rule 2. Until the director
 confirms, the current 16 px art stays in the game; new art is drawn to this rule.
 
-## Grid and scale
-Current sizes below are **legacy** (below the proposed 64 rule above):
-- Shelter cells are **16×16**. A room is the `roomEmpty` tile with an amenity sprite drawn on top. Amenities rest on row 13, and rows 14–15 are floor.
-- World-map terrain is painted per pixel on a 320×192 native canvas; the 40×24 grid of **8×8** cells is the region click grid (see "World map" below).
-- UI icons are **12×12**, crisis icons **10×10**, and in-canvas text uses the **3×5** pixel font (`src/art/font.js`).
-- Display only at **whole-number scales**. `fitIntegerScale()` picks the largest one that fits. Never use CSS stretching or smoothing (`image-rendering: pixelated`, `imageSmoothingEnabled = false`).
+## Grid and scale (updated by #24)
+**Art is authored at 64 px per metre; screens still lay it out at the old sizes** until the director confirms the 64 px grid. Each piece draws a level-of-detail copy at the layout size: blocks are averaged and snapped back to colours the piece already uses, and outlines are kept. At 64 px per tile, everything draws 1:1 with no code changes.
+
+| Piece | Authored at | Shown today | Source |
+|---|---|---|---|
+| Ground strata (topsoil, clay, bedrock, deep rock, abyss) | 64 × 64, painted from world pixels (seamless, no repeats) | 16 px grid cell | `src/art/hd/grid-tiles64.js` |
+| Build stages (dig, shell, fit-out) | 64 px per metre | 16 px grid cell | same |
+| Room tiles (73 rooms + 3) | 64 px per metre of the room | room panel, 1:1 | `src/art/hd/room-tiles.js` (#117) |
+| Survival fixtures | 64 px per metre | 16 px grid | `src/art/fixtures64.js` (#119) |
+| Luxury and comfort furniture | 64 px per metre | 16 px grid | `src/art/hd/amenities64.js` (#118) |
+| Client-order amenity icons, map tiles, crisis icons and overlays, UI frames, icons and logo | 64 × 64 (remastered) | as before | `src/art/remaster.js` (#116) |
+| Map markers (city, client, bunker, site, HQ) | 64 × 64 | their old footprint × the map zoom, on the terrain-resolution layer, so a 4× map shows a 36 px skyline | `src/art/hd/markers64.js` (#24) |
+| World map base, regions and heat | whole-map paintings (exempt) | integer zoom | `src/art/map-base.js` and the others |
+
+Still below 64: the **3×5 pixel font** (rule 3 wants glyphs at least 8 px tall; a new font changes every text layout, so it needs its own ticket) and **17 bunker pieces** for power, security, plumbing and the bunk (the furniture redo, R41). `node tools/check-asset-minimum.mjs` lists them.
+- The world-map terrain is painted per pixel on a 320×192 native canvas at up to 6× terrain resolution. The 40×24 grid of **8×8** cells is the region click grid (see "World map" below).
+- Display only at **whole-number scales**. `fitIntegerScale()` picks the largest scale that fits. Never use CSS stretching or smoothing (`image-rendering: pixelated`, `imageSmoothingEnabled = false`).
 
 ## Drawing rules
 1. Light comes from the top-left: highlights on top and left edges, shadow on bottom and right.

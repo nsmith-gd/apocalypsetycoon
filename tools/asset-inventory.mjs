@@ -58,16 +58,18 @@ export async function inventory() {
   spriteGroup('src/art/sprites-ui.js', 'ui-frames', 'UI', ui.UI_FRAMES);
   spriteGroup('src/art/sprites-ui.js', 'ui-icons', 'icons', ui.UI_ICONS);
   spriteGroup('src/art/sprites-ui.js', 'ui', 'UI', { cursor: ui.UI_CURSOR, logo: ui.LOGO });
-  const markers = await art('map-markers.js');
-  spriteGroup('src/art/map-markers.js', 'map-markers', 'map', markers.MARKERS);
+  const m64 = await art('hd/markers64.js');
+  for (const id of m64.MARKER64_KINDS) add({ asset: `map-markers/${id}`, category: 'map', source: 'src/art/hd/markers64.js', kind: 'procedural', w: m64.MARKER_PX, h: m64.MARKER_PX, frames: 2, note: 'authored at 64 px (#24); drawn reduced to its map footprint x the map zoom', ...owners('src/art/hd/markers64.js') });
 
   // procedural art: fixed native sizes
   const proc = (asset, category, source, w, h, note) => add({ asset, category, source, kind: 'procedural', w, h, frames: 1, note, ...owners(source) });
   proc('font/glyph', 'UI', 'src/art/font.js', 3, 5, 'bitmap font, 3x5 per glyph');
   const tiles = await art('bunker-tiles.js');
-  for (const id of Object.keys(tiles.STRATUM_ART)) proc(`bunker-tiles/strata-${id}`, 'rooms and grid tiles', 'src/art/bunker-tiles.js', 16, 16);
-  for (const id of ['dig', 'shell']) proc(`bunker-tiles/stage-${id}`, 'rooms and grid tiles', 'src/art/bunker-tiles.js', 16, 16);
-  proc('bunker-tiles/stage-fitout', 'rooms and grid tiles', 'src/art/bunker-tiles.js', 16, 16, 'scaffold drawn at the object size (16 px per metre)');
+  const g64 = await art('hd/grid-tiles64.js');
+  const gnote = 'authored at 64 px per metre (#24); the 16 px grid draws a reduced copy';
+  for (const id of Object.keys(tiles.STRATUM_ART)) proc(`bunker-tiles/strata-${id}`, 'rooms and grid tiles', 'src/art/hd/grid-tiles64.js', g64.GRID_PX, g64.GRID_PX, gnote);
+  for (const id of ['dig', 'shell']) proc(`bunker-tiles/stage-${id}`, 'rooms and grid tiles', 'src/art/hd/grid-tiles64.js', g64.GRID_PX, g64.GRID_PX, gnote);
+  proc('bunker-tiles/stage-fitout', 'rooms and grid tiles', 'src/art/hd/grid-tiles64.js', g64.GRID_PX, g64.GRID_PX, 'scaffold at the object size, 64 px per metre (#24)');
   const { OBJECTS } = await import(new URL('../src/shelter/bunker-catalog.js', import.meta.url));
   const fx = await art('fixtures64.js');
   const am = await art('hd/amenities64.js');

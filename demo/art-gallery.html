@@ -39,6 +39,13 @@
   <h2>SHELTER CROSS-SECTION (3X)</h2>
   <div class="scroll"><canvas id="shelter-view" width="160" height="96"></canvas></div>
 
+  <h2 id="set64">THE 64 PX SET (#24): GROUND, BUILD STAGES, MAP MARKERS, FURNITURE, ROOMS (1X)</h2>
+  <p>Art note D4 raised the minimum to 64 px: 1 m = 64 px. Shown here at native size, 1 art pixel per screen pixel. The ground is painted from world coordinates, so the 4 x 2 blocks below join without a seam and never repeat. Build stages: dig at three depths, shell, poured, fit-out under a dust sheet. Map markers: city, client, sold bunker, your site, HQ. Then the luxury furniture (#118) and a few finished room tiles (#117).</p>
+  <div class="scroll"><canvas id="set64-ground"></canvas></div>
+  <div class="scroll"><canvas id="set64-build"></canvas></div>
+  <div class="scroll"><canvas id="set64-amen"></canvas></div>
+  <div class="scroll"><canvas id="set64-rooms"></canvas></div>
+
   <h2 id="fixtures">SURVIVAL FIXTURES: AIR, WATER, FOOD (64 PX PER METRE, 2X)</h2>
   <p>Authored at the 64 px minimum: 1 m = 64 px, so a 2 x 3 m water tank is 128 x 192. Steel plus one accent per need (mint air, blue water, green food), lit from the top-left with clustered wear. Top row: native art at 2x. Bottom row: what the editor draws while it is still 16 px per metre (a crisp reduction of the same art).</p>
   <div class="scroll"><canvas id="fixtures-native"></canvas></div>
@@ -205,6 +212,28 @@ drawUI();
 tick();
 setInterval(tick, 500);
 window.__galleryReady = true;
+
+// ---- the 64 px set (#24) ----
+{
+  const { strataRaster, digRaster, shellRaster, fitoutRaster } = await import('../src/art/hd/grid-tiles64.js');
+  const { markerRaster, MARKER64_KINDS } = await import('../src/art/hd/markers64.js');
+  const { AMENITY_KINDS, amenityRaster } = await import('../src/art/hd/amenities64.js');
+  const { renderRoomTile } = await import('../src/art/hd/room-tiles.js');
+  const { variantsFor } = await import('../src/shelter/bunker-catalog.js');
+  const { drawRaster } = await import('../src/art/hd/raster.js');
+  const strip = (id, items, gap = 8, maxW = 2200) => {
+    const cv = document.getElementById(id); let x = 0, y = 0, rowH = 0; const pos = [];
+    for (const r of items) { if (x && x + r.w > maxW) { x = 0; y += rowH + gap; rowH = 0; } pos.push([x, y]); x += r.w + gap; rowH = Math.max(rowH, r.h); }
+    cv.width = Math.max(...pos.map(([px], i) => px + items[i].w)); cv.height = y + rowH;
+    const ctx = cv.getContext('2d'); items.forEach((r, i) => drawRaster(ctx, r, pos[i][0], pos[i][1]));
+  };
+  const block = (id) => { const tiles = []; for (let yy = 0; yy < 2; yy++) for (let xx = 0; xx < 4; xx++) tiles.push([xx, yy, strataRaster(id, xx, yy)]); return { w: 256, h: 128, tiles }; };
+  const g = document.getElementById('set64-ground'); g.width = 5 * 264; g.height = 128; const gc = g.getContext('2d');
+  ['topsoil', 'clay', 'bedrock', 'deep', 'abyss'].forEach((id, k) => { for (const [xx, yy, r] of block(id).tiles) drawRaster(gc, r, k * 264 + xx * 64, yy * 64); });
+  strip('set64-build', [digRaster('clay', 0.25, 2, 1), digRaster('bedrock', 0.6, 2, 1), digRaster('deep', 1, 2, 1), shellRaster(0.2, 'wall'), shellRaster(0.6, 'spine'), shellRaster(1, 'wall'), fitoutRaster(3, 2, 0.4, 1), ...MARKER64_KINDS.map((m) => markerRaster(m))]);
+  strip('set64-amen', AMENITY_KINDS.map((k) => amenityRaster(k, variantsFor(k)[1] ?? variantsFor(k)[0])), 8, 1800);
+  strip('set64-rooms', ['bunk_room', 'hydroponics_bay', 'master_suite', 'wine_cellar', 'cryo_pod_bay'].map((id) => renderRoomTile(id)), 8, 2400);
+}
 </script>
 </body>
 </html>

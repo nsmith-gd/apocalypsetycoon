@@ -16,6 +16,7 @@
 import { createWorldMapScreen } from '../src/worldmap/worldmap-ui.js';
 import { REGIONS } from '../src/demand/demand.js';
 import { settings } from '../src/settings/settings.js';
+import { moodOf } from '../src/art/atmosphere.js';
 
 const q = new URLSearchParams(location.search);
 if (q.get('patterns')) settings.set?.('trackPatterns', true);
@@ -24,7 +25,9 @@ const levels = q.get('all') ? Object.fromEntries(REGIONS.map((r) => [r.id, Numbe
 const rows = REGIONS.map((r) => ({ id: r.id, name: r.name, crisis: levels[r.id] ?? 10, buyers: 2, leadsPerWeek: 1, panicPremium: 1, premium: 1, edgeBonus: 0, siteOwned: false, open: 2 }));
 const noop = () => () => {};
 const sales = { sold: [], stock: [], market: { on: noop, cfg: { rivalAfterWeeks: 4 }, weekNo: 0 }, overview: () => rows, region: (id) => REGIONS.find((r) => r.id === id), regionView: (id) => ({ ...rows.find((r) => r.id === id), buyerList: [], best: null, quotes: [] }), onChange: noop };
-window.__screen = createWorldMapScreen({ root: document.getElementById('stage'), sales, initial: q.get('sel') === 'none' ? null : q.get('sel') ?? 'afr' });
+let mood = q.get('mood'); window.__setMood = (m) => { mood = m; };
+if (q.get('reduced')) settings.set?.('reducedLighting', true);
+window.__screen = createWorldMapScreen({ root: document.getElementById('stage'), sales, getMood: () => moodOf({ force: mood ?? 'calm' }), initial: q.get('sel') === 'none' ? null : q.get('sel') ?? 'afr' });
 </script>
 </body>
 </html>

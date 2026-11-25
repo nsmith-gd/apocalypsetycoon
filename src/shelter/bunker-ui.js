@@ -10,12 +10,14 @@ import { OBJECTS, STRUCTURES, CONDUITS, STRATA, TIER_COLORS, WATER_TABLE_M, FINI
 import { drawWallPiece, drawFloorPiece } from '../art/finish-art.js';
 import { drawText } from '../art/font.js';
 import { drawRoomTile, ROOM_TILE_IDS, DESIGN_STYLES } from '../art/hd/room-tiles.js'; // the room card shows the room in its style (#120)
-import { drawStratumTile, drawDigStage, drawShellStage, drawFitoutStage } from '../art/bunker-tiles.js';
+import { drawStrata64, drawDig64, drawShell64, drawFitout64 } from '../art/hd/grid-tiles64.js'; // #24: ground and build stages authored at 64 px
 import { drawObjectSprite, drawResident, drawThought, hasSprite } from './bunker-sprites.js';
 import { daysSealedCanvas } from '../art/hd/shelter-life64.js';
 import { deviceScale, sizeCanvas, snapToDevice, onPixelRatioChange, dpr } from '../ui/pixel-perfect.js';
 import { NEED_IDS } from './bunker-catalog.js';
 import { createBuildFx, drawCrew, drawSnap } from './build-fx.js'; // #128
+import { moodOf, drawGrade, drawShelterLight, LIGHT_SOURCES } from '../art/atmosphere.js'; // #130
+import { settings } from '../settings/settings.js';
 import { drawGaze, drawPhoto, gazeLevel, PHOTO_ASSETS, PHOTO_CARD_WINDOW } from '../art/hd/gaze-photo.js'; // #121
 
 const T = 16;
@@ -43,7 +45,7 @@ const DECOR_TOOLS = new Set(['style', 'paint', 'recolor', 'flip', 'look']);
 const NEED_NAMES = { energy: 'ENERGY', hunger: 'HUNGER', bladder: 'BLADDER', hygiene: 'HYGIENE', fun: 'FUN', social: 'SOCIAL' };
 const needColor = (v) => (v < 25 ? '#ff5a4f' : v < 50 ? '#ff9f1c' : '#7ed957');
 
-export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast = null, onHandOver = null }) {
+export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast = null, onHandOver = null, getMood = () => moodOf() }) {
   const W = site.W, H = site.H, S = site.S;
   const wrap = el('div', 'bk');
   // ---------- toolbar ----------
@@ -298,6 +300,21 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
   // ---------- drawing ----------
   const PX = (x) => x * T;
   const PY = (y) => (y + S) * T;
+  // ---------- lighting and atmosphere (#130) ----------
+  function lighting() {
+    const mood = getMood(), reduced = settings.get('reducedLighting'), now = performance.now();
+    const lights = [], shadows = [];
+    for (const obj of site.objects.values()) {
+      const o = OBJECTS[obj.kind];
+      if (!o) continue;
+      const box = { kind: obj.kind, x: PX(obj.x), y: PY(obj.y - o.h + 1), w: o.w * T, h: o.h * T };
+      if (LIGHT_SOURCES[obj.kind]) lights.push(box);
+      if (o.layer !== 'wall') shadows.push(box);
+    }
+    drawShelterLight(ctx, lights, shadows, mood.grade, { time: now, reduced, T });
+    drawGrade(ctx, canvas.width, canvas.height, mood.grade, { time: now, reduced });
+  }
+
   // ---------- build feedback (#128) ----------
   const fx = createBuildFx({ T });
   let seenJobs = null, seenRooms = null;
@@ -330,7 +347,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const i = site.idx(x, y);
       if (!site.dug[i]) {
-        drawStratumTile(ctx, site.stratum(y).id, PX(x), PY(y), x, y); // R32 strata tiles
+        drawStrata64(ctx, site.stratum(y).id, PX(x), PY(y), x, y, { tile: T }); // R32 strata, redrawn at 64 px (#24)
         if (y === 0) { ctx.fillStyle = '#4a7a2a'; ctx.fillRect(PX(x), PY(y), T, 3); }
       } else if (site.finish?.wall[i]) wallFinish(x, y, FINISHES.wall[site.finish.wall[i]]);
       else {
@@ -450,13 +467,13 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       if (j.type === 'object') {
         const o = OBJECTS[j.kind];
         drawObject(j, 0.4 + 0.5 * t, true, frame);
-        drawFitoutStage(ctx, PX(j.x), PY(j.y - o.h + 1), o.w * T, o.h * T, t, frame); // R32 fit-out stage
+        drawFitout64(ctx, PX(j.x), PY(j.y - o.h + 1), o.w, o.h, t, Math.floor(frame / 4), { tile: T }); // R32 fit-out stage (64 px, #24)
         if (t > 0) { ctx.fillStyle = '#7ed957'; ctx.fillRect(PX(j.x) + 1, PY(j.y) + T - 3, Math.round((o.w * T - 2) * t), 2); }
         continue;
       }
       const x = PX(j.x), y = PY(j.y);
-      if (j.type === 'dig') { drawDigStage(ctx, x, y, t, site.stratum(j.y).id, j.x, j.y); if (t > 0) { ctx.fillStyle = '#7ed957'; ctx.fillRect(x + 1, y + T - 3, Math.round((T - 2) * t), 2); } continue; }
-      if (j.type === 'build') { drawShellStage(ctx, x, y, t, j.kind ?? j.structure); if (t > 0) { ctx.fillStyle = '#7ed957'; ctx.fillRect(x + 1, y + T - 3, Math.round((T - 2) * t), 2); } continue; }
+      if (j.type === 'dig') { drawDig64(ctx, x, y, t, site.stratum(j.y).id, j.x, j.y, { tile: T }); if (t > 0) { ctx.fillStyle = '#7ed957'; ctx.fillRect(x + 1, y + T - 3, Math.round((T - 2) * t), 2); } continue; }
+      if (j.type === 'build') { drawShell64(ctx, x, y, t, j.kind ?? j.structure, { tile: T }); if (t > 0) { ctx.fillStyle = '#7ed957'; ctx.fillRect(x + 1, y + T - 3, Math.round((T - 2) * t), 2); } continue; }
       ctx.strokeStyle = j.type === 'dig' ? 'rgba(245,197,66,.9)' : j.type === 'build' ? 'rgba(220,220,220,.8)' : CONDUITS[j.net].color;
       ctx.lineWidth = 1;
       ctx.strokeRect(x + 1.5, y + 1.5, T - 3, T - 3);
@@ -465,6 +482,8 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     }
     // crews
     for (const c of site.crewAt ?? []) if (c) drawCrew(ctx, c, PX(c.x), PY(c.y), frame, fx); // #128: shovel, hammer or wrench at work
+    // #130: lighting and mood: light pools and contact shadows, then the grade for the world's tension
+    lighting();
     // #128: finished jobs and newly formed rooms get their completion effects; then every live effect draws
     watchBuild(sim);
     fx.draw(ctx, performance.now(), PX, PY);

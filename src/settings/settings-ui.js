@@ -8,6 +8,7 @@ const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls)
 const OPTIONS = [
   ['trackPatterns', 'Crisis patterns', 'Hatching on crisis gauges and world-map regions (dots = uneasy, stripes = edge, crosshatch = tipping or breached), so no zone relies on colour alone.'],
   ['reducedFlash', 'Reduced flashing', 'No blinking or shaking anywhere. The breach alert arrives as a steady dark card instead of a flashing red screen.'],
+  ['reducedLighting', 'Reduced lighting', 'Turns the lighting and mood down: no flickering power or dark vignette as tension rises, a lighter colour shift, softer lamp glows.'],
   ['cleanFont', 'Clean font', 'A plain sans-serif font instead of the typewriter one.'],
 ];
 
