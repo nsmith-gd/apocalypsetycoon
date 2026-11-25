@@ -180,12 +180,14 @@ export function createPressDesk({ press, pushback, onAction = () => {}, showSite
     const P = PRESS.pitchforks;
     const headRow = el('div', 'pr-sites-head');
     headRow.append(el('span', 'pr-label', 'SITES · THE PITCHFORKS'));
-    const status = el('span', 'pr-pf', s.pitchforksOpen ? 'MOBS MARCHING WEEKLY' : `Opens at tension ${P.openAtTension}`);
+    const status = el('span', 'pr-pf', s.pitchforksOpen ? 'MOBS MARCHING WEEKLY' : press.siegeWatch ? 'Not open yet (3:30)' : `Opens at tension ${P.openAtTension}`);
     status.dataset.open = String(s.pitchforksOpen);
     headRow.append(status);
-    const formula = el('div', 'pr-formula', `Siege strength = tension ${Math.round(pushback.tension)} / 20 + visible surface features. Beats security? The site is occupied.`);
+    const formula = el('div', 'pr-formula', press.siegeWatch
+      ? `Every week, each site in The Pitchforks' regions: mob = tension ${Math.round(s.siegeTension)} / 20 + visible surface features, against its security. Stronger mob: the site is occupied. A Decoy Entrance takes the first loss each quarter. Holding: reputation +1.`
+      : `Siege strength = tension ${Math.round(pushback.tension)} / 20 + visible surface features. Beats security? The site is occupied.`);
     const list = el('div', 'pr-site-list');
-    if (!s.sites.length) list.append(el('div', 'pr-quiet', 'No shelter sites built yet.'));
+    if (!s.sites.length) list.append(el('div', 'pr-quiet', press.siegeWatch ? 'No sites in The Pitchforks\' regions.' : 'No shelter sites built yet.'));
     for (const site of s.sites) {
       const row = el('div', 'pr-site');
       row.dataset.occupied = String(site.occupied);
@@ -197,15 +199,15 @@ export function createPressDesk({ press, pushback, onAction = () => {}, showSite
       if (site.occupied) flags.append(el('span', 'pr-flag pr-flag-red', 'OCCUPIED'));
       const vs = el('div', 'pr-vs');
       vs.append(
-        el('span', 'pr-vs-mob', `MOB ${site.strength}`),
+        el('span', 'pr-vs-mob', `MOB ${Math.round(site.strength * 10) / 10}`),
         el('span', 'pr-vs-x', site.strength > site.defence ? '>' : '≤'),
         el('span', 'pr-vs-def', `SEC ${site.defence}`),
       );
-      vs.title = `Mob strength ${site.strength} (tension/20 + ${site.visible} visible features) vs defence ${site.defence} (security ${site.security}${site.decoy ? ' + decoy 2' : ''})`;
+      vs.title = `Mob strength ${site.strength} (tension/20 + ${site.visible} visible features) vs defence ${site.defence} (security ${site.security}${site.decoy && !press.siegeWatch ? ' + decoy 2' : ''})`;
       const actions = el('div', 'pr-site-actions');
       const insp = btn('pr-sbtn', `INSPECTOR ${fmt(PRESS.inspector.cost)}`, act(() => press.inspect(site.id)), 'One walkthrough. Certifies a sound, quiet site (reputation +6) or lists what to fix.');
       insp.disabled = site.inspectedWeek != null && press.week - site.inspectedWeek < PRESS.inspector.onceEveryWeeks;
-      const decoy = btn('pr-sbtn', `DECOY ${fmt(P.decoy.cost)}`, act(() => press.buildDecoy(site.id)), `A fake entrance for the mob: defence +${P.decoy.defence}.`);
+      const decoy = btn('pr-sbtn', `DECOY ${fmt(P.decoy.cost)}`, act(() => press.buildDecoy(site.id)), press.siegeWatch ? 'A fake entrance: it takes the first lost siege each quarter.' : `A fake entrance for the mob: defence +${P.decoy.defence}.`);
       decoy.disabled = site.decoy;
       actions.append(insp, decoy);
       if (site.occupied) actions.append(btn('pr-sbtn pr-sbtn-red', `RETAKE ${fmt(P.retake.cost)}`, act(() => press.retake(site.id)), `Send in security. Heat +${P.retake.heat}.`));

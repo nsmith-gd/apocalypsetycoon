@@ -919,7 +919,7 @@ export class BunkerSite {
     // morale: the layout's rating blended with how the residents actually feel living here
     const mood = this.people.averageMood;
     const morale = mood == null ? s.ratings.morale : Math.round((s.ratings.morale + mood) / 2);
-    return { id: 'hq', name: this.name, owner: 'your board', occupants: s.occupants, rooms: this.legacyRooms(), sold: false, sealed: { daysSealed: s.daysSealed, ratings: { ...s.ratings, morale: Math.round(morale / 20) }, prestige: s.prestige } };
+    return { id: 'hq', name: this.name, owner: 'your board', occupants: s.occupants, rooms: this.legacyRooms(), sold: false, sealed: { daysSealed: s.daysSealed, ratings: { ...s.ratings, morale: Math.round(morale / 20) }, prestige: s.prestige, visibility: Math.max(0, s.visibility ?? 0), decoy: [...this.objects.values()].some((o) => o.kind === 'decoy') } };
   }
 
   handOver(name = 'Shelter') {

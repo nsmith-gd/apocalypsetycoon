@@ -315,3 +315,81 @@ test('Whispers starts a story with the first free journalist, never before 1:00'
   assert.equal(press.startStory(), 'gil');
   assert.equal(press.startStory(), null, 'both busy');
 });
+
+// ---------- sieges in the campaign (#150) ----------
+const siegeSetup = (sites, tension = 80) => {
+  const store = { reputation: 40 };
+  const state = { tension, sites };
+  const { pb, press } = setup(0, { reputationStore: store,
+    siegeWatch: { getSites: () => state.sites, getTension: () => state.tension, hotRegions: ['nam', 'mea'] } });
+  return { pb, press, store, state };
+};
+
+test('sieges wait for The Pitchforks to open, then check every site in its regions each week', () => {
+  const { press, state } = siegeSetup([
+    { id: 'a', name: 'Strong', region: 'nam', security: 5, visible: 0 }, // 4 vs 5: holds
+    { id: 'b', name: 'Exposed', region: 'mea', security: 1, visible: 3 }, // 7 vs 1: falls
+    { id: 'c', name: 'Far away', region: 'oce', security: 0, visible: 9 }, // not a Pitchforks region
+  ]);
+  press.tickWeek();
+  assert.equal(press.sites.length, 0, 'nothing happens before it opens');
+  press.openPitchforks();
+  const r = press.tickWeek();
+  assert.equal(r.sieges.length, 2);
+  assert.equal(press.sites.find((s) => s.id === 'b').occupied, true);
+  assert.equal(press.sites.find((s) => s.id === 'a').occupied, false);
+  assert.equal(press.sites.find((s) => s.id === 'c').occupied, false);
+  assert.deepEqual(press.snapshot().sites.map((s) => s.id).sort(), ['a', 'b'], 'the desk lists exposed sites');
+  assert.equal(state.tension, 80);
+});
+
+test('strength = Pitchforks tension / 20 + visible features, against security (no decoy bonus)', () => {
+  const { press } = siegeSetup([{ id: 'x', name: 'Edge', region: 'nam', security: 4, visible: 0 }], 80); // 4 vs 4 holds
+  press.openPitchforks();
+  press.tickWeek();
+  assert.equal(press.sites[0].occupied, false);
+  const { press: p2 } = siegeSetup([{ id: 'x', name: 'Edge', region: 'nam', security: 4, visible: 1 }], 80); // 5 vs 4 falls
+  p2.openPitchforks();
+  p2.tickWeek();
+  assert.equal(p2.sites[0].occupied, true);
+});
+
+test('a repelled siege gives reputation +1, once a site a quarter', () => {
+  const { press, store } = siegeSetup([{ id: 'a', name: 'Strong', region: 'nam', security: 5, visible: 0 }]);
+  press.openPitchforks();
+  for (let i = 0; i < 13; i++) press.tickWeek();
+  assert.equal(store.reputation, 41);
+  press.tickWeek(); // week 14: a new quarter
+  assert.equal(store.reputation, 42);
+});
+
+test('a Decoy Entrance absorbs the first loss each quarter', () => {
+  const { press } = siegeSetup([{ id: 'd', name: 'Decoy Manor', region: 'mea', security: 2, visible: 2, decoy: true }]); // 6 vs 2
+  press.openPitchforks();
+  const first = press.tickWeek().sieges[0];
+  assert.equal(first.decoy, true);
+  assert.equal(press.sites[0].occupied, false);
+  press.tickWeek();
+  assert.equal(press.sites[0].occupied, true, 'the second loss in the quarter is real');
+  // retake, then a new quarter: the decoy works again
+  press.retake('d');
+  while (press.week < 13) press.tickWeek();
+  press.sites[0].occupied = false;
+  const next = press.tickWeek().sieges[0];
+  assert.equal(next.decoy, true);
+});
+
+test('an occupied site costs reputation and its client leverage; a bought decoy survives the weekly sync', () => {
+  const { pb, press, store } = siegeSetup([{ id: 'b', name: 'Exposed', region: 'mea', security: 1, visible: 3, clientName: 'Gerald' }]);
+  pb.onSale({ client: 'Gerald', price: 1 });
+  const lev = pb.clients[0].leverage;
+  press.openPitchforks();
+  press.tickWeek();
+  assert.equal(press.sites[0].occupied, true);
+  assert.equal(pb.clients[0].leverage, lev + PRESS.pitchforks.occupied.leverage);
+  assert.ok(store.reputation < 40);
+  press.retake('b');
+  press.buildDecoy('b');
+  press.syncSites();
+  assert.equal(press.sites[0].decoy, true);
+});

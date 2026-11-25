@@ -137,8 +137,13 @@ export class Press {
    *   which feeds lead quality), so press hits and the rest of the game share one number. Omit for a standalone one.
    * sieges: false keeps The Pitchforks out of tickWeek (the campaign wires sieges separately).
    * getMinutes: minutes of play; when given, no story starts before PRESS.story.firstStoryAt and Iris calls at it.
+   * siegeWatch (#150, the campaign's GDD sieges): { getSites, getTension, hotRegions }. getSites() lists every site
+   *   ({ id, name, region, security, visible, decoy, clientName }); getTension() is The Pitchforks track's tension.
+   *   Once openPitchforks() is called, EVERY site in a hot region is checked each week (no dice): strength =
+   *   tension / 20 + visible features against its security. Stronger mob: the site is occupied, unless the site has a
+   *   Decoy Entrance that hasn't absorbed a loss yet this quarter. Held: reputation +1 (once a site a quarter).
    */
-  constructor({ pushback, crisis = null, seed = 7, sites = [], reputationStore = null, sieges = true, getMinutes = null } = {}) {
+  constructor({ pushback, crisis = null, seed = 7, sites = [], reputationStore = null, sieges = true, getMinutes = null, siegeWatch = null } = {}) {
     this.pb = pushback;
     this.crisis = crisis; // optional: { addTension(trackId, n) } + tracks
     this.rng = mulberry32(seed);
@@ -147,6 +152,7 @@ export class Press {
     this.sieges = sieges;
     this.getMinutes = getMinutes;
     this.firstCallDone = false;
+    this.siegeWatch = siegeWatch;
     this.reputation = reputationStore ? reputationStore.reputation : PRESS.reputation.start;
     this.journalists = {};
     for (const [id, j] of Object.entries(PRESS.journalists)) {
@@ -268,8 +274,12 @@ export class Press {
       j.story.progress = Math.min(100, j.story.progress + journalistGrowth(heat, id, j.trust));
       if (j.story.progress >= PRESS.story.airAt) out.aired.push(this._air(id));
     }
-    if (this.sieges && !this.pitchforksOpen && (this.pb?.tension ?? 0) >= PRESS.pitchforks.openAtTension) this.openPitchforks();
-    if (this.sieges && this.pitchforksOpen) out.siege = this._weeklySiege();
+    if (this.siegeWatch) {
+      if (this.pitchforksOpen) out.sieges = this._weeklyChecks();
+    } else {
+      if (this.sieges && !this.pitchforksOpen && (this.pb?.tension ?? 0) >= PRESS.pitchforks.openAtTension) this.openPitchforks();
+      if (this.sieges && this.pitchforksOpen) out.siege = this._weeklySiege();
+    }
     for (const s of this.sites) if (s.occupied) this.addReputation(PRESS.pitchforks.occupied.weeklyReputation);
     this._changed();
     return out;
@@ -457,6 +467,53 @@ export class Press {
     this._emit('pitchforks', {});
   }
 
+  /** Tension the mob draws on: The Pitchforks track in the campaign, world tension otherwise. */
+  siegeTension() { return this.siegeWatch ? this.siegeWatch.getTension() : (this.pb?.tension ?? 0); }
+
+  /** Bring the site list up to date with the campaign's sites, keeping occupation and bought decoys. */
+  syncSites() {
+    if (!this.siegeWatch) return this.sites;
+    for (const d of this.siegeWatch.getSites()) {
+      let s = this.sites.find((x) => x.id === d.id);
+      if (!s) { s = this._site(d); this.sites.push(s); }
+      Object.assign(s, { name: d.name ?? s.name, region: d.region, security: d.security ?? 0, visible: Math.max(0, d.visible ?? 0), clientName: d.clientName ?? null });
+      s.decoy = !!d.decoy || !!s.boughtDecoy;
+    }
+    return this.sites;
+  }
+
+  /** Sites The Pitchforks can reach: those in its hot regions. */
+  exposedSites() {
+    const hot = this.siegeWatch?.hotRegions;
+    return this.sites.filter((s) => !hot || hot.includes(s.region));
+  }
+
+  /** #150: every exposed, free site faces the mob this week. */
+  _weeklyChecks() {
+    this.syncSites();
+    const quarter = Math.floor((this.week - 1) / 13);
+    const tension = this.siegeTension();
+    const out = [];
+    for (const site of this.exposedSites()) {
+      if (site.occupied) continue;
+      const strength = siegeStrength(tension, site.visible);
+      const defence = site.security ?? 0;
+      if (strength > defence) {
+        if (site.decoy && site.decoyQuarter !== quarter) {
+          site.decoyQuarter = quarter;
+          const r = { site: site.id, name: site.name, strength, defence, occupied: false, decoy: true, week: this.week };
+          this._note('siege', `SIEGE at ${site.name}: the mob took the Decoy Entrance (strength ${strength} vs security ${defence}). It won't work again this quarter.`, { site: site.id });
+          this._emit('siege', r);
+          out.push(r);
+        } else out.push(this.siege(site.id, { tension, defence }));
+      } else if (site.repelledQuarter !== quarter) {
+        site.repelledQuarter = quarter;
+        out.push(this.siege(site.id, { tension, defence }));
+      }
+    }
+    return out;
+  }
+
   /** Pick the week's target (most visible free site) and maybe besiege it. */
   _weeklySiege() {
     const tension = this.pb?.tension ?? 0;
@@ -470,19 +527,18 @@ export class Press {
   }
 
   /** Resolve a siege on a site now (also callable by events). */
-  siege(siteId) {
+  siege(siteId, { tension = this.siegeTension(), defence = null } = {}) {
     const P = PRESS.pitchforks;
     const site = this.sites.find((s) => s.id === siteId);
     if (!site || site.occupied) return null;
-    const tension = this.pb?.tension ?? 0;
     const strength = siegeStrength(tension, site.visible);
-    const defence = siteDefence(site);
+    if (defence == null) defence = this.siteDefence(site);
     const occupied = strength > defence;
     const res = { site: site.id, name: site.name, strength, defence, occupied, week: this.week };
     if (occupied) {
       site.occupied = true;
       this.addReputation(P.occupied.reputation, `${site.name} occupied`);
-      const client = this.pb?.clients?.find((c) => c.id === site.clientId);
+      const client = this.pb?.clients?.find((c) => (site.clientId != null && c.id === site.clientId) || (site.clientName && c.name === site.clientName));
       if (client) client.leverage += P.occupied.leverage;
       this._note('siege', `SIEGE: ${site.name} OCCUPIED (strength ${strength} vs security ${defence})`, { site: site.id });
     } else {
@@ -516,15 +572,19 @@ export class Press {
     if (!site || site.decoy) return { ok: false, reason: site ? 'Already has a decoy' : 'No such site' };
     if (this.pb?.ledger) this.pb.ledger.record('builds', `Decoy entrance: ${site.name}`, -D.cost);
     site.decoy = true;
+    site.boughtDecoy = true;
     this._note('decoy', `Decoy entrance built at ${site.name} (defence +${D.defence})`);
     this._changed();
     return { ok: true, cost: D.cost };
   }
 
   // ---------- read-out / save ----------
+  /** Defence: security, plus the decoy bonus in the standalone rules (in the campaign the decoy absorbs a loss instead). */
+  siteDefence(site) { return this.siegeWatch ? (site.security ?? 0) : siteDefence(site); }
+
   snapshot() {
     const heat = this.pb?.heat ?? 0;
-    const tension = this.pb?.tension ?? 0;
+    const tension = this.siegeTension();
     return {
       week: this.week,
       reputation: this.reputation,
@@ -541,7 +601,8 @@ export class Press {
           weeksToAir: j.story ? Math.ceil((PRESS.story.airAt - j.story.progress) / Math.max(0.01, growth)) : null,
         };
       }),
-      sites: this.sites.map((s) => ({ ...s, strength: siegeStrength(tension, s.visible), defence: siteDefence(s) })),
+      siegeTension: tension,
+      sites: (this.siegeWatch ? this.exposedSites() : this.sites).map((s) => ({ ...s, strength: siegeStrength(tension, s.visible), defence: this.siteDefence(s) })),
     };
   }
 
