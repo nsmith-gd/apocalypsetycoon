@@ -10,7 +10,7 @@
 // Middle East / South Asia / East Asia, so all eight demand regions are clickable.
 
 import { quoteLead, redeemLead } from '../leads/redeem.js';
-import { regionAt as artRegionAt, crisisOverlay, MAP_W, MAP_H, MAP_COLS, MAP_ROWS, CELL, WORLD_LAYOUT } from '../art/worldmap.js';
+import { regionAt as artRegionAt, crisisOverlay, MAP_W, MAP_H, MAP_COLS, MAP_ROWS, CELL } from '../art/worldmap.js';
 import { MAP_MARKERS, CRISIS_OVERLAYS } from '../art/sprites-map.js';
 import { drawSprite } from '../art/render.js';
 import { drawText, textWidth } from '../art/font.js';
@@ -22,7 +22,7 @@ import { settings } from '../settings/settings.js';
 import { buildRegionMask, drawRegionLayer } from '../art/map-regions.js';
 import { mapBase, mapBaseAt, mapBaseCanvas } from '../art/map-base.js';
 import { createMapLayers } from '../art/map-layers-hd.js';
-import { CELL_REGIONS, earthRegionAt, mapXY } from '../art/earth.js';
+import { CELL_REGIONS, CITIES, earthRegionAt, mapXY } from '../art/earth.js';
 import { drawMarker, drawLabelPlate, drawCountTag } from '../art/map-markers.js';
 import { drawHeatLayer } from '../art/map-heat.js';
 
@@ -217,7 +217,8 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       layers.draw(lctx, { levels: heatLevels(), hover, selected, frame: Math.floor(frame / 3), breath: Math.floor(frame / 10), strong: settings.get('trackPatterns'), steady: settings.get('reducedFlash') });
     }
     // cities (#102): a skyline icon over each city cell, sitting on its cell's bottom edge
-    for (let r = 0; r < MAP_ROWS; r++) for (let c = 0; c < MAP_COLS; c++) if (WORLD_LAYOUT[r][c] === 'c') drawMarker(ctx, 'city', c * CELL - 1, r * CELL - 2);
+    // #139: each skyline stands on its real city (it was snapped to the old 8 px cells: up to 8 px off, some in the sea)
+    for (const city of CITIES) { const [fx, fy] = mapXY(city.lon, city.lat); drawMarker(ctx, 'city', Math.round(fx * MAP_W) - 4, Math.round(fy * MAP_H) - 9); }
     // sold bunkers
     const soldIn = {};
     for (const s of sales.sold) soldIn[s.region] = (soldIn[s.region] ?? 0) + 1;
@@ -527,7 +528,23 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     select,
     get selected() { return selected; },
     canvas,
-    /** The map as one 320x192 canvas: terrain at map size with everything drawn on top (checks, thumbnails). */
+    /** What the player sees, at the terrain's resolution (#139): terrain, the #123 region/heat layers, then the
+     *  markers and labels scaled up by whole pixels. Returns { canvas, mask, scale } (mask = the region mask the
+     *  layers are drawn on), or null before the first fit. */
+    /** Paint the terrain and its layers at this art scale now (checks; the game picks it from the window). */
+    paintAt(s) { clearTimeout(baseTimer); blitBase(s); },
+    snapshotHD() {
+      if (!layers) return null;
+      const c = Object.assign(document.createElement('canvas'), { width: layers.w, height: layers.h });
+      const x = c.getContext('2d');
+      x.imageSmoothingEnabled = false;
+      x.drawImage(baseCanvas, 0, 0, layers.w, layers.h);
+      x.drawImage(layerCanvas, 0, 0);
+      x.drawImage(canvas, 0, 0, layers.w, layers.h);
+      return { canvas: c, mask: layers.mask, scale: layers.w / MAP_W };
+    },
+    /** The map as one 320x192 canvas: terrain at map size with everything drawn on top (thumbnails). The check
+     *  uses snapshotHD(): the game no longer draws these 320x192 heat and region layers (#123). */
     snapshot() {
       const c = Object.assign(document.createElement('canvas'), { width: MAP_W, height: MAP_H });
       const x = c.getContext('2d');
