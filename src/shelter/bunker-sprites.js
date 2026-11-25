@@ -3,6 +3,7 @@
 
 import { OBJECTS } from './bunker-catalog.js';
 import { hasFixture, drawFixture } from '../art/fixtures64.js';
+import { hasAmenity, drawAmenity } from '../art/hd/amenities64.js';
 
 const T = 16;
 const shade = (hex, f) => {
@@ -15,6 +16,8 @@ const shade = (hex, f) => {
 export function drawObjectSprite(ctx, kind, px, py, { a, b }, { on = true, frame = 0, flip = false } = {}) {
   // Air, water and food fixtures are authored at 64 px per metre (#119); here they draw at the editor's scale.
   if (hasFixture(kind)) { drawFixture(ctx, kind, px, py, { a, b }, { on, frame: Math.floor(frame / 6), flip, tile: T }); return; }
+  // Luxury and comfort amenities are authored at 64 px per metre too (#118); same level-of-detail draw.
+  if (hasAmenity(kind)) { drawAmenity(ctx, kind, px, py, { a, b }, { on, frame: Math.floor(frame / 30), flip, tile: T }); return; }
   const o = OBJECTS[kind];
   const w = o.w * T, h = o.h * T;
   ctx.save();
@@ -185,4 +188,4 @@ export function drawThought(ctx, x, y, good) {
 }
 
 /** Whether a kind has a hand-drawn sprite (machines without one use the labelled block in the UI). */
-export const hasSprite = (kind) => !!RECIPES[kind] || hasFixture(kind);
+export const hasSprite = (kind) => !!RECIPES[kind] || hasFixture(kind) || hasAmenity(kind);
