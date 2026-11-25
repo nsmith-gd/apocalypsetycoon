@@ -71,12 +71,24 @@ export async function inventory() {
   const { OBJECTS } = await import(new URL('../src/shelter/bunker-catalog.js', import.meta.url));
   const fx = await art('fixtures64.js');
   const am = await art('hd/amenities64.js');
+  const life = await art('hd/shelter-life64.js');
   for (const [id, o] of Object.entries(OBJECTS)) {
+    if (life.DOOR_KINDS.includes(id)) { // measured from the art itself (#122), every state
+      const sizes = life.DOOR_STATES.map((st) => life.doorRaster(id, st));
+      proc(`bunker-objects/${id}`, 'amenities and fixtures', 'src/art/hd/shelter-life64.js', Math.min(...sizes.map((r) => r.w)), Math.min(...sizes.map((r) => r.h)), `${o.w}x${o.h} m at ${life.LIFE_PX} px per metre, states ${life.DOOR_STATES.join('/')} (#122); drawn reduced while the editor is 16 px per metre`);
+      continue;
+    }
     if (am.hasAmenity(id)) { proc(`bunker-objects/${id}`, 'amenities and fixtures', 'src/art/hd/amenities64.js', o.w * am.AMENITY_PX, o.h * am.AMENITY_PX, `${o.w}x${o.h} m at ${am.AMENITY_PX} px per metre (native, #118); drawn reduced while the editor is 16 px per metre`); continue; }
     if (fx.hasFixture(id)) { proc(`bunker-objects/${id}`, 'amenities and fixtures', 'src/art/fixtures64.js', o.w * fx.FIXTURE_PX, o.h * fx.FIXTURE_PX, `${o.w}x${o.h} m at ${fx.FIXTURE_PX} px per metre (native); drawn reduced while the editor is 16 px per metre`); continue; }
     proc(`bunker-objects/${id}`, 'amenities and fixtures', 'src/shelter/bunker-sprites.js', o.w * 16, o.h * 16, `${o.w}x${o.h} m at 16 px per metre`);
   }
-  proc('bunker-residents/resident', 'characters', 'src/shelter/bunker-sprites.js', 10, 16, 'per pose');
+  { // residents (#122): measured from the art, smallest side over every pose
+    const look = life.residentLook({ name: 'Inventory', cls: 'C2' });
+    const poses = life.RESIDENT_POSES.map((p) => life.residentRaster(look, p));
+    proc('bunker-residents/resident', 'characters', 'src/art/hd/shelter-life64.js', Math.min(...poses.map((r) => Math.min(r.w, r.h))), Math.max(...poses.map((r) => Math.max(r.w, r.h))), `per pose: ${life.RESIDENT_POSES.join(', ')} (64 x 128 standing, 128 x 64 lying)`);
+    const em = life.daysSealedRaster(40, 30);
+    proc('shelter-life/days-sealed-emblem', 'UI', 'src/art/hd/shelter-life64.js', em.w, em.h, 'Days Sealed readout emblem (#122)');
+  }
   const style = await art('styleArt.js');
   proc('styled-rooms/room', 'rooms and grid tiles', 'src/art/styleArt.js', style.ROOM_PX, style.ROOM_PX, `design-layer room: a 2x2 m cut of its 64 px tile, in ${style.ROOM_STYLES_DRAWN.length} styles (#120)`);
   const rooms = await art('hd/room-tiles.js');
