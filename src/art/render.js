@@ -118,9 +118,11 @@ export function drawNineSlice(ctx, sprite, x, y, w, h, border) {
  * multiple of its native size that fits the available width/height.
  */
 export function fitIntegerScale(canvas, maxW, maxH = Infinity) {
-  const scale = Math.max(1, Math.floor(Math.min(maxW / canvas.width, maxH / canvas.height)));
-  canvas.style.width = `${canvas.width * scale}px`;
-  canvas.style.height = `${canvas.height * scale}px`;
+  // #127: whole DEVICE pixels per art pixel (whole CSS pixels are uneven on 125% / 150% screens)
+  const d = typeof devicePixelRatio === 'number' && devicePixelRatio > 0 ? devicePixelRatio : 1;
+  const scale = Math.max(1, Math.floor(Math.min((maxW * d) / canvas.width, (maxH * d) / canvas.height) + 1e-6));
+  canvas.style.width = `${(canvas.width * scale) / d}px`;
+  canvas.style.height = `${(canvas.height * scale) / d}px`;
   canvas.style.imageRendering = 'pixelated';
   return scale;
 }

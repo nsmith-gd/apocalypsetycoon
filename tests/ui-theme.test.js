@@ -40,15 +40,16 @@ test('pixel font covers the glyph table, lowercase and the wide glyphs', () => {
 
 test('theme uses the pixel font only at whole-number scales', () => {
   const css = readFileSync(new URL('../src/ui/theme.css', import.meta.url), 'utf8');
-  const sizes = [...css.matchAll(/--th-x(\d):\s*(\d+)px/g)];
+  // #127: --th-xN = 6 font px at N device-rounded px each (calc(6 * var(--px-N)))
+  const sizes = [...css.matchAll(/--th-x(\d):\s*calc\((\d+) \* var\(--px-(\d)/g)];
   assert.ok(sizes.length >= 3);
-  for (const [, k, px] of sizes) assert.equal(Number(px), Number(k) * PIXEL_FONT_STEP, `--th-x${k}`);
+  for (const [, k, six, n] of sizes) { assert.equal(Number(six), PIXEL_FONT_STEP, `--th-x${k}`); assert.equal(n, k, `--th-x${k}`); }
   // every rule that switches to the pixel font sizes it with a token or a multiple of 6
   for (const rule of css.split('}')) {
     if (!/font-family:\s*var\(--th-pixel\)/.test(rule)) continue;
     const fs = rule.match(/font-size:\s*([^;]+);/);
     if (!fs) continue;
     const v = fs[1].trim();
-    assert.ok(/^var\(--th-x\d\)$/.test(v) || (/^\d+px$/.test(v) && parseInt(v, 10) % PIXEL_FONT_STEP === 0), `font-size ${v} in: ${rule.trim().slice(0, 80)}`);
+    assert.ok(/^var\(--th-x\d\)$/.test(v) || /^calc\(6 \* var\(--px-\d/.test(v), `font-size ${v} in: ${rule.trim().slice(0, 80)}`);
   }
 });

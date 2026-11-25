@@ -1,0 +1,497 @@
+[
+ {
+  "size": "1080p",
+  "viewport": "1920x1080@1",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "1080p",
+  "viewport": "1920x1080@1",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "1080p",
+  "viewport": "1920x1080@1",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "1080p",
+  "viewport": "1920x1080@1",
+  "screen": "midnight",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "1440p",
+  "viewport": "2560x1440@1",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "1440p",
+  "viewport": "2560x1440@1",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "1440p",
+  "viewport": "2560x1440@1",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "1440p",
+  "viewport": "2560x1440@1",
+  "screen": "midnight",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "4k-200pct",
+  "viewport": "1920x1080@2",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:16",
+   "12px:4"
+  ],
+  "errs": []
+ },
+ {
+  "size": "4k-200pct",
+  "viewport": "1920x1080@2",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:4",
+   "24px:8",
+   "18px:6"
+  ],
+  "errs": []
+ },
+ {
+  "size": "4k-200pct",
+  "viewport": "1920x1080@2",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:4",
+   "24px:8",
+   "18px:6"
+  ],
+  "errs": []
+ },
+ {
+  "size": "4k-200pct",
+  "viewport": "1920x1080@2",
+  "screen": "midnight",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:4",
+   "24px:8",
+   "18px:6"
+  ],
+  "errs": []
+ },
+ {
+  "size": "4k-100pct",
+  "viewport": "3840x2160@1",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "4k-100pct",
+  "viewport": "3840x2160@1",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "4k-100pct",
+  "viewport": "3840x2160@1",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "4k-100pct",
+  "viewport": "3840x2160@1",
+  "screen": "midnight",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "ultrawide",
+  "viewport": "3440x1440@1",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "ultrawide",
+  "viewport": "3440x1440@1",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "ultrawide",
+  "viewport": "3440x1440@1",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "ultrawide",
+  "viewport": "3440x1440@1",
+  "screen": "midnight",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "laptop-125pct",
+  "viewport": "1536x864@1.25",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:10",
+   "14.4px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "laptop-125pct",
+  "viewport": "1536x864@1.25",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "14.4px:3",
+   "24px:5",
+   "19.2px:4"
+  ],
+  "errs": []
+ },
+ {
+  "size": "laptop-125pct",
+  "viewport": "1536x864@1.25",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "14.4px:3",
+   "24px:5",
+   "19.2px:4"
+  ],
+  "errs": []
+ },
+ {
+  "size": "laptop-125pct",
+  "viewport": "1536x864@1.25",
+  "screen": "midnight",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "14.4px:3",
+   "24px:5",
+   "19.2px:4"
+  ],
+  "errs": []
+ },
+ {
+  "size": "laptop-150pct",
+  "viewport": "1280x720@1.5",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:12",
+   "12px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "laptop-150pct",
+  "viewport": "1280x720@1.5",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:3",
+   "24px:6",
+   "20px:5"
+  ],
+  "errs": []
+ },
+ {
+  "size": "laptop-150pct",
+  "viewport": "1280x720@1.5",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:3",
+   "24px:6",
+   "20px:5"
+  ],
+  "errs": []
+ },
+ {
+  "size": "laptop-150pct",
+  "viewport": "1280x720@1.5",
+  "screen": "midnight",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:3",
+   "24px:6",
+   "20px:5"
+  ],
+  "errs": []
+ },
+ {
+  "size": "windowed",
+  "viewport": "1280x720@1",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "windowed",
+  "viewport": "1280x720@1",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "windowed",
+  "viewport": "1280x720@1",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "windowed",
+  "viewport": "1280x720@1",
+  "screen": "midnight",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "windowed-odd",
+  "viewport": "1366x768@1",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "windowed-odd",
+  "viewport": "1366x768@1",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "windowed-odd",
+  "viewport": "1366x768@1",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "windowed-odd",
+  "viewport": "1366x768@1",
+  "screen": "midnight",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3"
+  ],
+  "errs": []
+ }
+]

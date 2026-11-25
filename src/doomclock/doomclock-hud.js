@@ -1,3 +1,4 @@
+import { sizeCanvas, dpr, onPixelRatioChange } from '../ui/pixel-perfect.js';
 // Doom Clock on the HUD: a pixel clock face whose minute hand creeps toward twelve, a red wedge for
 // the one-way floor (the hand can never go back past it), minutes to Midnight, and the Final
 // Countdown in weeks once it starts.
@@ -87,6 +88,11 @@ export function createDoomClockHud({ clock, hud, center = true, before = '.view-
   const canvas = el('canvas', 'dc-face');
   canvas.width = S;
   canvas.height = S;
+  // #127: the face at a whole number of device pixels per art pixel, as near its design size as that allows
+  // (64 CSS px in the crown = 2x on a normal screen; it was 48 = 1.5x, so every other pixel was doubled)
+  const faceSize = () => sizeCanvas(canvas, S, S, Math.max(1, Math.round(((center ? 64 : 40) * dpr()) / S)));
+  faceSize(); onPixelRatioChange(faceSize);
+  canvas.dataset.snap = '';
   const text = el('div', 'dc-text');
   const label = el('span', 'hud-label', 'DOOM CLOCK');
   const time = el('span', 'hud-value dc-time');

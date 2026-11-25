@@ -8,6 +8,7 @@ import { Ledger } from '../ledger/ledger.js';
 import { MONEY } from '../config/tuning.js';
 import { createGameUI } from '../ui/hud.js';
 import { installTheme } from '../ui/theme.js';
+import { installPixelPerfect, sizeCanvas, dpr } from '../ui/pixel-perfect.js';
 import { createResearchPanel } from '../ui/researchPanel.js';
 import { Pushback } from '../pushback/pushback.js';
 import { Board, quarterRevenue } from '../board/board.js';
@@ -24,6 +25,7 @@ import { uncontrolledRoad, sealOrderClients, resolveUncontrolled } from '../midn
 import { REGIONS as SALES_REGIONS } from '../demand/demand.js';
 import { BunkerSite } from '../shelter/bunker.js';
 import { createBunkerUI } from '../shelter/bunker-ui.js';
+import { moodOf } from '../art/atmosphere.js';
 import { CrisisSystem } from '../crisis/breach.js';
 import { CrisisConsequences } from '../crisis/consequences.js';
 import { createContainmentUI } from '../crisis/breach-ui.js';
@@ -82,8 +84,16 @@ function showMainMenu() {
   app.replaceChildren();
   const mm = el('div', 'mm');
   const sky = el('canvas', 'mm-sky');
-  sky.width = 320; sky.height = 180;
-  drawMenuSky(sky.getContext('2d'));
+  // #127: the sky is painted at the window's size divided by a whole device scale, so it is never stretched
+  // (it was a 320x180 picture stretched to the window: 10.75 x 8 pixels on an ultrawide)
+  const paintSky = () => {
+    const k = Math.max(1, Math.round((innerHeight * dpr()) / 180));
+    sky.width = Math.ceil((innerWidth * dpr()) / k); sky.height = Math.ceil((innerHeight * dpr()) / k);
+    sizeCanvas(sky, sky.width, sky.height, k);
+    drawMenuSky(sky.getContext('2d'), sky.width, sky.height);
+  };
+  paintSky();
+  addEventListener('resize', paintSky);
   const save = slot.peek();
   const start = el('button', null, 'NEW CAMPAIGN');
   const cont = el('button', null, 'CONTINUE');
@@ -151,20 +161,23 @@ function describeSave(save) {
   return c ? `Quarter ${c.quarter}/12 · saved ${when}` : `Saved ${when}`;
 }
 
-function drawMenuSky(c) {
-  c.fillStyle = '#14110f'; c.fillRect(0, 0, 320, 180);
+function drawMenuSky(c, W = 320, H = 180) {
+  // laid out on a 180-high scene (ground at 145) anchored to the bottom, as wide as the window
+  const oy = H - 180, cx = Math.floor(W / 2);
+  c.fillStyle = '#14110f'; c.fillRect(0, 0, W, H);
   let seed = 7;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  for (let i = 0; i < 90; i++) { c.fillStyle = rnd() > 0.7 ? '#f2e6c9' : '#6a5d4a'; c.fillRect(Math.floor(rnd() * 320), Math.floor(rnd() * 110), 1, 1); }
-  c.fillStyle = '#ff5a4f'; c.fillRect(0, 128, 320, 1); // the glow on the horizon
+  const stars = Math.round((90 * W * (110 + oy)) / (320 * 110));
+  for (let i = 0; i < stars; i++) { c.fillStyle = rnd() > 0.7 ? '#f2e6c9' : '#6a5d4a'; c.fillRect(Math.floor(rnd() * W), Math.floor(rnd() * (110 + oy)), 1, 1); }
+  c.fillStyle = '#ff5a4f'; c.fillRect(0, oy + 128, W, 1); // the glow on the horizon
   c.fillStyle = '#241f1a';
-  for (let x = 0; x < 320;) { const w = 8 + Math.floor(rnd() * 18); const h = 14 + Math.floor(rnd() * 34); c.fillRect(x, 145 - h, w - 1, h); x += w; }
-  c.fillStyle = '#3b2a1e'; c.fillRect(0, 145, 320, 35);
-  c.fillStyle = '#5a7a3a'; c.fillRect(0, 145, 320, 2);
-  // bunker hatch
-  c.fillStyle = '#4a3f33'; c.fillRect(152, 140, 16, 6);
-  c.fillStyle = '#a8977a'; c.fillRect(154, 137, 12, 3);
-  c.fillStyle = '#f5c542'; c.fillRect(159, 141, 2, 3);
+  for (let x = 0; x < W;) { const w = 8 + Math.floor(rnd() * 18); const h = 14 + Math.floor(rnd() * 34); c.fillRect(x, oy + 145 - h, w - 1, h); x += w; }
+  c.fillStyle = '#3b2a1e'; c.fillRect(0, oy + 145, W, 35);
+  c.fillStyle = '#5a7a3a'; c.fillRect(0, oy + 145, W, 2);
+  // bunker hatch, centred
+  c.fillStyle = '#4a3f33'; c.fillRect(cx - 8, oy + 140, 16, 6);
+  c.fillStyle = '#a8977a'; c.fillRect(cx - 6, oy + 137, 12, 3);
+  c.fillStyle = '#f5c542'; c.fillRect(cx - 1, oy + 141, 2, 3);
 }
 
 // ======================= Campaign =======================
@@ -217,6 +230,10 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   const pbui = createPushbackUI({ root, pushback: pb });
   // Doom Clock: fed by the crisis system's open roster tracks (below); a Final Countdown can bring Midnight early.
   const doom = new DoomClock();
+  // #130: the mood of the whole game (lighting and colour grade): tension and the Doom Clock, or a forced preset
+  // for comparisons (?mood=calm|edge|runaway, or __game.setMood('edge') from the console; null goes back to live).
+  let moodForce = new URLSearchParams(location.search).get('mood');
+  const mood = () => moodOf({ tension: pb.tension, minutes: doom.minutes, startMinutes: doom.cfg.startMinutes, force: moodForce });
   createDoomClockHud({ clock: doom, hud: root.querySelector('.hud') });
   const gauge = createPressureGauge({ root, pushback: pb, getQuarterProfit: () => ledger.summary(ledger.quarter).net,
     getBoard: () => ({ progress: quarterRevenue(ledger, ledger.quarter), target: board.quota, ousted: board.ousted,
@@ -247,7 +264,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   const companyPanel = createCompanyPanel({ root, company, getWorkingCrews: workingCrews });
   root.querySelector('.hud')?.insertBefore(companyPanel.chip, root.querySelector('.view-toggle'));
   const grid = new BunkerSite({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: workingCrews, crewSpeed: () => company.crewSpeed, research: tree });
-  const gridUI = createBunkerUI({ mount: gridView, grid, getFrame: () => frame, onHandOver: (sh) => { qStats.handovers += 1; mapSales.addFinished(sh); mapScreen.refresh(); } });
+  const gridUI = createBunkerUI({ mount: gridView, grid, getFrame: () => frame, getMood: () => mood(), onHandOver: (sh) => { qStats.handovers += 1; mapSales.addFinished(sh); mapScreen.refresh(); } });
   slot.register('grid', grid);
 
   // ---------- the world: crisis tracks, weekly leads, schemes and map sales ----------
@@ -315,7 +332,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     social.session.onChange(() => ui.update(hudState()));
     eventsBtn.disabled = false;
   }).catch((err) => { eventsBtn.title = `Events unavailable: ${err.message}`; });
-  const mapScreen = createWorldMapScreen({ root: mapView, sales: mapSales, schemes, leads, initial: 'nam', onScheme: () => ui.update(hudState()), onSold: () => ui.update(hudState()) });
+  const mapScreen = createWorldMapScreen({ root: mapView, sales: mapSales, schemes, leads, initial: 'nam', getMood: () => mood(), onScheme: () => ui.update(hudState()), onSold: () => ui.update(hudState()) });
   createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => crisis.advanceWeek() });
   crisis.on('week', () => mapScreen.refresh());
   crisis.on('breach', () => { qStats.breaches += 1; });
@@ -627,6 +644,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   }
 
   session = {
+    mood, setMood: (m) => { moodForce = m; }, // #130
     difficulty: diff, clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, board, consequences, market, schemes, mapSales, mapScreen, slot, leads, social, company, story, telemetry, firstBreach,
     destroy() {
       cancelAnimationFrame(raf);
@@ -709,6 +727,7 @@ const DEBUG_PRESETS = {
   },
 };
 
+installPixelPerfect(); // #127: whole device pixels everywhere (theme units, canvas snapping)
 installTheme(); // #126: pixel font + nine-slice frames (theme.css)
 showMainMenu();
 window.__menu = { showMainMenu, startCampaign };
