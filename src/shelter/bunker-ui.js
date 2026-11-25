@@ -15,6 +15,7 @@ import { drawObjectSprite, drawResident, drawThought, hasSprite } from './bunker
 import { daysSealedCanvas } from '../art/hd/shelter-life64.js';
 import { deviceScale, sizeCanvas, snapToDevice, onPixelRatioChange, dpr } from '../ui/pixel-perfect.js';
 import { NEED_IDS } from './bunker-catalog.js';
+import { createBuildFx, drawCrew, drawSnap } from './build-fx.js'; // #128
 import { drawGaze, drawPhoto, gazeLevel, PHOTO_ASSETS, PHOTO_CARD_WINDOW } from '../art/hd/gaze-photo.js'; // #121
 
 const T = 16;
@@ -191,26 +192,36 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     act(tool, from, to, shift || e.shiftKey);
   }
   function toast(msg) { info.textContent = msg; onToast?.(msg); }
+  /** A style or finish went on: shimmer across the room at that tile (or just the tile). */
+  function upgradeFx(t) {
+    const sim = site.simulate(), rid = t.y >= 0 && site.inside(t.x, t.y) ? sim.roomOf[site.idx(t.x, t.y)] : -1;
+    const r = rid >= 0 ? sim.rooms[rid] : null;
+    fx.add('upgrade', r ? { x: r.minX, y: r.minY, w: r.maxX - r.minX + 1, h: r.maxY - r.minY + 1 } : { x: t.x, y: t.y, w: 1, h: 1 });
+  }
   function act(which, a, b, outline = false) {
     if (OBJECTS[which]) {
       const r = site.place(which, b.x, b.y, { variant: chosenVariant[which], flip: flipNext });
+      if (r.ok) { const o = OBJECTS[which]; fx.add('place', { x: b.x, y: b.y - o.h + 1, w: o.w, h: o.h }); }
       toast(r.ok ? `${OBJECTS[which].name} ordered. A crew will fit it once the space is dug.` : `Can't place: ${r.reason}.`);
     } else if (which === 'paint') {
       const f = FINISHES[paintKind][paintFinish[paintKind]];
       const r = site.paint(paintKind, paintFinish[paintKind], b.x, b.y, { single: outline });
+      if (r.ok && r.tiles) upgradeFx(b);
       toast(!r.ok ? `${r.reason}.` : r.tiles ? `${f.name}: ${r.tiles} m² for ${k(f.cost * r.tiles)}.` : `Already ${f.name.toLowerCase()}.`);
     } else if (which === 'style') {
       const r = site.applyStyle(styleKit, b.x, b.y);
+      if (r.ok) upgradeFx(b);
       toast(!r.ok ? `${r.reason}.` : `${STYLE_KITS[styleKit].name} room: walls, floor and light${r.cost ? ` for ${k(r.cost)}` : ''}${r.recoloured ? `, ${r.recoloured} piece${r.recoloured > 1 ? 's' : ''} recoloured` : ''}.`);
     } else if (which === 'recolor' || which === 'flip') {
       const obj = pieceAt(b.x, b.y);
       if (!obj) toast('Nothing there to change.');
       else if (which === 'flip') { site.flip(obj); toast(`${OBJECTS[obj.kind].name} turned around.`); }
-      else { const v = site.recolor(obj); toast(`${OBJECTS[obj.kind].name}: ${variantsFor(obj.kind).find((x) => x.id === v).name}.`); }
+      else { const v = site.recolor(obj); const o = OBJECTS[obj.kind]; fx.add('upgrade', { x: obj.x, y: obj.y - o.h + 1, w: o.w, h: o.h }); toast(`${OBJECTS[obj.kind].name}: ${variantsFor(obj.kind).find((x) => x.id === v).name}.`); }
     } else if (which === 'look') {
       selectedResident = null;
     } else if (which === 'dig') {
       const n = site.digRect(a.x, a.y, b.x, b.y);
+      if (n) fx.add('place', { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x) + 1, h: Math.abs(b.y - a.y) + 1 });
       toast(n ? `${n} tile${n > 1 ? 's' : ''} ordered dug. Crews dig down from the surface or the spine.` : 'Nothing new to dig there.');
     } else if (which === 'wall' || which === 'spine') {
       const n = which === 'spine' ? site.buildRect('spine', a.x, a.y, a.x + (b.x >= a.x ? Math.min(1, b.x - a.x) : 0), b.y) : site.buildRect('wall', a.x, a.y, b.x, b.y, { outline });
@@ -219,9 +230,13 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       const n = site.conduitLine(which, a.x, a.y, b.x, b.y);
       toast(n ? `${n} m of ${CONDUITS[which].name.toLowerCase()} ordered.` : 'Nothing new to lay there.');
     } else if (which === 'remove') {
+      const piece = a.x === b.x && a.y === b.y ? pieceAt(b.x, b.y) : null;
+      const po = piece ? OBJECTS[piece.kind] : null;
+      fx.add('demolish', piece ? { x: piece.x, y: piece.y - po.h + 1, w: po.w, h: po.h } : { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x) + 1, h: Math.abs(b.y - a.y) + 1 });
       for (let y = Math.min(a.y, b.y); y <= Math.max(a.y, b.y); y++) for (let x = Math.min(a.x, b.x); x <= Math.max(a.x, b.x); x++) site.remove(x, y);
       toast('Removed (queued jobs refunded; installed objects return half their price).');
     }
+    rebase(); // what the player just did is not a completion
     const sim = site.simulate();
     if (a && a.y >= 0) { const rid = sim.roomOf[site.idx(Math.max(0, Math.min(W - 1, b.x)), Math.max(0, Math.min(H - 1, b.y)))]; if (rid >= 0) selectedRoom = rid; }
     render();
@@ -283,6 +298,29 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
   // ---------- drawing ----------
   const PX = (x) => x * T;
   const PY = (y) => (y + S) * T;
+  // ---------- build feedback (#128) ----------
+  const fx = createBuildFx({ T });
+  let seenJobs = null, seenRooms = null;
+  const roomKey = (r) => `${r.type.id}@${r.minX},${r.minY}`;
+  const realRoom = (r) => !r.touchesSky && r.type && !['open_pit', 'empty', 'corridor'].includes(r.type.id);
+  function watchBuild(sim) {
+    const jobs = new Map(site.jobs.map((j) => [j.id, j]));
+    const rooms = new Set(sim.rooms.filter(realRoom).map(roomKey));
+    if (seenJobs) {
+      for (const [id, j] of seenJobs) {
+        if (jobs.has(id)) continue;
+        if (j.type === 'object') { const o = OBJECTS[j.kind]; fx.add('complete', { x: j.x, y: j.y - o.h + 1, w: o.w, h: o.h }); }
+        else if (j.type === 'dig') fx.add('dug', { x: j.x, y: j.y, w: 1, h: 1, colour: STRATA_COLOUR(j.y) });
+        else fx.add('dug', { x: j.x, y: j.y, w: 1, h: 1, colour: '#a8a49c' });
+      }
+      for (const r of sim.rooms) if (realRoom(r) && !seenRooms.has(roomKey(r))) fx.add('room', { x: r.minX, y: r.minY, w: r.maxX - r.minX + 1, h: r.maxY - r.minY + 1, tier: r.type.tier, label: r.type.name.toUpperCase(), drawText });
+    }
+    seenJobs = jobs; seenRooms = rooms;
+  }
+  const STRATA_COLOUR = (y) => site.stratum(y).color ?? '#8a4422'; // dirt in the colour of the layer it came from
+  /** After the player's own change, take a fresh look so removals don't read as completions. */
+  const rebase = () => { seenJobs = new Map(site.jobs.map((j) => [j.id, j])); seenRooms = new Set(site.simulate().rooms.filter(realRoom).map(roomKey)); };
+
   function draw() {
     const frame = getFrame();
     const sim = site.simulate();
@@ -426,23 +464,17 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       if (j.progress > 0) { ctx.fillStyle = '#7ed957'; ctx.fillRect(x + 1, y + T - 3, Math.round((T - 2) * (j.progress / j.days)), 2); }
     }
     // crews
-    for (const c of site.crewAt ?? []) {
-      if (!c) continue;
-      const bob = Math.floor(frame / 8) % 2;
-      const x = PX(c.x) + 4, y = PY(c.y) + 3 - bob;
-      ctx.fillStyle = '#f5c542'; ctx.fillRect(x + 1, y, 6, 3); // hard hat
-      ctx.fillStyle = '#e0b090'; ctx.fillRect(x + 2, y + 3, 4, 3);
-      ctx.fillStyle = '#ff9f1c'; ctx.fillRect(x + 1, y + 6, 6, 4);
-      ctx.fillStyle = '#3a3a5a'; ctx.fillRect(x + 1, y + 10, 2, 3); ctx.fillRect(x + 5, y + 10, 2, 3);
-    }
+    for (const c of site.crewAt ?? []) if (c) drawCrew(ctx, c, PX(c.x), PY(c.y), frame, fx); // #128: shovel, hammer or wrench at work
+    // #128: finished jobs and newly formed rooms get their completion effects; then every live effect draws
+    watchBuild(sim);
+    fx.draw(ctx, performance.now(), PX, PY);
     // hover ghost
     if (hover && site.inside(hover.x, hover.y)) {
       if (OBJECTS[tool]) {
         const ok = site.canPlace(tool, hover.x, hover.y).ok;
         drawObject({ kind: tool, x: hover.x, y: hover.y, variant: chosenVariant[tool], flip: flipNext }, 0.6, true, frame);
         const o = OBJECTS[tool];
-        ctx.strokeStyle = ok ? '#7ed957' : '#ff5a4f'; ctx.lineWidth = 2;
-        ctx.strokeRect(PX(hover.x) + 1, PY(hover.y - o.h + 1) + 1, o.w * T - 2, o.h * T - 2);
+        drawSnap(ctx, PX(hover.x), PY(hover.y - o.h + 1), o.w * T, o.h * T, ok, performance.now()); // #128: snapped preview
       } else if (tool === 'recolor' || tool === 'flip') {
         const obj = pieceAt(hover.x, hover.y);
         if (obj) { const o = OBJECTS[obj.kind]; ctx.strokeStyle = '#f5c542'; ctx.lineWidth = 1; ctx.strokeRect(PX(obj.x) + 0.5, PY(obj.y - o.h + 1) + 0.5, o.w * T - 1, o.h * T - 1); }
@@ -458,7 +490,10 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
         if (CONDUITS[tool] && drag) {
           ctx.strokeRect(PX(Math.min(a.x, b.x)) + 0.5, PY(a.y) + 0.5, (Math.abs(b.x - a.x) + 1) * T - 1, T - 1);
           ctx.strokeRect(PX(b.x) + 0.5, PY(Math.min(a.y, b.y)) + 0.5, T - 1, (Math.abs(b.y - a.y) + 1) * T - 1);
-        } else ctx.strokeRect(PX(Math.min(a.x, b.x)) + 0.5, PY(Math.min(a.y, b.y)) + 0.5, (Math.abs(b.x - a.x) + 1) * T - 1, (Math.abs(b.y - a.y) + 1) * T - 1);
+        } else {
+          ctx.strokeRect(PX(Math.min(a.x, b.x)) + 0.5, PY(Math.min(a.y, b.y)) + 0.5, (Math.abs(b.x - a.x) + 1) * T - 1, (Math.abs(b.y - a.y) + 1) * T - 1);
+          drawSnap(ctx, PX(Math.min(a.x, b.x)), PY(Math.min(a.y, b.y)), (Math.abs(b.x - a.x) + 1) * T, (Math.abs(b.y - a.y) + 1) * T, tool !== 'remove', performance.now());
+        }
       }
     }
   }
@@ -667,6 +702,8 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     render,
     fit,
     select: (id) => { tool = id; sync(); },
+    act: (which, a, b = a, outline = false) => act(which, a, b, outline), // scripted building (demos, captures)
+    fx: () => fx.active,
     chromeHeight: () => toolbar.offsetHeight + info.offsetHeight + 24,
     refresh() { dirty = true; syncLocks(); render(); },
     destroy() { leavePhoto(); offChange(); removeEventListener('keydown', onKey); removeEventListener('mouseup', onUp); wrap.remove(); },

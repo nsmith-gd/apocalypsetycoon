@@ -93,6 +93,13 @@ const el = (tag, cls, text) => {
   return n;
 };
 
+// One set of region and heat layers per terrain size, shared by every map screen (their caches are the costly part).
+const LAYERS = new Map();
+function layersAt(s) {
+  if (!LAYERS.has(s)) LAYERS.set(s, createMapLayers({ base: mapBaseAt(s), regionAt: (fx, fy) => { const id = earthRegionAt(fx, fy); return id === 'ice' ? null : id; }, document }));
+  return LAYERS.get(s);
+}
+
 export function createWorldMapScreen({ root, sales, schemes = null, leads = null, onSold, onScheme, initial = null }) {
   root.classList.add('wm');
   const mapWrap = el('div', 'wm-map');
@@ -160,7 +167,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     b.imageSmoothingEnabled = false;
     b.drawImage(src, 0, 0);
     baseCanvas.dataset.artScale = String(s);
-    layers = createMapLayers({ base: mapBaseAt(s), regionAt: (fx, fy) => { const id = earthRegionAt(fx, fy); return id === 'ice' ? null : id; }, document });
+    layers = layersAt(s);
     layerCanvas.width = layers.w; layerCanvas.height = layers.h;
     baseScale = s;
   }
@@ -219,7 +226,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     // patterns (#94) adds the textures, Reduced flashing stops the tipping breath.
     if (layers) {
       lctx.clearRect(0, 0, layerCanvas.width, layerCanvas.height);
-      layers.draw(lctx, { levels: heatLevels(), hover, selected, frame: Math.floor(frame / 3), breath: Math.floor(frame / 10), strong: settings.get('trackPatterns'), steady: settings.get('reducedFlash') });
+      layers.draw(lctx, { levels: heatLevels(), crisis: Object.fromEntries(rows.map((r) => [r.id, r.crisis ?? 0])), hover, selected, frame: Math.floor(frame / 3), time: performance.now(), strong: settings.get('trackPatterns'), steady: settings.get('reducedFlash') }); // #129: animated by the clock
     }
     // cities (#102): a skyline icon over each city cell, sitting on its cell's bottom edge
     // #139: each skyline stands on its real city (it was snapped to the old 8 px cells: up to 8 px off, some in the sea)
@@ -341,6 +348,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
         burn.onclick = () => {
           const r = schemes.crisis.controlledBurn(id);
           flash = r.ok ? { kind: 'err', msg: `CONTROLLED BURN: ${tv.name} breached on your schedule. Panic premiums doubled for up to ${r.weeks} weeks. Heat +${r.heat}. Next time it breaches you'll get ${r.nextWindow} weeks.` } : { kind: 'err', msg: r.reason };
+          if (r.ok) layers?.burst(selected, { kind: 'breach' });
           onScheme?.(r);
           refresh();
         };
@@ -388,6 +396,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
         const up = Math.round((after.premium - before.premium) * 100);
         flash = { kind: r.enteredEdge ? 'edge' : 'ok', msg: `${r.scheme.name}: ${schemes.crisis.tracks[r.track].name} ${Math.round(r.before)} → ${Math.round(r.after)}. Prices here x${after.premium.toFixed(2)}${up > 0 ? ` (+${up}%)` : ''}${after.buyers > before.buyers ? `, ${after.buyers - before.buyers} new buyer${after.buyers - before.buyers === 1 ? '' : 's'}` : ''}.${r.enteredEdge ? ' You are at the EDGE: prices peak here.' : ''}` };
       }
+      layers?.burst(selected, { kind: r.breached ? 'breach' : r.gain < 0 ? 'calm' : 'stoke' }); // #129: the scheme lands visibly
       onScheme?.(r);
     } catch (err) {
       flash = { kind: 'err', msg: err.message };
@@ -533,6 +542,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     select,
     get selected() { return selected; },
     canvas,
+    burst: (id, kind = 'stoke') => layers?.burst(id, { kind }), // #129 (demos, captures)
     /** What the player sees, at the terrain's resolution (#139): terrain, the #123 region/heat layers, then the
      *  markers and labels scaled up by whole pixels. Returns { canvas, mask, scale } (mask = the region mask the
      *  layers are drawn on), or null before the first fit. */

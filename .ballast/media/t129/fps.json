@@ -1,0 +1,17 @@
+{
+ "all-tipping": {
+  "fps": 59.8,
+  "worstFrameMs": 33.3,
+  "framesOver20ms": 1
+ },
+ "all-edge": {
+  "fps": 60,
+  "worstFrameMs": 16.8,
+  "framesOver20ms": 0
+ },
+ "mixed-with-selection": {
+  "fps": 60,
+  "worstFrameMs": 16.8,
+  "framesOver20ms": 0
+ }
+}
