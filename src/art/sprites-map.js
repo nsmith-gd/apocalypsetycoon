@@ -4,6 +4,8 @@
 
 // ---------------------------------------------------------------- terrain
 
+import { remaster, remasterSet } from './remaster.js';
+
 const OCEAN_A = [
   'NNNNNNNN',
   'NNNNNNNN',
@@ -25,7 +27,7 @@ const OCEAN_B = [
   'NNNNNNNN',
 ];
 
-export const MAP_TILES = {
+export const MAP_TILES_SRC = {
   ocean: { w: 8, h: 8, frames: [OCEAN_A, OCEAN_B], rows: OCEAN_A },
   shallows: {
     w: 8, h: 8, rows: [
@@ -115,7 +117,7 @@ export const MAP_TILES = {
 
 // ---------------------------------------------------------------- markers
 
-export const MAP_MARKERS = {
+export const MAP_MARKERS_SRC = {
   bunker: {
     w: 10, h: 10, rows: [
       '..KKKKKK..',
@@ -187,7 +189,7 @@ const FIRE_B = [
   '.KKKKKKKK.',
 ];
 
-export const CRISIS_ICONS = {
+export const CRISIS_ICONS_SRC = {
   pandemic: {
     w: 10, h: 10, rows: [
       '..KKKKKK..',
@@ -298,7 +300,7 @@ const TIPPING_B = [
   'R.R.R.R.',
 ];
 
-export const CRISIS_OVERLAYS = {
+export const CRISIS_OVERLAYS_SRC = {
   uneasy: {
     w: 8, h: 8, rows: [
       '........',
@@ -337,3 +339,9 @@ export const CRISIS_OVERLAYS = {
     ],
   },
 };
+
+// #116: the game uses these 64 px+ remasters; the hand-made masters above stay as *_SRC.
+export const MAP_TILES = remasterSet(MAP_TILES_SRC);
+export const MAP_MARKERS = remasterSet(MAP_MARKERS_SRC);
+export const CRISIS_ICONS = remasterSet(CRISIS_ICONS_SRC);
+export const CRISIS_OVERLAYS = remasterSet(CRISIS_OVERLAYS_SRC);

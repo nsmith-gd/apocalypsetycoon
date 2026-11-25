@@ -10,7 +10,7 @@
 //
 //   drawStyledRoom(ctx, { x, y, amenity: 'gold_taps', style: 'gilded', tier: 'status', frame, seed });
 
-import { AMENITIES } from './sprites-shelter.js';
+import { AMENITIES_SRC as AMENITIES } from './sprites-shelter.js'; // the 32 px room template stays on the 16 px masters until its own 64 px redo (R43)
 import { drawSprite } from './render.js';
 import { HEX } from './palette.js';
 
