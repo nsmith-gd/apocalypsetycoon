@@ -269,7 +269,8 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   const workingCrews = () => company.crews(1 + tree.crewCount); // the tier's crews, research adds more, the tier caps them
   const companyPanel = createCompanyPanel({ root, company, getWorkingCrews: workingCrews });
   root.querySelector('.hud')?.insertBefore(companyPanel.chip, root.querySelector('.view-toggle'));
-  const grid = new BunkerSite({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: workingCrews, crewSpeed: () => company.crewSpeed, research: tree });
+  const grid = new BunkerSite({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: workingCrews, crewSpeed: () => company.crewSpeed, research: tree,
+    catalog: { minutes: () => (clock.total / clock.quarterSeconds) * 27, roster: () => roster } }); // #140 catalog rooms on schedule
   const gridUI = createBunkerUI({ mount: gridView, grid, getFrame: () => frame, getMood: () => mood(), onHandOver: (sh) => { qStats.handovers += 1; mapSales.addFinished(sh); mapScreen.refresh(); } });
   slot.register('grid', grid);
 
