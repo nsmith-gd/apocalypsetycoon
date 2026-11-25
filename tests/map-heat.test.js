@@ -27,8 +27,15 @@ test('calm regions draw nothing; the tipping pulse stops under reduced flashing'
 test('the default look is clean (#111): no textures unless Crisis patterns is on', () => {
   const n = (strong) => { const c = ctx(); drawHeat(c, mask, 'afr', 'edge', { steady: true, strong }); return c.n; };
   const plain = n(false), patterned = n(true);
-  assert.ok(patterned > plain * 1.5, `${plain} vs ${patterned}`);
+  assert.ok(patterned > plain * 1.3, `${plain} vs ${patterned}`); // edge's double rim (#129) fills more of the plain look
   // no dark veil: every fill uses the level's own colour
   const c = ctx(); drawHeat(c, mask, 'afr', 'tipping', { steady: true });
   assert.deepEqual([...c.colors], [HEAT_STYLE.tipping.wash]);
+});
+
+test('uneasy and edge differ in shape, not just hue (director on #124: "make them more distinct")', () => {
+  const u = HEAT_STYLE.uneasy, e = HEAT_STYLE.edge;
+  assert.ok(u.dash && !e.dash, 'uneasy has a dashed rim, edge a solid one');
+  assert.ok(e.rim > u.rim, 'edge has the thicker rim');
+  assert.ok(e.tintA >= u.tintA * 2 && e.glow.length > u.glow.length, 'edge tints harder and glows wider');
 });
