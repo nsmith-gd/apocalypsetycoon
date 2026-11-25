@@ -14,6 +14,7 @@ import { drawStratumTile, drawDigStage, drawShellStage, drawFitoutStage } from '
 import { drawObjectSprite, drawResident, drawThought, hasSprite } from './bunker-sprites.js';
 import { daysSealedCanvas } from '../art/hd/shelter-life64.js';
 import { NEED_IDS } from './bunker-catalog.js';
+import { drawGaze, drawPhoto, gazeLevel, PHOTO_ASSETS, PHOTO_CARD_WINDOW } from '../art/hd/gaze-photo.js'; // #121
 
 const T = 16;
 const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
@@ -35,7 +36,7 @@ const CATS = [
   ['CEILING', ['chandelier', 'pendant']],
 ];
 const TOOLS = [['look', 'INSPECT', 'Q'], ['dig', 'DIG', 'D'], ['wall', 'WALL', 'W'], ['spine', 'SPINE', 'S'], ['air', 'AIR DUCT', '1'], ['water', 'WATER PIPE', '2'], ['power', 'POWER CABLE', '3'], ['style', 'STYLE', 'Y'], ['paint', 'PAINT', 'P'], ['recolor', 'RECOLOUR', 'C'], ['flip', 'FLIP', 'F'], ['remove', 'REMOVE', 'X']];
-const OVERLAYS = [['rooms', 'ROOMS'], ['decor', 'INTERIOR'], ['air', 'AIR'], ['water', 'WATER'], ['power', 'POWER'], ['noise', 'NOISE'], ['none', 'PLAIN']];
+const OVERLAYS = [['rooms', 'ROOMS'], ['decor', 'INTERIOR'], ['air', 'AIR'], ['water', 'WATER'], ['power', 'POWER'], ['noise', 'NOISE'], ['gaze', 'CLIENT GAZE'], ['none', 'PLAIN']];
 const DECOR_TOOLS = new Set(['style', 'paint', 'recolor', 'flip', 'look']);
 const NEED_NAMES = { energy: 'ENERGY', hunger: 'HUNGER', bladder: 'BLADDER', hygiene: 'HYGIENE', fun: 'FUN', social: 'SOCIAL' };
 const needColor = (v) => (v < 25 ? '#ff5a4f' : v < 50 ? '#ff9f1c' : '#7ed957');
@@ -58,7 +59,10 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
   const overlaySel = el('select', 'bk-overlay');
   for (const [id, label] of OVERLAYS) { const o = el('option', null, `VIEW: ${label}`); o.value = id; overlaySel.append(o); }
   overlaySel.onchange = () => { overlay = overlaySel.value; draw(); };
-  toolbar.append(overlaySel);
+  const photoBtn = el('button', 'bk-tool bk-photo-btn', 'PHOTO');
+  photoBtn.title = 'Photo mode: hide the interface and frame the cutaway [O]. ENTER takes the shot, ESC leaves.';
+  photoBtn.onclick = () => enterPhoto();
+  toolbar.append(overlaySel, photoBtn);
   // swatches: colour of the piece being placed, or the finish being painted
   const swatches = el('div', 'bk-sw');
   const chosenVariant = {};
@@ -244,6 +248,8 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
 
   const onKey = (e) => {
     if (mount.hidden || ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target?.tagName)) return;
+    if (photo) { if (e.key === 'Escape' || e.key.toLowerCase() === 'o') leavePhoto(); else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); snap(); } return; }
+    if (e.key.toLowerCase() === 'o') { enterPhoto(); return; }
     if (e.key.toLowerCase() === 'f' && OBJECTS[tool]) { flipNext = !flipNext; renderSwatches(); draw(); return; }
     const t = TOOLS.find(([, , key]) => key.toLowerCase() === e.key.toLowerCase());
     if (t) { tool = t[0]; sync(); }
@@ -366,6 +372,23 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     }
     // residents
     const clock = site.people?.clock ?? 0;
+    // Client Gaze (#121): what a client looks at on a walkthrough. Status and Delusion always (gold brackets and a
+    // wide eye), Comfort half the time (dashed amber, a heavy-lidded eye), Survive never (dimmed, eye shut).
+    if (overlay === 'gaze') {
+      const f = Math.floor(frame / 30) % 2;
+      for (const r of sim.rooms) {
+        if (r.touchesSky) continue;
+        const lvl = gazeLevel(r.type.tier);
+        if (lvl === 'skip') { for (const [x, y] of r.tiles) drawGaze(ctx, 'veil', PX(x), PY(y), { tile: T }); }
+        else {
+          const br = lvl === 'look' ? 'bracket' : 'bracket_maybe';
+          const x0 = PX(r.minX), y0 = PY(r.minY), x1 = PX(r.maxX + 1) - T, y1 = PY(r.maxY + 1) - T;
+          drawGaze(ctx, br, x0, y0, { tile: T, frame: f }); drawGaze(ctx, br, x1, y0, { tile: T, frame: f, flipX: true });
+          drawGaze(ctx, br, x0, y1, { tile: T, frame: f, flipY: true }); drawGaze(ctx, br, x1, y1, { tile: T, frame: f, flipX: true, flipY: true });
+        }
+        drawGaze(ctx, lvl, PX(r.minX) + 2, PY(r.minY) + 2, { tile: T, frame: f });
+      }
+    }
     for (const p of people()) {
       drawResident(ctx, p, PX(p.x) + T / 2, PY(p.y) + T, frame, { selected: p.id === selectedResident });
       if (p.thought && p.thought.until > clock && !(p.action?.admire && p.action.started)) drawThought(ctx, PX(p.x) + 9, PY(p.y) - 9, p.thought.good);
@@ -550,6 +573,72 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
   let dirty = true;
   const offChange = site.onChange(() => { dirty = true; });
   let lastRes = 0;
+  // ---------- photo mode (#121): hides the interface and frames the cutaway ----------
+  let photo = null;
+  function enterPhoto() {
+    if (photo) return;
+    const layer = el('canvas', 'bk-photo-layer');
+    document.body.append(layer);
+    photo = { layer, start: performance.now(), shotAt: -1, card: null, raf: 0 };
+    wrap.classList.add('bk-photo'); document.body.classList.add('at-photo');
+    const tick = () => { if (!photo) return; paintPhoto(); photo.raf = requestAnimationFrame(tick); };
+    tick();
+    // frame the built part of the shelter: scroll its middle to the middle of the screen
+    requestAnimationFrame(() => {
+      if (!photo) return;
+      const [mx, my] = subject(), sc = canvas.getBoundingClientRect().width / canvas.width;
+      scroller.scrollLeft = Math.max(0, mx * sc - scroller.clientWidth / 2); scroller.scrollTop = Math.max(0, my * sc - scroller.clientHeight / 2);
+    });
+  }
+  /** The middle of the rooms (canvas px): what the photo is of. Falls back to the middle of the dig. */
+  function subject() {
+    const rooms = site.simulate().rooms.filter((r) => !r.touchesSky);
+    if (!rooms.length) return [canvas.width / 2, PY(0) + T * 4];
+    const x0 = Math.min(...rooms.map((r) => r.minX)), x1 = Math.max(...rooms.map((r) => r.maxX + 1));
+    const y0 = Math.min(...rooms.map((r) => r.minY)), y1 = Math.max(...rooms.map((r) => r.maxY + 1));
+    return [(PX(x0) + PX(x1)) / 2, (PY(y0) + PY(y1)) / 2];
+  }
+  function leavePhoto() {
+    if (!photo) return;
+    cancelAnimationFrame(photo.raf); photo.layer.remove(); photo = null;
+    wrap.classList.remove('bk-photo'); document.body.classList.remove('at-photo');
+  }
+  function snap() {
+    if (!photo) return;
+    if (photo.card) { photo.card = null; return; } // ENTER again: back to framing
+    photo.shotAt = performance.now();
+    // the shot: the middle of the cutaway as the player framed it, at 1 art pixel per pixel
+    const w = PHOTO_CARD_WINDOW.w, h = PHOTO_CARD_WINDOW.h;
+    const [cx, cy] = subject();
+    const card = el('canvas'); card.width = PHOTO_ASSETS.card.w; card.height = PHOTO_ASSETS.card.h;
+    const c2 = card.getContext('2d'); c2.imageSmoothingEnabled = false;
+    c2.fillStyle = '#0a0807'; c2.fillRect(PHOTO_CARD_WINDOW.x, PHOTO_CARD_WINDOW.y, w, h);
+    c2.drawImage(canvas, Math.round(Math.max(0, Math.min(canvas.width - w, cx - w / 2))), Math.round(Math.max(0, Math.min(canvas.height - h, cy - h / 2))), w, h, PHOTO_CARD_WINDOW.x, PHOTO_CARD_WINDOW.y, w, h);
+    drawPhoto(c2, 'card', 0, 0);
+    photo.card = card;
+  }
+  function paintPhoto() {
+    const L = photo.layer, dpr = 1;
+    if (L.width !== innerWidth * dpr || L.height !== innerHeight * dpr) { L.width = innerWidth * dpr; L.height = innerHeight * dpr; }
+    const g = L.getContext('2d'); g.imageSmoothingEnabled = false; g.clearRect(0, 0, L.width, L.height);
+    const t = performance.now(), f = Math.floor((t - photo.start) / 500) % 2, m = 24;
+    drawPhoto(g, 'viewfinder', m, m); drawPhoto(g, 'viewfinder', L.width - m - 64, m, { flipX: true });
+    drawPhoto(g, 'viewfinder', m, L.height - m - 64, { flipY: true }); drawPhoto(g, 'viewfinder', L.width - m - 64, L.height - m - 64, { flipX: true, flipY: true });
+    // rule-of-thirds guides, faint
+    g.fillStyle = 'rgba(242,230,201,.14)';
+    for (const k of [1, 2]) { g.fillRect(Math.round((L.width * k) / 3), m + 64, 1, L.height - 2 * m - 128); g.fillRect(m + 64, Math.round((L.height * k) / 3), L.width - 2 * m - 128, 1); }
+    drawPhoto(g, 'label', m + 72, m + 4, { frame: f });
+    drawPhoto(g, 'iris', L.width - m - 64 - 72, m + 4, { frame: photo.shotAt > 0 && t - photo.shotAt < 180 ? 1 : 0 });
+    const since = photo.shotAt > 0 ? t - photo.shotAt : Infinity;
+    if (since < 260) { // shutter flash
+      g.fillStyle = `rgba(255,243,208,${(0.85 * (1 - since / 260)).toFixed(3)})`; g.fillRect(0, 0, L.width, L.height);
+      drawPhoto(g, 'flash', Math.round(L.width / 2 - 32), Math.round(L.height / 2 - 32), { frame: since < 120 ? 0 : 1 });
+    } else if (photo.card) { // the share card, at the largest whole scale that fits
+      const c = photo.card, s = Math.max(1, Math.min(3, Math.floor(Math.min((L.width - 160) / c.width, (L.height - 200) / c.height))));
+      g.drawImage(c, Math.round((L.width - c.width * s) / 2), Math.round((L.height - c.height * s) / 2) + 20, c.width * s, c.height * s);
+    } else drawPhoto(g, 'camera', Math.round(L.width / 2 - 32), L.height - m - 72, { frame: f });
+  }
+
   function render() {
     draw();
     if (dirty) { renderSide(); dirty = false; lastRes = getFrame(); }
@@ -572,6 +661,6 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     select: (id) => { tool = id; sync(); },
     chromeHeight: () => toolbar.offsetHeight + info.offsetHeight + 24,
     refresh() { dirty = true; syncLocks(); render(); },
-    destroy() { offChange(); removeEventListener('keydown', onKey); removeEventListener('mouseup', onUp); wrap.remove(); },
+    destroy() { leavePhoto(); offChange(); removeEventListener('keydown', onKey); removeEventListener('mouseup', onUp); wrap.remove(); },
   };
 }
