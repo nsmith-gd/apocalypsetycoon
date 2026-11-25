@@ -1,0 +1,58 @@
+[
+ {
+  "name": "01-title",
+  "worldPct": 100,
+  "textChars": 284,
+  "buttons": 7,
+  "note": ""
+ },
+ {
+  "name": "02-shelter",
+  "worldPct": 18,
+  "textChars": 2990,
+  "buttons": 111,
+  "note": ""
+ },
+ {
+  "name": "03-map",
+  "worldPct": 42.7,
+  "textChars": 1461,
+  "buttons": 24,
+  "note": ""
+ },
+ {
+  "name": "03b-map-world-first-mock",
+  "worldPct": 42.7,
+  "textChars": 1297,
+  "buttons": 21,
+  "note": "mock: panel floats small, HUD keeps cash + clock, map fills the width"
+ },
+ {
+  "name": "02b-shelter-world-first-mock",
+  "worldPct": 42,
+  "textChars": 391,
+  "buttons": 26,
+  "note": "mock: build list and stats hidden, the cutaway at 2x"
+ },
+ {
+  "name": "04-breach",
+  "worldPct": 18,
+  "textChars": 4027,
+  "buttons": 117,
+  "note": ""
+ },
+ {
+  "name": "05-seal-order",
+  "worldPct": 18,
+  "textChars": 3348,
+  "buttons": 112,
+  "note": ""
+ },
+ {
+  "name": "06-midnight",
+  "worldPct": 27.1,
+  "textChars": 3996,
+  "buttons": 112,
+  "note": ""
+ }
+]
