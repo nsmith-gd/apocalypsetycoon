@@ -1,0 +1,172 @@
+/* UI theme (#126). One look for HUD, build menu, map panels and scheme panels.
+   Installed by src/ui/theme.js (sets <html data-theme="pixel">, the frame images and the pixel font).
+   Load this file LAST so it wins over the per-screen sheets. `?theme=off` shows the old look.
+
+   Rules
+   - Type: the pixel font ('AT Pixel', the game's 3x5 glyphs) only at whole-number scales: 12px = 2x, 18px = 3x,
+     24px = 4x (multiples of 6). It is for labels, numbers, titles and buttons. Sentences stay in the body mono
+     font, at 12px (11px for secondary lines).
+   - Frames: the UI_FRAMES nine-slices from src/art/sprites-ui.js, at 1x (rows, buttons, HUD tiles) or 2x (panels).
+   - Spacing: a 4px grid (--th-1 .. --th-4). Gaps and padding use only these.
+   - Colours: the "Last Resort 28" palette (src/art/palette.js). Each meaning has one colour, used everywhere:
+     money gold, heat neon, tension ice, crisis sodium -> amber -> alarm, gain leaf, loss alarm. */
+
+:root[data-theme='pixel'] {
+  --th-pixel: 'AT Pixel', 'Courier New', ui-monospace, monospace;
+  --th-body: 'Courier New', ui-monospace, monospace;
+  --th-x2: 12px; --th-x3: 18px; --th-x4: 24px;
+  --th-1: 4px; --th-2: 8px; --th-3: 12px; --th-4: 16px;
+
+  /* semantic text colours (palette keys in comments) */
+  --th-money: #f5c542;   /* Y gold */
+  --th-gain: #7ed957;    /* G leaf */
+  --th-loss: #ff5a4f;    /* R alarm */
+  --th-heat: #c070ff;    /* v neon: the people watching you */
+  --th-tension: #8fd3ff; /* C ice: the world's nerves */
+  --th-crisis-uneasy: #f0b052; /* p sodium lamp */
+  --th-crisis-edge: #ff9f1c;   /* O edge amber */
+  --th-crisis-tipping: #ff5a4f;/* R alarm */
+  --th-research: #b8e0c8;      /* T clean air */
+  --th-ink: #f2e6c9;     /* W bone */
+  --th-dim: #a8977a;     /* S dust */
+  --th-label: #a8977a;
+
+  /* the old tokens follow the theme, so unthemed screens pick up the colours too */
+  --at-font: var(--th-body);
+}
+
+/* ---------- Frames ---------- */
+:root[data-theme='pixel'] :is(.hud-stat, .research-chip, .ledger-chip) {
+  border-style: solid; border-width: 6px; box-shadow: none; background: none;
+  border-image: var(--th-frame-panel) 6 fill / 6px / 0 repeat; image-rendering: pixelated;
+  padding: var(--th-1) var(--th-2);
+}
+:root[data-theme='pixel'] :is(.wm-panel, .pg-panel, .pb-panel, .bk-pal, .bk-side > div, .tw-panel, .research-panel) {
+  border-style: solid; border-width: 12px; box-shadow: 4px 4px 0 rgba(10, 8, 7, .6); background: none;
+  border-image: var(--th-frame-panel) 6 fill / 12px / 0 repeat; image-rendering: pixelated;
+  padding: var(--th-1) var(--th-2);
+}
+:root[data-theme='pixel'] .bk-side > div { border-width: 6px; border-image-width: 6px; box-shadow: none; }
+:root[data-theme='pixel'] :is(.hud, .cb) { background: #241f1a; }
+
+/* buttons: raised, pressed while held, gold when on/primary */
+:root[data-theme='pixel'] :is(.view-btn, .cb button, .bk-tool, .bk-overlay, .bk-actions button, .wm-x, .pg-btn, .tw-mode, .tw-back, .tw-swap, .research-close, .lr-open, .bk-sw button, .mm button) {
+  font-family: var(--th-pixel); font-size: var(--th-x2); font-weight: 400; letter-spacing: 0; line-height: 14px;
+  border-style: solid; border-width: 5px; box-shadow: none; background: none; color: var(--th-ink);
+  border-image: var(--th-frame-button) 5 fill / 5px / 0 repeat; image-rendering: pixelated;
+  padding: 1px var(--th-1);
+}
+:root[data-theme='pixel'] :is(.view-btn, .cb button, .bk-tool, .bk-overlay, .bk-actions button, .wm-x, .pg-btn, .tw-mode, .tw-back, .tw-swap, .research-close, .lr-open, .bk-sw button, .mm button):hover:not(:disabled) { color: var(--th-money); background: none; }
+:root[data-theme='pixel'] :is(.view-btn, .cb button, .bk-tool, .bk-overlay, .bk-actions button, .wm-x, .pg-btn, .tw-mode, .tw-back, .tw-swap, .research-close, .lr-open, .bk-sw button, .mm button):active:not(:disabled) {
+  border-image-source: var(--th-frame-button-down); padding: 2px var(--th-1) 0;
+}
+:root[data-theme='pixel'] :is(.view-btn.active, .cb button.on, .bk-tool.on, .tw-mode.on, .tw-start, .bk-sw button.on, .mm .mm-diff button.mm-diff-btn[aria-pressed='true']) {
+  border-image-source: var(--th-frame-button-on); color: #2a2118; background: none;
+}
+:root[data-theme='pixel'] :is(.view-btn.active, .cb button.on, .bk-tool.on):hover { color: #2a2118; }
+:root[data-theme='pixel'] .mm button { padding: var(--th-1) var(--th-2); }
+:root[data-theme='pixel'] .mm button:hover:not(:disabled), :root[data-theme='pixel'] .mm button:focus-visible { border-image-source: var(--th-frame-button-on); color: #2a2118; background: none; }
+:root[data-theme='pixel'] .pg-btn { font-size: var(--th-x2); text-align: left; }
+:root[data-theme='pixel'] .bk-photo-btn { border-image-source: var(--th-frame-button-on); color: #2a2118; }
+
+/* money buttons on the map: gold frame, the price in money colour on dark */
+:root[data-theme='pixel'] :is(.wm-sell, .wm-fund, .wm-burn) {
+  font-family: var(--th-pixel); font-size: var(--th-x2); font-weight: 400; letter-spacing: 0; line-height: 14px;
+  border-style: solid; border-width: 5px; box-shadow: none; background: none; filter: none;
+  border-image: var(--th-frame-button-on) 5 fill / 5px / 0 repeat; image-rendering: pixelated; color: #2a2118; padding: 0 var(--th-1);
+}
+:root[data-theme='pixel'] :is(.wm-sell, .wm-fund) b { font-size: var(--th-x2); font-weight: 400; }
+:root[data-theme='pixel'] .wm-burn { border-image-source: var(--th-frame-button); color: var(--th-crisis-tipping); }
+:root[data-theme='pixel'] :is(.wm-sell, .wm-fund):disabled { border-image-source: var(--th-frame-button-down); color: var(--th-dim); background: none; }
+
+/* bars: the recessed meter track */
+:root[data-theme='pixel'] :is(.hud-bar, .pg-bar, .wm-bar, .wm-tbar) {
+  height: 10px; border-style: solid; border-width: 3px; box-shadow: none; background: none; box-sizing: border-box;
+  border-image: var(--th-frame-meter) 3 fill / 3px / 0 repeat; image-rendering: pixelated;
+}
+:root[data-theme='pixel'] .wm-tbar { height: 10px; }
+
+/* ---------- Type ---------- */
+:root[data-theme='pixel'] :is(.hud-label, .hud-value, .hud-brand, .dc-time, .dc-sub, .dc-scale, .dc-cd-label, .dc-cd-weeks, .view-hint,
+  .cb, .pg-head, .pg-top, .pb-panel-head, .bk-grp, .bk-days span, .bk-days small, .bk-sys b, .bk-sys span, .bk-rat,
+  .wm-h, .wm-h3, .wm-big, .wm-num, .wm-c, .wm-b, .wm-crisis .wm-lbl b, .wm-track-lbl b, .wm-legend,
+  .tw-title, .tw-group, .tw-slot, .tw-kind, .tw-cost, .tw-heat, .tw-when, .research-title, .rc-name, .rc-meta, .research-col-title, .lr-title,
+  .ledger-chip-last, .research-chip-project, .hud-strikes, .hud-delta) {
+  font-family: var(--th-pixel); font-weight: 400; letter-spacing: 0;
+}
+/* sizes: everything pixel is 2x, numbers that matter 3x, cash and the clock 4x */
+:root[data-theme='pixel'] :is(.hud-label, .dc-sub, .dc-scale, .dc-cd-label, .view-hint, .cb, .pg-head, .pg-top, .pb-panel-head, .bk-grp, .bk-days small,
+  .wm-h3, .wm-track-lbl b, .wm-legend, .wm-crisis .wm-lbl b, .tw-slot, .tw-kind, .tw-cost, .tw-heat, .tw-when, .rc-meta, .research-col-title,
+  .ledger-chip-last, .research-chip-project, .hud-strikes, .hud-delta, .bk-sys b, .bk-sys span, .bk-rat, .wm-c, .wm-b) { font-size: var(--th-x2); line-height: 14px; }
+:root[data-theme='pixel'] :is(.hud-value, .hud-meter .hud-value, .research-chip .hud-value, .ledger-chip .hud-value, .wm-h, .wm-big, .tw-group, .rc-name, .lr-title, .hud-brand) { font-size: var(--th-x2); line-height: 14px; }
+:root[data-theme='pixel'] :is(.hud-big, .hud-quarter .hud-value, .tw-title, .research-title, .wm-num, .dc-cd-weeks, .dc-time) { font-size: var(--th-x3); line-height: 21px; }
+:root[data-theme='pixel'] :is(.hud-cash .hud-value, .dc-center .dc-time, .bk-days span) { font-size: var(--th-x4); line-height: 28px; }
+:root[data-theme='pixel'] .wm-h { font-size: var(--th-x3); line-height: 21px; }
+:root[data-theme='pixel'] .hud-label, :root[data-theme='pixel'] .pg-name, :root[data-theme='pixel'] .wm-h3, :root[data-theme='pixel'] .bk-grp { color: var(--th-label); }
+:root[data-theme='pixel'] .wm-h3 { border-top: 0; padding-top: var(--th-2); margin: var(--th-2) 0 var(--th-1); }
+/* body copy: one mono size for sentences, one for secondary lines */
+:root[data-theme='pixel'] :is(.wm-dim, .pg-next, .bk-info, .wm-scheme, .wm-buyers li, .pb-tick, .rc-blurb, .tw-line, .tw-premise) { font-size: 11px; line-height: 14px; }
+:root[data-theme='pixel'] :is(.wm-panel, .pg-panel, .pb-panel, .bk-side) { font-size: 12px; line-height: 16px; }
+
+/* ---------- Semantic colours ---------- */
+:root[data-theme='pixel'] .hud-cash .hud-value, :root[data-theme='pixel'] .lr-cash b, :root[data-theme='pixel'] :is(.wm-sell b, .wm-fund b) { color: var(--th-money); }
+:root[data-theme='pixel'] :is(.wm-sell, .wm-fund) b { color: #2a2118; } /* on the gold button the price is dark */
+:root[data-theme='pixel'] .hud-cash[data-negative='true'] .hud-value { color: var(--th-loss); }
+:root[data-theme='pixel'] :is(.hud-value, .lr-line-amt, .lr-net-value, .lr-cat-val, .hud-delta)[data-dir='up'] { color: var(--th-gain); }
+:root[data-theme='pixel'] :is(.hud-value[data-dir='down'], .lr-line-amt[data-dir='down'], .lr-net-value[data-dir='down'], .hud-delta[data-dir='down']) { color: var(--th-loss); }
+:root[data-theme='pixel'] .hud-heat .hud-label, :root[data-theme='pixel'] .hud-heat .hud-value { color: var(--th-heat); }
+:root[data-theme='pixel'] .hud-heat .hud-bar-fill { background: var(--th-heat); }
+:root[data-theme='pixel'] .hud-tension .hud-label, :root[data-theme='pixel'] .hud-tension .hud-value { color: var(--th-tension); }
+:root[data-theme='pixel'] .hud-tension .hud-bar-fill { background: var(--th-tension); }
+/* past the edge the meter turns crisis colours, whatever it measures */
+:root[data-theme='pixel'] .hud-meter[data-zone='edge'] .hud-bar-fill { background: var(--th-crisis-edge); }
+:root[data-theme='pixel'] .hud-meter[data-zone='edge'] .hud-value { color: var(--th-crisis-edge); }
+:root[data-theme='pixel'] .hud-meter[data-zone='tipping'] .hud-bar-fill { background: var(--th-crisis-tipping); }
+:root[data-theme='pixel'] .hud-meter[data-zone='tipping'] .hud-value { color: var(--th-crisis-tipping); }
+:root[data-theme='pixel'] .research-chip .hud-value, :root[data-theme='pixel'] .research-chip .hud-bar-fill { color: var(--th-research); }
+:root[data-theme='pixel'] .research-chip .hud-bar-fill { background: var(--th-research); }
+/* the pressure rail: heat row neon, tension row ice */
+:root[data-theme='pixel'] .pg-row[data-k='heat'] .pg-name { color: var(--th-heat); }
+:root[data-theme='pixel'] .pg-row[data-k='tension'] .pg-name { color: var(--th-tension); }
+/* crisis ramp on the map: numbers, bars and the scheme panel's track rows */
+:root[data-theme='pixel'] :is(.wm-c, .wm-crisis .wm-lbl b, .wm-track .wm-track-lbl b)[data-zone='uneasy'],
+:root[data-theme='pixel'] :is(.wm-crisis, .wm-track)[data-zone='uneasy'] :is(.wm-lbl b, .wm-track-lbl b) { color: var(--th-crisis-uneasy); }
+:root[data-theme='pixel'] :is(.wm-crisis, .wm-track)[data-zone='uneasy'] :is(.wm-bar i, .wm-tbar i) { background: var(--th-crisis-uneasy); }
+:root[data-theme='pixel'] :is(.wm-crisis, .wm-track)[data-zone='edge'] :is(.wm-bar i, .wm-tbar i) { background: var(--th-crisis-edge); }
+:root[data-theme='pixel'] :is(.wm-crisis, .wm-track)[data-zone='edge'] :is(.wm-lbl b, .wm-track-lbl b) { color: var(--th-crisis-edge); }
+:root[data-theme='pixel'] .wm-c[data-zone='uneasy'] { color: var(--th-crisis-uneasy); }
+:root[data-theme='pixel'] .wm-c[data-zone='edge'] { color: var(--th-crisis-edge); }
+:root[data-theme='pixel'] .wm-c[data-zone='tipping'] { color: var(--th-crisis-tipping); }
+:root[data-theme='pixel'] :is(.wm-risk, .tw-heat) { color: var(--th-heat); } /* a scheme's heat cost reads as heat */
+:root[data-theme='pixel'] .wm-gain { color: var(--th-crisis-edge); }
+:root[data-theme='pixel'] .tw-cost, :root[data-theme='pixel'] .sg-cost { color: var(--th-money); }
+:root[data-theme='pixel'] .wm-edge, :root[data-theme='pixel'] .wm-edge-note { background: var(--th-crisis-edge); }
+
+/* ---------- Spacing (4px grid) ---------- */
+:root[data-theme='pixel'] .hud { gap: var(--th-1); padding: var(--th-1) var(--th-2); }
+:root[data-theme='pixel'] .hud-stat { gap: var(--th-1); }
+:root[data-theme='pixel'] .cb { gap: var(--th-2); padding: var(--th-1) var(--th-2); }
+:root[data-theme='pixel'] .cb-group, :root[data-theme='pixel'] .view-toggle, :root[data-theme='pixel'] .bk-tools { gap: var(--th-1); }
+:root[data-theme='pixel'] .bk-pal { gap: var(--th-1); }
+:root[data-theme='pixel'] .bk-obj { border: 0; padding: var(--th-1); background: #2f2821; box-shadow: inset 0 -2px 0 #0a0807, inset 2px 0 0 #3b2f26; }
+:root[data-theme='pixel'] .bk-obj.on { box-shadow: inset 0 0 0 2px var(--th-money); color: var(--th-money); }
+:root[data-theme='pixel'] .bk-obj small { color: var(--th-money); }
+:root[data-theme='pixel'] .bk-obj[data-locked='true'] small { color: var(--th-dim); }
+:root[data-theme='pixel'] .bk-grp { margin: var(--th-2) 0 0; }
+:root[data-theme='pixel'] .wm-scheme { padding: var(--th-1) 0; border-bottom: 2px solid #0a0807; }
+:root[data-theme='pixel'] .wm-track { margin-bottom: var(--th-2); }
+:root[data-theme='pixel'] .wm-panel { padding: var(--th-2); }
+:root[data-theme='pixel'] .tw-scheme { padding: var(--th-1); border-bottom: 2px solid #0a0807; }
+:root[data-theme='pixel'] .tw-card { border-width: 0 0 0 8px; padding: var(--th-2); box-shadow: inset 0 0 0 2px #0a0807, inset 2px 2px 0 4px #3b2f26; }
+/* pressure rail bars follow the HUD: heat neon, tension ice until the edge */
+:root[data-theme='pixel'] .pg-row[data-k='heat']:not([data-zone='hot']):not([data-zone='watched']) .pg-fill { background: var(--th-heat); }
+:root[data-theme='pixel'] .pg-row[data-k='tension']:not([data-zone='momentum']):not([data-zone='edge']) .pg-fill { background: var(--th-tension); }
+
+/* frames are thicker than the old 3px borders: keep the floating rails the same outer width (272px) */
+:root[data-theme='pixel'] :is(.pg-panel, .pb-panel) { width: 232px; }
+/* the threats list: room for 'HEAT +12' at 2x */
+:root[data-theme='pixel'] .tw-scheme { grid-template-columns: 170px 1fr 56px 72px 48px; }
+/* row labels are sentences with one number: body font, the number in pixels */
+:root[data-theme='pixel'] :is(.wm-track-lbl, .wm-crisis .wm-lbl) { font-size: 11px; line-height: 14px; align-items: baseline; }
+:root[data-theme='pixel'] .mm-title { font-family: var(--th-pixel); font-weight: 400; font-size: 48px; line-height: 56px; letter-spacing: 0; text-shadow: 6px 6px 0 #0a0807; } /* 8x */
+:root[data-theme='pixel'] .mm-diff-label { font-family: var(--th-pixel); font-size: var(--th-x2); letter-spacing: 0; }

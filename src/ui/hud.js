@@ -17,8 +17,8 @@ const el = (tag, cls, text) => {
   return n;
 };
 
-function meter(label, title) {
-  const wrap = el('div', 'hud-stat hud-meter');
+function meter(label, title, kind = '') {
+  const wrap = el('div', `hud-stat hud-meter${kind ? ` hud-${kind}` : ''}`); // hud-heat / hud-tension: theme colours (#126)
   wrap.title = title;
   wrap.append(el('span', 'hud-label', label));
   const bar = el('div', 'hud-bar');
@@ -72,8 +72,8 @@ export function createGameUI({ root, ledger, views = {}, onViewChange, initialVi
   const qPips = el('div', 'hud-pips');
   qBox.append(qValue, qPips);
 
-  const heat = meter('HEAT', 'Heat: how closely regulators and press are watching you.');
-  const tension = meter('TENSION', 'World tension. Profit peaks just below the tipping point.');
+  const heat = meter('HEAT', 'Heat: how closely regulators and press are watching you.', 'heat');
+  const tension = meter('TENSION', 'World tension. Profit peaks just below the tipping point.', 'tension');
 
   const boardBox = el('div', 'hud-stat hud-board');
   boardBox.title = 'Profit the board expects this quarter. Miss it and you take a strike; three strikes and you are out.';
