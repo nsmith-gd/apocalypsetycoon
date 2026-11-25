@@ -1,12 +1,14 @@
 # World map: fidelity target sheet (v2, #112; replaces #98)
 
 **Reference:** the director's "pixel earth" (`ffd5a215d5-pixel-earth.png` on the `ballast/targets` branch; "Match: World map").
-**Compared with:** the base layer as the game paints it at 1440x900 after #109 and #110: 480x288 terrain pixels, each shown 2 screen pixels wide, terrain only.
+**Compared with:** the base layer as the game paints it at 1440x900 after the #136 redo (v1-era numbers: #110 column): 480x288 terrain pixels, each shown 2 screen pixels wide, terrain only.
 **Status:** proposed. The director is asked to confirm it (see `.ballast/reports/t112.md`).
 
 **Why v2:** the director's review of v1 was "Fidelity targets are way off, it's far too low detail low pixel density". v1 kept a 320x192 canvas and set targets by impression: outline yes, shelf yes, ramps yes. It never asked for the reference's **amount of detail per pixel**, and the map met v1 while still looking empty. v2 measures both maps with the same numbers (`tools/map_target_metrics.py`) and sets targets you can check.
 
 ![Same pixel density](world-map-target/01-side-by-side.png)
+
+**#136 update:** the base layer was redone to these targets. The images below now show the redo, and the table shows the #110 numbers next to the redo's. The "core problem" text describes the map as it was at #110.
 
 ## The core problem, in one picture
 
@@ -24,19 +26,19 @@ So making the map bigger (#109) added pixels but not density. **Detail must be s
 
 ## Targets (measured; all in terrain pixels)
 
-| # | Measure | Reference | Ours now (#110) | **Target** | Met? |
-|---|---|---|---|---|---|
-| 1 | Terrain resolution in game | 275x168 | 480x288 at 1440x900; 640x384 at 1920x1080 | **at least 480x288 at 1440x900**, scaling with the screen | yes |
-| 2 | Screen pixels per terrain pixel | 2 | 2 | **2** (never 3 or more: that is what made v1 look low density) | yes |
-| 3 | Map size on a 1440x900 screen | 550x336 | 960x576 | **at least 960 px wide** | yes |
-| 4 | Colour changes per 100 neighbouring pixel pairs, whole map | 13.7 | 10.4 | **at least 13.5** | no |
-| 5 | Same, on land only | 20.6 | 21.4 | **at least 20** | yes |
-| 6 | Mean run of one colour along a land row | 3.5 px | 4.3 px | **3.5 px or less** | no |
-| 7 | Coast wiggle: coast length ÷ the perimeter of one round blob of the same land area | 6.4 | 3.9 | **at least 6** | no |
-| 8 | Islands: land pieces under 0.2% of the map, per 10,000 pixels | 36 | 7 | **at least 25**, clustered into archipelagos, never evenly sprinkled | no |
-| 9 | Distinct colours | 29 | 20 | **28-32**, extending `MAP_PALETTE` (see below) | no |
-| 10 | Coast pixels carrying the dark outline | 63% | 61% | **60-75%** | yes |
-| 11 | Land share of the map | 24% | 28% | 22-30% (keep: the layout sets it) | yes |
+| # | Measure | Reference | #110 | **Ours now (#136)** | **Target** | Met? |
+|---|---|---|---|---|---|---|
+| 1 | Terrain resolution in game | 275x168 | 480x288 | 480x288 at 1440x900; 640x384 at 1920x1080 | **at least 480x288 at 1440x900**, scaling with the screen | yes |
+| 2 | Screen pixels per terrain pixel | 2 | 2 | 2 | **2** (never 3 or more: that is what made v1 look low density) | yes |
+| 3 | Map size on a 1440x900 screen | 550x336 | 960x576 | 960x576 | **at least 960 px wide** | yes |
+| 4 | Colour changes per 100 neighbouring pixel pairs, whole map | 13.7 | 10.4 | 17.0 | **at least 13.5** | yes |
+| 5 | Same, on land only | 20.6 | 21.4 | 28.0 | **at least 20** | yes |
+| 6 | Mean run of one colour along a land row | 3.5 px | 4.3 px | 3.1 px | **3.5 px or less** | yes |
+| 7 | Coast wiggle: coast length ÷ the perimeter of one round blob of the same land area | 6.4 | 3.9 | 9.3 | **at least 6** | yes |
+| 8 | Islands: land pieces under 0.2% of the map, per 10,000 pixels | 36 | 7 | 19 | **at least 25**, clustered into archipelagos, never evenly sprinkled | no (closer) |
+| 9 | Distinct colours | 29 | 20 | 28 | **28-32**, extending `MAP_PALETTE` | yes |
+| 10 | Coast pixels carrying the dark outline | 63% | 61% | 58% (python measure; 60%+ in the game's own test) | **60-75%** | about |
+| 11 | Land share of the map | 24% | 28% | 31% | 22-30% (keep: the layout sets it) | about |
 
 Run the checks with:
 ```

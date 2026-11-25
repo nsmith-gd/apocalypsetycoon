@@ -72,13 +72,17 @@ export const PALETTE = Object.freeze({
 // pixel-earth reference ramps at about 80% brightness: the reference's richness, dark enough that the
 // amber and red crisis overlays still pop. Ramps run dark -> light.
 export const MAP_PALETTE = Object.freeze({
-  ocean: Object.freeze(['#002e59', '#00548a', '#007ab0']), // trench, deep (the sea itself), shelf
-  forest: Object.freeze(['#0f3d3d', '#185a42', '#297a3c', '#489e3f']), // dark core -> open grass
-  meadow: Object.freeze(['#7ab84c', '#a9cf65']), // brightest grass and highlight, used sparingly
-  desert: Object.freeze(['#6e3a2b', '#995a3b', '#b87d54', '#c5a27f', '#d4c2ad']), // rust ridge -> pale sand
-  rock: Object.freeze(['#3a3f46', '#5a5f6e', '#8a8f9c']), // mountain shadow, face, lit ridge
-  snow: Object.freeze(['#9aa1b0', '#d0d4dc']), // shadow edge, cap
-  water: Object.freeze(['#007ab0']), // lakes and rivers: the shelf blue
+  // #136 world map redo: a brighter daylight atlas (target sheet v2), 28 colours. The war-room mood is carried
+  // by the crisis overlays and the UI frame, not by dark terrain.
+  ocean: Object.freeze(['#073d6e', '#0a66a8', '#1196d6', '#47c6ee']), // lake deep, open sea, shelf, lagoon
+  forest: Object.freeze(['#0d2f3a', '#123f45', '#16564c', '#227346', '#36964a']), // jungle core -> mid green
+  meadow: Object.freeze(['#5bbf4e', '#97df63', '#cdf57f']), // light green, highlight, glint (sparingly)
+  savanna: Object.freeze(['#7a8a4a', '#9fae5a', '#c8b874']), // dry scrub -> dry grass
+  tundra: Object.freeze(['#5c7a6c', '#8fa39a']), // cold moss, frost
+  desert: Object.freeze(['#7e3f31', '#b0623f', '#de9562', '#f2c497', '#f7e3c8']), // rust ridge -> pale sand
+  rock: Object.freeze(['#40465a', '#69779a', '#a3aec4']), // mountain shadow, face, lit ridge
+  snow: Object.freeze(['#c4cddd', '#ffffff']), // shadow edge, cap
+  water: Object.freeze(['#1196d6', '#073d6e']), // rivers (shelf blue), lakes (deep)
   outline: '#0a0807', // = K: the 1px coast outline
 });
 export const MAP_COLOURS = Object.freeze([...new Set(Object.values(MAP_PALETTE).flat())]);

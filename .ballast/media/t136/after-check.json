@@ -1,0 +1,105 @@
+{
+ "label": "after",
+ "viewports": [
+  {
+   "scale": 3,
+   "shownW": 960,
+   "shownH": 576,
+   "aspectOk": true,
+   "rendering": "pixelated",
+   "hits": {
+    "nam": "nam",
+    "eur": "eur",
+    "eas": "eas",
+    "mea": "mea",
+    "afr": "afr",
+    "sas": "sas",
+    "lat": "lat",
+    "oce": "oce"
+   },
+   "layoutMovedOnSelect": false,
+   "integerScale": true,
+   "hitAreasOk": true,
+   "viewport": "1440x900",
+   "errs": [],
+   "terrain": {
+    "artW": 480,
+    "artH": 288,
+    "screenPerArtPx": 2,
+    "aligned": true
+   },
+   "terrainOk": true,
+   "columnWidths": [
+    3
+   ],
+   "seamFree": true
+  },
+  {
+   "scale": 4,
+   "shownW": 1280,
+   "shownH": 768,
+   "aspectOk": true,
+   "rendering": "pixelated",
+   "hits": {
+    "nam": "nam",
+    "eur": "eur",
+    "eas": "eas",
+    "mea": "mea",
+    "afr": "afr",
+    "sas": "sas",
+    "lat": "lat",
+    "oce": "oce"
+   },
+   "layoutMovedOnSelect": false,
+   "integerScale": true,
+   "hitAreasOk": true,
+   "viewport": "1920x1080",
+   "errs": [],
+   "terrain": {
+    "artW": 640,
+    "artH": 384,
+    "screenPerArtPx": 2,
+    "aligned": true
+   },
+   "terrainOk": true,
+   "columnWidths": [
+    4
+   ],
+   "seamFree": true
+  },
+  {
+   "scale": 2,
+   "shownW": 640,
+   "shownH": 384,
+   "aspectOk": true,
+   "rendering": "pixelated",
+   "hits": {
+    "nam": "nam",
+    "eur": "eur",
+    "eas": "eas",
+    "mea": "mea",
+    "afr": "afr",
+    "sas": "sas",
+    "lat": "lat",
+    "oce": "oce"
+   },
+   "layoutMovedOnSelect": false,
+   "integerScale": true,
+   "hitAreasOk": true,
+   "viewport": "1280x720",
+   "errs": [],
+   "terrain": {
+    "artW": 320,
+    "artH": 192,
+    "screenPerArtPx": 2,
+    "aligned": true
+   },
+   "terrainOk": true,
+   "columnWidths": [
+    2
+   ],
+   "seamFree": true
+  }
+ ],
+ "pass": true
+}

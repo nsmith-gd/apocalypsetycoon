@@ -19,14 +19,14 @@
    480,
    288
   ],
-  "colours": 20,
-  "edges_per_100": 10.4,
-  "land_edges_per_100": 21.4,
-  "land_run_px": 4.29,
-  "land_share": 0.278,
-  "coast_wiggle": 3.89,
-  "outlined_coast": 0.61,
-  "islands": 100,
-  "islands_per_10k_px": 7.23
+  "colours": 28,
+  "edges_per_100": 17.0,
+  "land_edges_per_100": 28.0,
+  "land_run_px": 3.07,
+  "land_share": 0.309,
+  "coast_wiggle": 9.32,
+  "outlined_coast": 0.58,
+  "islands": 261,
+  "islands_per_10k_px": 18.88
  }
 }
