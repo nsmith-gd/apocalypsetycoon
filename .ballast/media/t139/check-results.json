@@ -1,0 +1,461 @@
+{
+ "results": [
+  {
+   "region": "nam",
+   "name": "North America",
+   "state": "uneasy",
+   "pass": true,
+   "fails": [],
+   "changedPct": 83.6,
+   "strength": 54.6,
+   "bleedPx": 0,
+   "cells": "83/70",
+   "labelBg": [
+    62,
+    136,
+    163
+   ]
+  },
+  {
+   "region": "nam",
+   "name": "North America",
+   "state": "edge",
+   "pass": true,
+   "fails": [],
+   "changedPct": 83.7,
+   "strength": 85,
+   "bleedPx": 0,
+   "cells": "83/70",
+   "labelBg": [
+    62,
+    136,
+    163
+   ]
+  },
+  {
+   "region": "nam",
+   "name": "North America",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 83.7,
+   "strength": 112.6,
+   "bleedPx": 0,
+   "cells": "83/70",
+   "labelBg": [
+    62,
+    136,
+    163
+   ]
+  },
+  {
+   "region": "nam",
+   "name": "North America",
+   "state": "selected",
+   "pass": true,
+   "fails": [],
+   "bleedPx": 0
+  },
+  {
+   "region": "lat",
+   "name": "Latin America",
+   "state": "uneasy",
+   "pass": true,
+   "fails": [],
+   "changedPct": 77.6,
+   "strength": 45.9,
+   "bleedPx": 0,
+   "cells": "50/42",
+   "labelBg": [
+    17,
+    122,
+    185
+   ]
+  },
+  {
+   "region": "lat",
+   "name": "Latin America",
+   "state": "edge",
+   "pass": true,
+   "fails": [],
+   "changedPct": 77.6,
+   "strength": 72.8,
+   "bleedPx": 0,
+   "cells": "50/42",
+   "labelBg": [
+    17,
+    122,
+    185
+   ]
+  },
+  {
+   "region": "lat",
+   "name": "Latin America",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 77.6,
+   "strength": 99.1,
+   "bleedPx": 0,
+   "cells": "50/42",
+   "labelBg": [
+    17,
+    122,
+    185
+   ]
+  },
+  {
+   "region": "lat",
+   "name": "Latin America",
+   "state": "selected",
+   "pass": true,
+   "fails": [],
+   "bleedPx": 0
+  },
+  {
+   "region": "eur",
+   "name": "Europe",
+   "state": "uneasy",
+   "pass": true,
+   "fails": [],
+   "changedPct": 70.4,
+   "strength": 48.5,
+   "bleedPx": 0,
+   "cells": "54/41",
+   "labelBg": [
+    24,
+    124,
+    171
+   ]
+  },
+  {
+   "region": "eur",
+   "name": "Europe",
+   "state": "edge",
+   "pass": true,
+   "fails": [],
+   "changedPct": 70.5,
+   "strength": 73.6,
+   "bleedPx": 0,
+   "cells": "54/41",
+   "labelBg": [
+    24,
+    124,
+    171
+   ]
+  },
+  {
+   "region": "eur",
+   "name": "Europe",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 70.4,
+   "strength": 102.4,
+   "bleedPx": 0,
+   "cells": "54/41",
+   "labelBg": [
+    24,
+    124,
+    171
+   ]
+  },
+  {
+   "region": "eur",
+   "name": "Europe",
+   "state": "selected",
+   "pass": true,
+   "fails": [],
+   "bleedPx": 0
+  },
+  {
+   "region": "mea",
+   "name": "Middle East",
+   "state": "uneasy",
+   "pass": false,
+   "fails": [
+    "reads weaker than other regions at uneasy (colour shift 25.9 vs median 43.5)"
+   ],
+   "changedPct": 47.4,
+   "strength": 25.9,
+   "bleedPx": 0,
+   "cells": "19/12",
+   "labelBg": [
+    28,
+    74,
+    71
+   ]
+  },
+  {
+   "region": "mea",
+   "name": "Middle East",
+   "state": "edge",
+   "pass": false,
+   "fails": [
+    "reads weaker than other regions at edge (colour shift 41.2 vs median 69.5)"
+   ],
+   "changedPct": 47.4,
+   "strength": 41.2,
+   "bleedPx": 0,
+   "cells": "19/12",
+   "labelBg": [
+    28,
+    74,
+    71
+   ]
+  },
+  {
+   "region": "mea",
+   "name": "Middle East",
+   "state": "tipping",
+   "pass": false,
+   "fails": [
+    "reads weaker than other regions at tipping (colour shift 53.7 vs median 95.2)"
+   ],
+   "changedPct": 47.4,
+   "strength": 53.7,
+   "bleedPx": 0,
+   "cells": "19/12",
+   "labelBg": [
+    28,
+    74,
+    71
+   ]
+  },
+  {
+   "region": "mea",
+   "name": "Middle East",
+   "state": "selected",
+   "pass": true,
+   "fails": [],
+   "bleedPx": 0
+  },
+  {
+   "region": "afr",
+   "name": "Africa",
+   "state": "uneasy",
+   "pass": true,
+   "fails": [],
+   "changedPct": 83.5,
+   "strength": 36.8,
+   "bleedPx": 0,
+   "cells": "53/43",
+   "labelBg": [
+    116,
+    128,
+    93
+   ]
+  },
+  {
+   "region": "afr",
+   "name": "Africa",
+   "state": "edge",
+   "pass": true,
+   "fails": [],
+   "changedPct": 83.5,
+   "strength": 62.9,
+   "bleedPx": 0,
+   "cells": "53/43",
+   "labelBg": [
+    116,
+    128,
+    93
+   ]
+  },
+  {
+   "region": "afr",
+   "name": "Africa",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 83.5,
+   "strength": 85.5,
+   "bleedPx": 0,
+   "cells": "53/43",
+   "labelBg": [
+    116,
+    128,
+    93
+   ]
+  },
+  {
+   "region": "afr",
+   "name": "Africa",
+   "state": "selected",
+   "pass": true,
+   "fails": [],
+   "bleedPx": 0
+  },
+  {
+   "region": "sas",
+   "name": "South Asia",
+   "state": "uneasy",
+   "pass": true,
+   "fails": [],
+   "changedPct": 67.8,
+   "strength": 56.9,
+   "bleedPx": 0,
+   "cells": "31/22",
+   "labelBg": [
+    136,
+    158,
+    117
+   ]
+  },
+  {
+   "region": "sas",
+   "name": "South Asia",
+   "state": "edge",
+   "pass": true,
+   "fails": [],
+   "changedPct": 67.8,
+   "strength": 81.2,
+   "bleedPx": 0,
+   "cells": "31/22",
+   "labelBg": [
+    136,
+    158,
+    117
+   ]
+  },
+  {
+   "region": "sas",
+   "name": "South Asia",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 67.8,
+   "strength": 101,
+   "bleedPx": 0,
+   "cells": "31/22",
+   "labelBg": [
+    136,
+    158,
+    117
+   ]
+  },
+  {
+   "region": "sas",
+   "name": "South Asia",
+   "state": "selected",
+   "pass": true,
+   "fails": [],
+   "bleedPx": 0
+  },
+  {
+   "region": "eas",
+   "name": "East Asia",
+   "state": "uneasy",
+   "pass": true,
+   "fails": [],
+   "changedPct": 77.3,
+   "strength": 39.9,
+   "bleedPx": 0,
+   "cells": "106/95",
+   "labelBg": [
+    45,
+    92,
+    80
+   ]
+  },
+  {
+   "region": "eas",
+   "name": "East Asia",
+   "state": "edge",
+   "pass": true,
+   "fails": [],
+   "changedPct": 77.3,
+   "strength": 66.2,
+   "bleedPx": 0,
+   "cells": "106/95",
+   "labelBg": [
+    45,
+    92,
+    80
+   ]
+  },
+  {
+   "region": "eas",
+   "name": "East Asia",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 77.3,
+   "strength": 91.3,
+   "bleedPx": 0,
+   "cells": "106/95",
+   "labelBg": [
+    45,
+    92,
+    80
+   ]
+  },
+  {
+   "region": "eas",
+   "name": "East Asia",
+   "state": "selected",
+   "pass": true,
+   "fails": [],
+   "bleedPx": 0
+  },
+  {
+   "region": "oce",
+   "name": "Oceania",
+   "state": "uneasy",
+   "pass": true,
+   "fails": [],
+   "changedPct": 68.7,
+   "strength": 41,
+   "bleedPx": 0,
+   "cells": "26/13",
+   "labelBg": [
+    22,
+    121,
+    172
+   ]
+  },
+  {
+   "region": "oce",
+   "name": "Oceania",
+   "state": "edge",
+   "pass": true,
+   "fails": [],
+   "changedPct": 68.7,
+   "strength": 61.7,
+   "bleedPx": 0,
+   "cells": "26/13",
+   "labelBg": [
+    22,
+    121,
+    172
+   ]
+  },
+  {
+   "region": "oce",
+   "name": "Oceania",
+   "state": "tipping",
+   "pass": true,
+   "fails": [],
+   "changedPct": 68.7,
+   "strength": 76.2,
+   "bleedPx": 0,
+   "cells": "26/13",
+   "labelBg": [
+    22,
+    121,
+    172
+   ]
+  },
+  {
+   "region": "oce",
+   "name": "Oceania",
+   "state": "selected",
+   "pass": true,
+   "fails": [],
+   "bleedPx": 0
+  }
+ ],
+ "passed": 29,
+ "total": 32,
+ "errs": []
+}
