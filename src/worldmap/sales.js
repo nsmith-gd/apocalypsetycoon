@@ -84,8 +84,8 @@ export class MapSales {
   _emit(evt) { for (const fn of this._listeners) fn(evt, this); }
 
   /** A shelter has finished construction (handover) and can be sold on the map. */
-  addFinished({ name, rooms = [], occupants = 6, sealed = null } = {}) {
-    const s = { id: `spec${++this._ids}`, name: name ?? `Spec shelter #${this._ids}`, rooms: [...rooms], occupants, ...(sealed ? { sealed } : {}) }; // sealed: a tile-built bunker's simulated Days Sealed and ratings
+  addFinished({ name, rooms = [], occupants = 6, sealed = null, inspected = false } = {}) {
+    const s = { id: `spec${++this._ids}`, name: name ?? `Spec shelter #${this._ids}`, rooms: [...rooms], occupants, ...(sealed ? { sealed } : {}), ...(inspected ? { inspected: true } : {}) }; // inspected: an Inspector walked it (#151) // sealed: a tile-built bunker's simulated Days Sealed and ratings
     s.value = specValue(s, this.cfg);
     this.stock.push(s);
     this._emit({ type: 'stock', shelter: s });
@@ -170,6 +170,7 @@ export class MapSales {
       price,
       premium,
       viaLead: !!pipelineLead,
+      inspected: !!shelter.inspected,
       ratings: { air: r2(graded.ratios.air), water: r2(graded.ratios.water), food: r2(graded.ratios.food) },
       grades: { ...graded.grades },
       prestige: graded.prestige,
@@ -177,7 +178,7 @@ export class MapSales {
     };
     this.sold.push(record);
     this.ledger?.record('sales', `${type?.label ?? 'Client'} shelter (${region.name}): ${owner}`, price);
-    this.pushback?.onSale?.({ client: owner, price, region: region.id, leverage: lead.leverage ?? 0 });
+    this.pushback?.onSale?.({ client: owner, price, region: region.id, leverage: lead.leverage ?? 0, inspected: !!shelter.inspected });
     this._emit({ type: 'sale', record, lead });
     return record;
   }

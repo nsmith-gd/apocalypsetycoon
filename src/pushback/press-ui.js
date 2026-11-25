@@ -209,7 +209,8 @@ export function createPressDesk({ press, pushback, onAction = () => {}, showSite
       insp.disabled = site.inspectedWeek != null && press.week - site.inspectedWeek < PRESS.inspector.onceEveryWeeks;
       const decoy = btn('pr-sbtn', `DECOY ${fmt(P.decoy.cost)}`, act(() => press.buildDecoy(site.id)), press.siegeWatch ? 'A fake entrance: it takes the first lost siege each quarter.' : `A fake entrance for the mob: defence +${P.decoy.defence}.`);
       decoy.disabled = site.decoy;
-      actions.append(insp, decoy);
+      if (press.siegeWatch) actions.append(decoy); // the campaign's Inspector is the Sales hire on the company panel (#151)
+      else actions.append(insp, decoy);
       if (site.occupied) actions.append(btn('pr-sbtn pr-sbtn-red', `RETAKE ${fmt(P.retake.cost)}`, act(() => press.retake(site.id)), `Send in security. Heat +${P.retake.heat}.`));
       row.append(name, flags, vs, actions);
       list.append(row);

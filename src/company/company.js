@@ -16,6 +16,7 @@
 //      $200K / $400K / $800K / $1.6M against the $400K opening treasury.
 
 import { PRICE_SCALE } from '../shelter/bunker-catalog.js';
+import { TUNING } from '../config/tuning.js';
 
 export const TIERS = Object.freeze([
   { id: 'startup', name: 'Startup', sites: 1, crews: 2, cap: 2, opens: ['sales', 'engineering', 'special'] },
@@ -53,6 +54,69 @@ export class Company {
     this.tierIndex = 0;
     this.levels = {}; // deptId -> level (0 = not yet opened)
     this._listeners = new Set();
+    // #151: department heads' loyalty (0-100), who replaced a scapegoat, the Inspector hire, the once-a-campaign scapegoat.
+    this.loyalty = Object.fromEntries(DEPARTMENTS.map((d) => [d.id, TUNING.loyalty.start]));
+    this.heads = {}; // deptId -> name of an acting head after a scapegoat
+    this.inspectorHired = false;
+    this.inspections = 0;
+    this.scapegoated = null; // { dept, head, minute } once used
+  }
+
+  headOf(deptId) { return this.heads[deptId] ?? DEPARTMENTS.find((d) => d.id === deptId)?.head; }
+
+  // ---------- the Inspector (#151) ----------
+  /** Why the Inspector can't be hired, or null. */
+  inspectorBlocker() {
+    const need = TUNING.inspector.salesLevel;
+    return this.level('sales') >= need ? null : `Needs Sales level ${need}`;
+  }
+  /** Hire or release the Inspector. While hired, every walkthrough is inspected and charged. */
+  setInspector(on) {
+    if (on && this.inspectorBlocker()) return { ok: false, reason: this.inspectorBlocker() };
+    this.inspectorHired = !!on;
+    this._emit({ type: 'inspector', hired: this.inspectorHired });
+    return { ok: true, hired: this.inspectorHired };
+  }
+  /** A walkthrough happens (a handover). Inspected when the Inspector is hired: pays $0.2M. Returns true if inspected. */
+  walkthrough(label = 'shelter') {
+    if (!this.inspectorHired || this.inspectorBlocker()) return false;
+    this.ledger?.record('upkeep', `Inspector walkthrough: ${label}`, -TUNING.inspector.costPerWalkthrough);
+    this.inspections += 1;
+    this._emit({ type: 'inspection', label });
+    return true;
+  }
+
+  // ---------- the scapegoat (#151) ----------
+  scapegoatBlocker(deptId) {
+    if (this.scapegoated) return `Already used: ${this.scapegoated.head} took the fall`;
+    if (!this.isOpen(deptId)) return 'That department is not open';
+    return null;
+  }
+  /**
+   * Once per campaign: the head of `deptId` leaves. Their department drops two levels (never below 1), every other
+   * head loses 15 loyalty (Marcus Dell a further 10), and heat falls by 40 (`pushback.addHeat`).
+   */
+  scapegoat(deptId, { pushback = null } = {}) {
+    const reason = this.scapegoatBlocker(deptId);
+    if (reason) return { ok: false, reason };
+    const S = TUNING.scapegoat;
+    const head = this.headOf(deptId);
+    const before = this.level(deptId);
+    this.levels[deptId] = Math.max(this.cfg.startLevel, before + S.departmentLevels);
+    for (const d of DEPARTMENTS) {
+      if (d.id === deptId) continue;
+      const hit = S.otherHeads + (d.id === 'legal' ? S.legalHead : 0);
+      this.loyalty[d.id] = Math.max(0, Math.min(100, this.loyalty[d.id] + hit));
+    }
+    this.heads[deptId] = `Acting head (${DEPARTMENTS.find((d) => d.id === deptId).name})`;
+    this.loyalty[deptId] = TUNING.loyalty.start;
+    const heatBefore = pushback?.heat ?? null;
+    pushback?.addHeat?.(S.heat, `Scapegoat: ${head}`);
+    pushback?._changed?.();
+    this.scapegoated = { dept: deptId, head, minute: Math.round(this.getPlayMinutes()) };
+    const res = { ok: true, head, dept: deptId, levelBefore: before, levelAfter: this.level(deptId), heatBefore, heatAfter: pushback?.heat ?? null };
+    this._emit({ type: 'scapegoat', ...res });
+    return res;
   }
 
   onChange(fn) { this._listeners.add(fn); return () => this._listeners.delete(fn); }
@@ -127,10 +191,18 @@ export class Company {
   view() {
     return {
       tier: this.tier.name, tierId: this.tier.id, sites: this.siteCap, crews: this.crewCap, cap: this.cap, crewSpeed: this.crewSpeed, extraCrews: this.extraCrews, rpPerWeek: this.rpPerWeek,
-      departments: DEPARTMENTS.map((d) => ({ id: d.id, name: d.name, head: d.head, perLevel: d.perLevel, open: this.isOpen(d.id), level: this.level(d.id), cap: this.cap, cost: this.levelCost(d.id), blocker: this.blocker(d.id) })),
+      departments: DEPARTMENTS.map((d) => ({ id: d.id, name: d.name, head: this.headOf(d.id), loyalty: this.loyalty[d.id], perLevel: d.perLevel, open: this.isOpen(d.id), level: this.level(d.id), cap: this.cap, cost: this.levelCost(d.id), blocker: this.blocker(d.id) })),
     };
   }
 
-  toJSON() { return { tierIndex: this.tierIndex, levels: { ...this.levels } }; }
-  load(d = {}) { this.tierIndex = d.tierIndex ?? 0; this.levels = { ...(d.levels ?? {}) }; this._emit({ type: 'load' }); }
+  toJSON() {
+    return { tierIndex: this.tierIndex, levels: { ...this.levels }, loyalty: { ...this.loyalty }, heads: { ...this.heads },
+      inspectorHired: this.inspectorHired, inspections: this.inspections, scapegoated: this.scapegoated };
+  }
+  load(d = {}) {
+    this.tierIndex = d.tierIndex ?? 0; this.levels = { ...(d.levels ?? {}) };
+    Object.assign(this.loyalty, d.loyalty ?? {}); this.heads = { ...(d.heads ?? {}) };
+    this.inspectorHired = !!d.inspectorHired; this.inspections = d.inspections ?? 0; this.scapegoated = d.scapegoated ?? null;
+    this._emit({ type: 'load' });
+  }
 }

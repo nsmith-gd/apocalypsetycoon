@@ -108,3 +108,94 @@ test('#72: a live build with Engineering 2 gets 2.3x the work done (15% faster c
   const after = work(co);
   assert.ok(Math.abs(after / before - 2.3) < 0.05, `${after / before}`);
 });
+
+// ---------- the Inspector and the scapegoat (#151) ----------
+import { TUNING } from '../src/config/tuning.js';
+import { Pushback } from '../src/pushback/pushback.js';
+import { MapSales } from '../src/worldmap/sales.js';
+import { LeadMarket } from '../src/demand/demand.js';
+
+const richCompany = () => {
+  const ledger = new Ledger({ startingCash: 500_000_000 });
+  const co = new Company({ ledger, getPlayMinutes: () => 200 });
+  co.setTier('firm');
+  return { ledger, co };
+};
+
+test('the Inspector needs Sales level 3, then charges $0.2M per walkthrough', () => {
+  const { ledger, co } = richCompany();
+  assert.match(co.setInspector(true).reason, /Sales level 3/);
+  assert.equal(co.walkthrough('Pod'), false);
+  co.levelUp('sales'); co.levelUp('sales');
+  assert.equal(co.level('sales'), 3);
+  assert.equal(co.setInspector(true).ok, true);
+  const cash = ledger.cash;
+  assert.equal(co.walkthrough('Pod'), true);
+  assert.equal(ledger.cash, cash - TUNING.inspector.costPerWalkthrough);
+  assert.equal(ledger.entries.at(-1).label, 'Inspector walkthrough: Pod');
+  co.setInspector(false);
+  assert.equal(co.walkthrough('Pod'), false);
+});
+
+test('inspected clients gain leverage half as fast', () => {
+  const pb = new Pushback({ seed: 1 });
+  pb.heat = 60;
+  pb.onSale({ client: 'Plain', price: 1 });
+  pb.onSale({ client: 'Inspected', price: 1, inspected: true });
+  const [a, b] = pb.clients.map((c) => c.leverage);
+  pb.endQuarter({ quarter: 1, profit: 0 });
+  const growth = pb.clients.map((c, i) => c.leverage - [a, b][i]);
+  assert.ok(growth[0] > 0);
+  assert.ok(Math.abs(growth[1] - growth[0] * TUNING.inspector.leverageGrowth) <= 1, JSON.stringify(growth));
+});
+
+test('a handed-over shelter carries the inspection to its buyer', () => {
+  const market = new LeadMarket({ seed: 2 });
+  const pb = new Pushback({ seed: 1 });
+  const sales = new MapSales({ market, pushback: pb });
+  const s = sales.addFinished({ name: 'Inspected Pod', rooms: ['bunk'], inspected: true });
+  market.addLeads('nam', 1);
+  const rec = sales.sell('nam', s.id);
+  assert.equal(rec.inspected, true);
+  assert.equal(pb.clients.at(-1).inspected, true);
+});
+
+test('the scapegoat: once per campaign, heat -40, department -2 levels, other heads -15 loyalty (Marcus -25)', () => {
+  const { co } = richCompany();
+  for (let i = 0; i < 3; i++) co.levelUp('engineering');
+  assert.equal(co.level('engineering'), 4);
+  const pb = new Pushback({ seed: 1 });
+  pb.heat = 70;
+  const start = TUNING.loyalty.start;
+  const r = co.scapegoat('engineering', { pushback: pb });
+  assert.equal(r.ok, true);
+  assert.equal(r.head, 'Ruth Abernathy');
+  assert.equal(pb.heat, 30);
+  assert.equal(co.level('engineering'), 2);
+  assert.equal(co.loyalty.sales, start - 15);
+  assert.equal(co.loyalty.legal, start - 25);
+  assert.equal(co.loyalty.engineering, start, 'the new acting head starts fresh');
+  assert.notEqual(co.headOf('engineering'), 'Ruth Abernathy');
+  assert.match(co.scapegoat('sales', { pushback: pb }).reason, /Already used/);
+  // a level-1 department never drops below 1; heat never below 0
+  const { co: c2 } = richCompany();
+  const p2 = new Pushback({ seed: 1 });
+  p2.heat = 10;
+  c2.scapegoat('sales', { pushback: p2 });
+  assert.equal(c2.level('sales'), 1);
+  assert.equal(p2.heat, 0);
+});
+
+test('the Inspector and the scapegoat are saved', () => {
+  const { co } = richCompany();
+  co.levelUp('sales'); co.levelUp('sales');
+  co.setInspector(true);
+  co.walkthrough('x');
+  co.scapegoat('special', { pushback: new Pushback({ seed: 1 }) });
+  const again = new Company({ getPlayMinutes: () => 200 });
+  again.load(JSON.parse(JSON.stringify(co.toJSON())));
+  assert.equal(again.inspectorHired, true);
+  assert.equal(again.inspections, 1);
+  assert.equal(again.scapegoated.head, 'Theo Lisk');
+  assert.deepEqual(again.loyalty, co.loyalty);
+});
