@@ -1,4 +1,74 @@
-# Visual fidelity audit (#125)
+# Visual fidelity audit, v2 (#160): the game is all interface
+
+Director review of v1 (#125): *"Still so ugly, nobody wants purely UI based games."*
+
+v1 (kept below) ranked interface problems: fonts, frames, spacing. That was the wrong lens. The complaint is that the
+game **is** interface: the player spends the session reading panels, not watching a world. v2 measures that and
+re-ranks every item by one question: **does it put the world on screen, alive, or does it add more interface?**
+
+Re-capture: serve the repo on port 8123, then `node tools/world-share-capture.cjs` (writes the screenshots and
+`world-share.json` to `.ballast/media/t160/`).
+
+## Measured: how much of each screen is world (1440x900)
+
+"World" = the pixel-art scene (shelter cutaway, world map, Midnight scene), minus any panel floating over it.
+The director's references are 85-100% world, with a few small lit signs as the interface.
+
+| Screen | World | Text on screen | Buttons | Capture |
+|---|---|---|---|---|
+| Shelter (where you build) | **18%** | 2,990 characters | 111 | `02-shelter.png` |
+| World map | 43% | 1,461 characters | 24 | `03-map.png` |
+| A breach | 18% | 4,027 characters | 117 | `04-breach.png` |
+| Seal order (Midnight) | 18% | 3,348 characters | 112 | `05-seal-order.png` |
+| Midnight ending | 27% | 3,996 characters | 112 | `06-midnight.png` |
+| Shelter, world-first mock | 42% | 391 characters | 26 | `02b-shelter-world-first-mock.png` |
+| Map, world-first mock | 43%+ (map wider, panel floats) | 1,297 characters | 21 | `03b-map-world-first-mock.png` |
+
+The shelter, the screen the player builds on for five hours, is under a fifth world and about 3,000 characters
+of text. Even with every panel hidden (the mock), what's left is **an empty brown rectangle**. At the start of a
+campaign there is no surface, no estate, no crew, no people and nothing moving. Removing interface doesn't fix that,
+because there's nothing behind it. That's the #1 finding.
+
+## Ranked: world first
+
+Tags: **covered by #N** = an existing task owns it; **new gameplay task** = proposed below (W1-W10).
+
+| # | What the player sees now | What it should be | Tag |
+|---|---|---|---|
+| 1 | The shelter opens on blank dirt in a narrow strip between two columns of text. Nothing happens until you place things. | A lived-in cutaway that fills the screen. The surface shows the client's estate, sky and weather, and a crew truck. A starter shaft is already dug, the crew is visibly digging, lit rooms glow under the ground, and the panels are collapsed to the edges. | **new gameplay task W1** (shelter scene: surface, starter shaft, framing at 2-3x); rooms covered by #117/#118/#120 |
+| 2 | Nobody is visible. Crews are a number ("2 crews"), clients are names in a list. | People in the world: the dig crew with picks and barrows on the job tiles, and clients touring their bunker. Residents already exist at 64 px (#122) but only appear after hand-over. | **new gameplay task W2** (crews on the grid); residents covered by #122, R41 |
+| 3 | Building is silent bookkeeping: a progress bar fills on a tile. | Building you can watch: dirt falls, rubble piles, concrete is poured, sparks fly, and the room lights up on completion. | stage art covered by R40 (strata and stage tiles at 64, in progress); motion is **new gameplay task W3** (build animation and completion beat) |
+| 4 | The map is a static picture; crises are numbers in a side panel. | Crises happen on the map: storm cells over the Superstorm's regions, smoke and fires where the Pitchforks riot, spore haze for the Bloom, sirens over Atomic hotspots. Cities glow at night, planes and ships move. | crisis tints covered by #124; **new gameplay task W4** (crisis events drawn on the map) and **W5** (map life: city lights, traffic) |
+| 5 | Big moments are text boxes. A breach is a red-bordered form with 117 buttons on screen; the Midnight strike is digits on black. | The moment is shown in the world: the map zooms to the breached region as it turns red and the alarm sounds. At Midnight the camera pulls back from the shelter as the sky goes white, and the doors seal on the residents. | **new gameplay task W6** (breach moment in-world), **W7** (Midnight sequence in-world); lighting covered by #130 |
+| 6 | Every decision is a panel of text and buttons: build list, schemes, threats, events, R&D. | Act on the world: click a region to see a small sign floating over it, click a room to see its card next to it. Lists become tooltips and pop-outs, not permanent columns. | **new gameplay task W8** (contextual pop-outs replace standing panels: build palette as a tool tray, region card over the map) |
+| 7 | The HUD is two rows across the full width (eight readouts plus the clock). | Cash and the Doom Clock always visible; heat, tension and the rest appear when they change or on hover. | **new gameplay task W9** (HUD down to cash + clock + alerts) |
+| 8 | Lighting is flat: the dirt and map are evenly lit, with no day/night and no lamp light in rooms. | Light tells the story: lamps in finished rooms, darkness in the dig, the world dimming and reddening as Midnight nears. | covered by #130 (lighting and atmosphere, in progress) |
+| 9 | Events and dialogue are text lists ("3 guests worth meeting"). | The venue is a scene with the guests standing in it; you click a person to talk. | **new gameplay task W10** (event venue scene with guests, using #122's 64 px people) |
+| 10 | The ending is a table of grades. | Each shelter's cutaway photo (Client Gaze, #121) with its fate stamped on it. | covered by #32 (endings, in progress) + #121; v1 item G6 |
+| 11 | Interface styling (fonts, frames, buttons). | Done: thin lit glass instead of brown boxes. | covered by #159 |
+
+## Proposed new gameplay tasks
+
+| ID | Title | Done when | Screens |
+|---|---|---|---|
+| W1 | Shelter scene: surface estate, starter shaft, world-first framing | A new campaign opens on a full-width cutaway at 2-3x: the client's estate and sky on the surface and a starter shaft with lit entrance; panels collapsed; the world is over 60% of the screen (`tools/world-share-capture.cjs`) | 02 |
+| W2 | Dig crews on the grid | Each crew is a 64 px worker walking to and working its job tile (pick, barrow, welder), visible at the editor scale | 02 |
+| W3 | Watchable construction | Dig, pour and fit-out animate (dirt falling, concrete rising, sparks), and a finished room lights up with a sound beat | 02 |
+| W4 | Crisis events drawn on the map | Each track has an on-map effect in its hot regions (storm, smoke, spore haze, alarm rings, fields going grey) scaling with tension | 03 |
+| W5 | Map life | City lights on the night side, a moving terminator, planes and ships on routes; quiet, under 10% of map pixels changing per second | 03 |
+| W6 | Breach in the world | The map zooms to the region, which flashes red with an alarm; the containment card is small and docked, not a full-screen form | 04 |
+| W7 | Midnight in the world | Midnight plays as a sequence over the shelter and map (the sky flares, the doors seal on the residents), then the ending | 05, 06 |
+| W8 | Pop-outs instead of standing panels | The build list, room inspector, region card and schemes open next to what you clicked and close after; nothing permanently covers the world except the HUD | 02, 03 |
+| W9 | HUD down to cash, clock and alerts | Only cash and the Doom Clock show by default; other readouts slide in when they change or on hover | all |
+| W10 | Event venues as scenes | Events show the venue with the guests standing in it, and you click a person to talk | events |
+
+**Order:** W1 and W8 first: they turn the main screen from 18% world into a scene. Then W2 and W3 (life in
+the shelter), W4 and W6 (crises you can see), W9, W5, W7 and W10.
+
+---
+
+# v1 (#125), kept for reference
+
 
 Director note D5: *"The whole game just looks so ugly and low fidelity."*
 
