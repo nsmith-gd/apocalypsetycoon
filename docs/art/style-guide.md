@@ -37,10 +37,13 @@ already 32-bit RGBA) and not as the 64-bit console era (that was 3D, which the p
 5. Display stays at **whole-number scales** (below). 64 px art shows at 1x on a 1080p screen; small screens
    scale the whole view down by integer steps, never individual sprites.
 
-**Test:** `node tools/asset-audit.mjs` measures every exported frame and image in `assets/art/`, every code
-sprite in `src/art/`, the grid units and the font, and exits 1 if anything is below the minimum.
-`--md <file>` writes the full table. At the time of writing, every sprite, tile and icon is below it (8-16 px);
-only the exempt whole-map layers pass. The list is the redraw backlog if the rule is confirmed.
+Minimum asset size: 64 px
+
+**Test:** `node tools/check-asset-minimum.mjs` (#115) reads the number on the line above and fails on any asset
+below it at native size, naming each one; `--baseline` fails only on new offenders while the redraw is under way.
+The inventory and the full audit are #114's (`tools/asset-inventory.mjs`, `docs/art/asset-audit-64.md`). At the
+time of writing every sprite, tile and icon is below it (8-16 px); only the exempt whole-map layers pass. That list
+is the redraw backlog if the rule is confirmed. Rule 3 (glyphs) isn't machine-checked yet: the font is one asset.
 
 **Fidelity, measured on the director's references:** characters are about 35-55 art px tall and doors and
 machines 70-100 px, with lit, worn surfaces. Match that density of detail, not just the canvas size.
