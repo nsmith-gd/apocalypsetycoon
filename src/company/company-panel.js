@@ -11,7 +11,7 @@ const el = (tag, cls, text) => {
   return n;
 };
 
-export function createCompanyPanel({ root, company, getWorkingCrews = () => company.crewCap }) {
+export function createCompanyPanel({ root, company, getWorkingCrews = () => company.crewCap, onScapegoat = null }) {
   const chip = el('button', 'hud-stat co-tier');
   chip.type = 'button';
   chip.title = 'Company: tier, caps and departments';
@@ -44,13 +44,13 @@ export function createCompanyPanel({ root, company, getWorkingCrews = () => comp
     box.append(head, el('p', 'cp-sub', `Sites ${v.sites} · crews ${getWorkingCrews()} of ${v.crews} · department level cap ${v.cap} · crew speed x${v.crewSpeed.toFixed(2)}${v.extraCrews ? ` · Engineering +${v.extraCrews} crew${v.extraCrews > 1 ? 's' : ''}` : ''}${v.rpPerWeek ? ` · R&D +${v.rpPerWeek} RP/week` : ''}`));
     const t = el('table', 'cp-t');
     const hr = el('tr');
-    for (const h of ['Department', 'Head', 'Level', 'Each level adds', '']) hr.append(el('th', null, h));
+    for (const h of ['Department', 'Head', 'Loyalty', 'Level', 'Each level adds', '']) hr.append(el('th', null, h));
     t.append(hr);
     for (const d of v.departments) {
       const tr = el('tr');
       tr.dataset.open = String(d.open);
       tr.dataset.dept = d.id;
-      tr.append(el('td', null, d.name), el('td', null, d.head), el('td', 'cp-lvl', d.open ? `${d.level} / ${d.cap}` : '-'), el('td', 'cp-dim', d.perLevel));
+      tr.append(el('td', null, d.name), el('td', null, d.head), el('td', 'cp-lvl', d.open ? String(d.loyalty) : '-'), el('td', 'cp-lvl', d.open ? `${d.level} / ${d.cap}` : '-'), el('td', 'cp-dim', d.perLevel));
       const td = el('td');
       const b = el('button', 'cp-up', d.blocker ? d.blocker.toUpperCase() : `LEVEL UP ${formatMoney(d.cost)}`);
       b.type = 'button';
@@ -61,6 +61,34 @@ export function createCompanyPanel({ root, company, getWorkingCrews = () => comp
       t.append(tr);
     }
     box.append(t);
+
+    // #151: the Inspector (Sales level 3) and the once-a-campaign scapegoat
+    const extra = el('div', 'cp-extra');
+    const insp = el('div', 'cp-row');
+    const ib = company.inspectorBlocker();
+    insp.append(el('div', 'cp-row-t', 'THE INSPECTOR'), el('p', 'cp-dim', `A Sales hire from level 3. $0.2M per walkthrough (each handover): clients see the Survive tier, and their leverage grows half as fast.${company.inspections ? ` Walkthroughs so far: ${company.inspections}.` : ''}`));
+    const ibtn = el('button', 'cp-up', ib ? ib.toUpperCase() : company.inspectorHired ? 'HIRED: RELEASE' : 'HIRE THE INSPECTOR');
+    ibtn.type = 'button';
+    ibtn.disabled = !!ib && !company.inspectorHired;
+    ibtn.onclick = () => { const r = company.setInspector(!company.inspectorHired); msg = r.ok ? (r.hired ? 'The Inspector joins every walkthrough from now on.' : 'The Inspector is released.') : r.reason; render(); };
+    insp.append(ibtn);
+    const sg = el('div', 'cp-row');
+    sg.append(el('div', 'cp-row-t', 'NAME A SCAPEGOAT'), el('p', 'cp-dim', company.scapegoated
+      ? `Used: ${company.scapegoated.head} took the fall. Once per campaign.`
+      : 'Once per campaign. The executive leaves, their department drops two levels, every other head loses 15 loyalty (Marcus Dell 25), and heat falls by 40.'));
+    if (!company.scapegoated && onScapegoat) {
+      const pick = el('div', 'cp-pick');
+      for (const d of v.departments.filter((x) => x.open)) {
+        const b = el('button', 'cp-up', `${d.head.toUpperCase()}`);
+        b.type = 'button';
+        b.title = `${d.name}: level ${d.level} -> ${Math.max(1, d.level - 2)}`;
+        b.onclick = () => { if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = `CONFIRM: ${d.head.toUpperCase()}`; return; } const r = onScapegoat(d.id); msg = r.ok ? `${r.head} resigned. Heat fell to ${Math.round(r.heatAfter)}.` : r.reason; render(); };
+        pick.append(b);
+      }
+      sg.append(pick);
+    }
+    extra.append(insp, sg);
+    box.append(extra);
     if (msg) box.append(el('p', 'cp-msg', msg));
     msg = '';
   }

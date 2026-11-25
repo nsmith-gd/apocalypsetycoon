@@ -39,7 +39,13 @@ export const TUNING = {
   leads: { perWeekWithSite: 0.5, fearDivisor: 50, waitWeeks: 4 },
   reputation: { min: 0, max: 100, start: 40 },
   siegeStrength: { tensionDivisor: 20, perVisibleFeature: 1 },
-  loyalty: { raise: 5, brokenPromise: -10 },
+  loyalty: { raise: 5, brokenPromise: -10, start: 60 }, // start: not in the GDD (stand-in)
+  // GDD Pushback > Reputation, the Inspector and sieges: a Sales hire from level 3, $0.2M a walkthrough; inspected
+  // clients see the Survive tier and their leverage grows half as fast.
+  inspector: { salesLevel: 3, costPerWalkthrough: 200_000, leverageGrowth: 0.5 },
+  // GDD Pushback > Heat: once per campaign an executive leaves, their department drops two levels, every other head
+  // loses 15 loyalty (Marcus Dell a further 10: "-10 per scapegoat"), and heat falls by 40.
+  scapegoat: { heat: -40, departmentLevels: -2, otherHeads: -15, legalHead: -10 },
 };
 
 /** Every row of the GDD "Tuning constants" table, in order, with where its value lives in TUNING. */

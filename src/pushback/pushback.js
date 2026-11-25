@@ -165,13 +165,14 @@ export class Pushback {
   }
 
   /** Call whenever a shelter is sold. Every buyer becomes a client with leverage over you. */
-  onSale({ client, price = 0, region = '', leverage = 0 } = {}) {
+  onSale({ client, price = 0, region = '', leverage = 0, inspected = false } = {}) {
     const c = {
       id: ++this._ids,
       name: client ?? `Client #${this.clients.length + 1}`,
       region,
       price,
       leverage: this.cfg.leverage.perSale + Math.max(0, leverage), // + leverage earned in conversation (#55)
+      inspected: !!inspected, // #151: saw the Survive tier on an Inspector walkthrough: leverage grows half as fast
       appeased: 0,
     };
     this.clients.push(c);
@@ -447,7 +448,7 @@ export class Pushback {
     }
 
     // 4. Client leverage grows with heat, then clients may act on it.
-    for (const c of this.clients) c.leverage += Math.round(this.heat * L.heatFactor * this.leverageGrowthMultiplier);
+    for (const c of this.clients) c.leverage += Math.round(this.heat * L.heatFactor * this.leverageGrowthMultiplier * (c.inspected ? TUNING.inspector.leverageGrowth : 1));
     events.push(...this._leverageEvents());
 
     this.quarter = quarter + 1;

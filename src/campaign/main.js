@@ -269,11 +269,13 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   const company = new Company({ ledger, getPlayMinutes: () => (clock.total / clock.quarterSeconds) * 27 });
   slot.register('company', company);
   const workingCrews = () => company.crews(1 + tree.crewCount); // the tier's crews, research adds more, the tier caps them
-  const companyPanel = createCompanyPanel({ root, company, getWorkingCrews: workingCrews });
+  const companyPanel = createCompanyPanel({ root, company, getWorkingCrews: workingCrews,
+    // #151: the scapegoat drops heat through pushback; the result shows as a message
+    onScapegoat: (deptId) => { const r = company.scapegoat(deptId, { pushback: pb }); if (r.ok) toast(`SCAPEGOAT: ${r.head} resigns. Heat ${Math.round(r.heatBefore)} -> ${Math.round(r.heatAfter)}. Their department falls to level ${r.levelAfter}; every other head is shaken.`); ui.update(hudState()); return r; } });
   root.querySelector('.hud')?.insertBefore(companyPanel.chip, root.querySelector('.view-toggle'));
   const grid = new BunkerSite({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: workingCrews, crewSpeed: () => company.crewSpeed, research: tree,
     catalog: { minutes: () => (clock.total / clock.quarterSeconds) * 27, roster: () => roster } }); // #140 catalog rooms on schedule
-  const gridUI = createBunkerUI({ mount: gridView, grid, getFrame: () => frame, getMood: () => mood(), onHandOver: (sh) => { qStats.handovers += 1; mapSales.addFinished(sh); mapScreen.refresh(); } });
+  const gridUI = createBunkerUI({ mount: gridView, grid, getFrame: () => frame, getMood: () => mood(), getInspector: () => company.inspectorHired, onHandOver: (sh) => { qStats.handovers += 1; const inspected = company.walkthrough(sh.name); if (inspected) toast(`Inspector walkthrough of ${sh.name}: $0.2M. The client saw the Survive tier.`); mapSales.addFinished({ ...sh, inspected }); mapScreen.refresh(); } });
   slot.register('grid', grid);
 
   // ---------- the world: crisis tracks, weekly leads, schemes and map sales ----------

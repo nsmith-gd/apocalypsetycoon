@@ -49,7 +49,7 @@ const DECOR_TOOLS = new Set(['style', 'paint', 'recolor', 'flip', 'look']);
 const NEED_NAMES = { energy: 'ENERGY', hunger: 'HUNGER', bladder: 'BLADDER', hygiene: 'HYGIENE', fun: 'FUN', social: 'SOCIAL' };
 const needColor = (v) => (v < 25 ? '#ff5a4f' : v < 50 ? '#ff9f1c' : '#7ed957');
 
-export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast = null, onHandOver = null, getMood = () => moodOf() }) {
+export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast = null, onHandOver = null, getMood = () => moodOf(), getInspector = () => false }) {
   const W = site.W, H = site.H, S = site.S;
   const wrap = el('div', 'bk');
   // ---------- toolbar ----------
@@ -454,7 +454,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       const f = Math.floor(frame / 30) % 2;
       for (const r of sim.rooms) {
         if (r.touchesSky) continue;
-        const lvl = gazeLevel(r.type.tier);
+        const lvl = gazeLevel(r.type.tier, { inspector: getInspector() }); // #151: with the Inspector, clients look at Survive rooms too
         if (lvl === 'skip') { for (const [x, y] of r.tiles) drawGaze(ctx, 'veil', PX(x), PY(y), { tile: T }); }
         else {
           const br = lvl === 'look' ? 'bracket' : 'bracket_maybe';
