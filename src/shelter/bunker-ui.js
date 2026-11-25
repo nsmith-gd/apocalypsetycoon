@@ -12,6 +12,7 @@ import { drawText } from '../art/font.js';
 import { drawRoomTile, ROOM_TILE_IDS, DESIGN_STYLES } from '../art/hd/room-tiles.js'; // the room card shows the room in its style (#120)
 import { drawStratumTile, drawDigStage, drawShellStage, drawFitoutStage } from '../art/bunker-tiles.js';
 import { drawObjectSprite, drawResident, drawThought, hasSprite } from './bunker-sprites.js';
+import { daysSealedCanvas } from '../art/hd/shelter-life64.js';
 import { NEED_IDS } from './bunker-catalog.js';
 
 const T = 16;
@@ -354,6 +355,9 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     // objects, back to front: wall hangings, rugs, furniture, ceiling fittings
     const byLayer = { wall: [], rug: [], floor: [], ceiling: [] };
     for (const obj of site.objects.values()) byLayer[layerOf(OBJECTS[obj.kind])].push(obj);
+    // door states (#122): sealed while the pressure test runs; open while someone stands in the doorway
+    doorSealed = !!(site.pressureTest && site.pressureTest.daysLeft > 0);
+    doorBusy = new Set(people().map((p) => `${Math.round(p.x)},${Math.round(p.y)}`));
     for (const l of ['wall', 'rug', 'floor', 'ceiling']) for (const obj of byLayer[l]) drawObject(obj, 1, sim.online.has(obj.id), frame);
     // lighting
     if (site.finish) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -434,6 +438,14 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     }
   }
 
+  let doorSealed = false;
+  let doorBusy = new Set();
+  function doorState(obj, o) {
+    if (!o.door) return 'closed';
+    if (doorSealed) return 'sealed';
+    for (let dy = 0; dy < o.h; dy++) if (doorBusy.has(`${obj.x},${obj.y - dy}`)) return 'open';
+    return 'closed';
+  }
   function drawObject(obj, alpha, on, frame) {
     const o = OBJECTS[obj.kind];
     const x = PX(obj.x), y = PY(obj.y - o.h + 1), w = o.w * T, h = o.h * T;
@@ -441,7 +453,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     if (hasSprite(obj.kind)) {
       const list = variantsFor(obj.kind);
       const v = list.find((q) => q.id === obj.variant) ?? list[0];
-      drawObjectSprite(ctx, obj.kind, x, y, v, { on, frame, flip: obj.flip });
+      drawObjectSprite(ctx, obj.kind, x, y, v, { on, frame, flip: obj.flip, state: doorState(obj, o) });
       ctx.globalAlpha = 1;
       return;
     }
@@ -509,7 +521,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     const sys = (label, days, line) => `<div class="bk-sys" data-limit="${days !== Infinity && days === s.daysSealed}"><b>${label}</b><span>${fmtDays(days)}d</span><small>${line}</small></div>`;
     const f = s.flows;
     side.innerHTML = `
-      <div class="bk-days"><span>${fmtDays(s.daysSealed)}</span><small>DAYS SEALED · ${s.occupants} occupant${s.occupants === 1 ? '' : 's'} · ${s.limiting.toUpperCase()} first</small></div>
+      <div class="bk-days"><canvas class="bk-days-emblem" width="64" height="64" title="Days Sealed: the ring fills toward twice the 30-day pressure test"></canvas><span>${fmtDays(s.daysSealed)}</span><small>DAYS SEALED · ${s.occupants} occupant${s.occupants === 1 ? '' : 's'} · ${s.limiting.toUpperCase()} first</small></div>
       ${sys('AIR', s.days.air, `${f.air.supply} of ${f.air.need} m³/h · ${f.air.buffer} m³ buffer`)}
       ${sys('WATER', s.days.water, `${f.water.stock.toLocaleString()} L · uses ${f.water.net} L/day${f.water.recycle ? ` (${f.water.recycle * 100}% recycled)` : ''}`)}
       ${sys('FOOD', s.days.food, `${f.food.stock.toLocaleString()} meals · grows ${f.food.production} of ${f.food.need}/day`)}
@@ -527,6 +539,9 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     if (tileCv) { const id = tileCv.dataset.room; const design = DESIGN_STYLES.includes(tileCv.dataset.style) ? tileCv.dataset.style : null; if (ROOM_TILE_IDS.includes(id)) { const t = drawRoomTile(tileCv.getContext('2d'), id, 0, 0, { frame: Math.floor(getFrame() / 30), design }); if (tileCv.width !== t.width) { tileCv.width = t.width; tileCv.height = t.height; drawRoomTile(tileCv.getContext('2d'), id, 0, 0, { frame: Math.floor(getFrame() / 30), design }); } } else tileCv.parentElement.remove(); }
     side.querySelector('.bk-rat').after(resBox);
     renderResidents();
+    // Days Sealed emblem (#122): 64 px native, the ring fills toward twice the 30-day pressure test
+    const emblem = side.querySelector('.bk-days-emblem');
+    if (emblem) { const ec = emblem.getContext('2d'); ec.imageSmoothingEnabled = false; ec.clearRect(0, 0, 64, 64); ec.drawImage(daysSealedCanvas(s.daysSealed, 30), 0, 0); }
     side.querySelector('.bk-test').onclick = () => { const res = site.startPressureTest(); toast(res.ok ? 'Pressure test running: 30 days sealed.' : res.reason); render(); };
     const hb = side.querySelector('.bk-hand');
     if (hb) hb.onclick = () => { const res = site.handOver(`Shelter #${site.handedOver + 1}`); if (res.ok) { onHandOver?.(res.shelter); toast('Handed over. A fresh plot is being surveyed.'); } else toast(res.reason); render(); };
