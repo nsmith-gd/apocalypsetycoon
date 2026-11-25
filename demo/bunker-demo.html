@@ -31,6 +31,7 @@ import { Ledger } from '../src/ledger/ledger.js';
 import { BunkerSite } from '../src/shelter/bunker.js';
 import { createBunkerUI } from '../src/shelter/bunker-ui.js';
 import { furnishedSuite } from '../src/shelter/showcase.js';
+import { moodOf } from '../src/art/atmosphere.js';
 
 const params = new URLSearchParams(location.search);
 const ledger = new Ledger({ startingCash: params.has('suite') ? 10_000_000 : 2_000_000 });
@@ -38,7 +39,8 @@ let crews = 2;
 let speed = 16;
 let frame = 0;
 const site = new BunkerSite({ ledger, crews: () => crews, surveyed: params.has('surveyed') });
-const ui = createBunkerUI({ mount: document.getElementById('mount'), grid: site, getFrame: () => frame, onHandOver: () => {} });
+let mood = params.get('mood'); // #130: ?mood=calm|edge|runaway (or __demo.setMood)
+const ui = createBunkerUI({ mount: document.getElementById('mount'), grid: site, getFrame: () => frame, onHandOver: () => {}, getMood: () => moodOf({ force: mood ?? 'calm' }) });
 
 // A small working Solo Pod: spine, two floors, bunks, pantry, tank, scrubber, generator, ducts.
 function starter() {
@@ -87,7 +89,7 @@ function loop(now) {
 ui.fit(innerWidth - 520, innerHeight - 160);
 addEventListener('resize', () => ui.fit(innerWidth - 520, innerHeight - 160));
 requestAnimationFrame(loop);
-window.__demo = { site, ui, ledger, starter, suite, setSpeed: (s) => { speed = s; } };
+window.__demo = { site, ui, ledger, starter, suite, setSpeed: (s) => { speed = s; }, setMood: (m) => { mood = m; } };
 </script>
 </body>
 </html>
