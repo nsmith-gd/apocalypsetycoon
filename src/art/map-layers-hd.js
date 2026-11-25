@@ -42,14 +42,14 @@ export function artRegionMask(base, regionAt) {
 }
 
 /**
- * @param base      a painted base layer (mapBaseAt(scale)): { w, h, rgba, isLandPx }
- * @param regionAt  (fx, fy) -> region id or null, fx/fy in 0..1 of the map (the real countries)
+ * The region art at the terrain's size, without a canvas (headless: tests and the PNG export use it too).
+ * heatPixels(id, level, strong) -> { b: box, rgba, glow }: the region's terrain recoloured for that crisis level
+ * (opaque inside the region, clear outside) and its inner glow (drawn with the tipping breath as alpha).
  */
-export function createMapLayers({ base, regionAt, document: doc = globalThis.document }) {
+export function regionArt(base, regionAt) {
   const { w: W, h: H } = base;
   const t = Math.max(1, Math.round(W / 480)); // line width: 1 px at 320-640, 2 px at 960-1280 (readable at 1x)
   const mask = artRegionMask(base, regionAt);
-  const canvas = (w, h) => Object.assign(doc.createElement('canvas'), { width: Math.max(1, w), height: Math.max(1, h) });
   const box = (id) => { const [x0, y0, x1, y1] = mask.edges[id].box; return { x0, y0, w: x1 - x0 + 1, h: y1 - y0 + 1 }; };
   const k = (id) => mask.index.get(id);
 
@@ -71,15 +71,11 @@ export function createMapLayers({ base, regionAt, document: doc = globalThis.doc
     return out;
   }
 
-  // -------- heat: per region and level, the region's terrain recoloured (opaque) + a glow canvas for the breath
-  const heatCache = new Map();
-  function heat(id, level, strong) {
-    const key = `${id}:${level}:${strong ? 1 : 0}`;
-    if (heatCache.has(key)) return heatCache.get(key);
+  function heatPixels(id, level, strong = false) {
     const st = HEAT_STYLE[level], K = k(id), b = box(id), wash = rgb(st.wash);
     const glowN = st.glow.length * t, rr = rings(id, glowN + t * st.rim);
     const ring = new Map(); rr.forEach((list, r) => { for (const i of list) ring.set(i, r); });
-    const img = new ImageData(b.w, b.h), gImg = new ImageData(b.w, b.h);
+    const rgba = new Uint8ClampedArray(b.w * b.h * 4), glow = new Uint8ClampedArray(b.w * b.h * 4);
     for (let y = b.y0; y < b.y0 + b.h; y++) for (let x = b.x0; x < b.x0 + b.w; x++) {
       const i = y * W + x;
       if (mask.data[i] !== K) continue;
@@ -90,14 +86,34 @@ export function createMapLayers({ base, regionAt, document: doc = globalThis.doc
       if (r !== undefined && r < t * st.rim) c = mix(c, wash, r < t ? st.rimA : st.rimA * 0.7); // the rim (2 lines at tipping)
       if (strong && PATTERN[level](Math.floor(x / t), Math.floor(y / t))) c = mix(c, wash, 0.6);
       const o = ((y - b.y0) * b.w + (x - b.x0)) * 4;
-      img.data.set([c[0], c[1], c[2], 255], o);
-      if (r !== undefined && r >= t * (st.rim > 1 ? 1 : 1) && r < t + glowN) { // inner glow, fading inward
+      rgba[o] = c[0]; rgba[o + 1] = c[1]; rgba[o + 2] = c[2]; rgba[o + 3] = 255;
+      if (r !== undefined && r >= t && r < t + glowN) { // inner glow, fading inward
         const a = st.glow[Math.min(st.glow.length - 1, Math.floor((r - t) / t))];
-        gImg.data.set([wash[0], wash[1], wash[2], Math.round(255 * Math.min(1, a))], o);
+        glow[o] = wash[0]; glow[o + 1] = wash[1]; glow[o + 2] = wash[2]; glow[o + 3] = Math.round(255 * Math.min(1, a));
       }
     }
+    return { b, rgba, glow };
+  }
+  return { W, H, t, mask, box, k, rings, heatPixels };
+}
+
+/**
+ * @param base      a painted base layer (mapBaseAt(scale)): { w, h, rgba, isLandPx }
+ * @param regionAt  (fx, fy) -> region id or null, fx/fy in 0..1 of the map (the real countries)
+ */
+export function createMapLayers({ base, regionAt, document: doc = globalThis.document }) {
+  const art = regionArt(base, regionAt);
+  const { W, H, t, mask, box, k, rings } = art;
+  const canvas = (w, h) => Object.assign(doc.createElement('canvas'), { width: Math.max(1, w), height: Math.max(1, h) });
+
+  // -------- heat: per region and level, cached as two small canvases (the recoloured region, and its glow)
+  const heatCache = new Map();
+  function heat(id, level, strong) {
+    const key = `${id}:${level}:${strong ? 1 : 0}`;
+    if (heatCache.has(key)) return heatCache.get(key);
+    const { b, rgba, glow } = art.heatPixels(id, level, strong);
     const cv = canvas(b.w, b.h), gv = canvas(b.w, b.h);
-    cv.getContext('2d').putImageData(img, 0, 0); gv.getContext('2d').putImageData(gImg, 0, 0);
+    cv.getContext('2d').putImageData(new ImageData(rgba, b.w, b.h), 0, 0); gv.getContext('2d').putImageData(new ImageData(glow, b.w, b.h), 0, 0);
     const out = { cv, gv, b };
     heatCache.set(key, out);
     return out;
@@ -161,4 +177,38 @@ export function createMapLayers({ base, regionAt, document: doc = globalThis.doc
       }
     },
   };
+}
+
+// ------------------------------------------------------------------------------------------ region state images (#124)
+export const REGION_STATE_IDS = Object.freeze(['calm', 'uneasy', 'edge', 'tipping', 'selected']);
+/**
+ * One region in one crisis state as a finished image (headless): the terrain around the region, the idle borders,
+ * and the state on top: calm (just the terrain), uneasy / edge / tipping (the heat, glow at full breath), selected.
+ * Cropped to the region with a margin. Returns { x0, y0, w, h, rgba }.
+ */
+export function renderRegionState(art, base, id, state, { margin = 12 } = {}) {
+  const { W, H, t, mask } = art;
+  const [bx0, by0, bx1, by1] = mask.edges[id].box;
+  const x0 = Math.max(0, bx0 - margin), y0 = Math.max(0, by0 - margin), x1 = Math.min(W - 1, bx1 + margin), y1 = Math.min(H - 1, by1 + margin);
+  const w = x1 - x0 + 1, h = y1 - y0 + 1, out = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) out.set(base.rgba.subarray(((y0 + y) * W + x0) * 4, ((y0 + y) * W + x1 + 1) * 4), y * w * 4);
+  const blend = (x, y, c, a) => { if (x < x0 || y < y0 || x > x1 || y > y1) return; const o = ((y - y0) * w + (x - x0)) * 4; for (let j = 0; j < 3; j++) out[o + j] = out[o + j] + (c[j] - out[o + j]) * a; };
+  if (HEAT_STYLE[state]) {
+    const { b, rgba, glow } = art.heatPixels(id, state);
+    for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) {
+      const o = (y * b.w + x) * 4;
+      if (rgba[o + 3]) blend(b.x0 + x, b.y0 + y, [rgba[o], rgba[o + 1], rgba[o + 2]], 1);
+      if (glow[o + 3]) blend(b.x0 + x, b.y0 + y, [glow[o], glow[o + 1], glow[o + 2]], glow[o + 3] / 255);
+    }
+  }
+  const K = rgb(HEX.K);
+  for (const rid of mask.ids) for (const [x, y] of mask.edges[rid].border) for (let j = 0; j < t; j++) for (let i = 0; i < t; i++) blend(x - (t >> 1) + i, y - (t >> 1) + j, K, 0.35);
+  if (state === 'selected') {
+    const kk = mask.index.get(id), rr = art.rings(id, 2 * t);
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (mask.data[y * W + x] === kk) blend(x, y, rgb(HEX.Y), 0.2);
+    for (const i of rr.slice(t, 2 * t).flat()) blend(i % W, (i / W) | 0, rgb(HEX.y), 0.8);
+    for (const i of rr.slice(0, t).flat()) blend(i % W, (i / W) | 0, rgb(HEX.Y), 1);
+    for (const i of rr[0]) { const x = i % W, y = (i / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx >= 0 && ny >= 0 && nx < W && ny < H && mask.data[ny * W + nx] !== kk) blend(nx, ny, K, 0.85); } }
+  }
+  return { x0, y0, w, h, rgba: out };
 }
