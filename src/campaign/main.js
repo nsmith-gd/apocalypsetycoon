@@ -315,8 +315,24 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   // runs: heat +25, reputation -15, every client +10 leverage, and Gil's scare also pushes a random open track +5.
   // Reputation is the crisis system's, the one that sets lead quality. Nobody digs before 1:00, when Iris calls for
   // comment (GDD unlock row 12). Counters are paid from the ledger. Sieges come with #150.
-  const press = new Press({ pushback: pb, crisis, seed: seeds.world + 7, reputationStore: crisis, sieges: false,
-    getMinutes: () => (clock.total / clock.quarterSeconds) * 27 });
+  // Sieges (#150): once The Pitchforks opens, every site in its hot regions faces the mob each week:
+  // strength = Pitchforks tension / 20 + visible surface features, against the site's security rating.
+  const PITCHFORKS_REGIONS = SALES_REGIONS.filter((r) => ['high', 'medium'].includes(r.exposure.pitchforks)).map((r) => r.id);
+  const siegeSites = () => {
+    const hq = grid.objects.size ? (() => { const sim = grid.simulate(); return [{ id: 'hq', name: `${grid.name} (HQ)`, region: 'nam', security: sim.ratings.security,
+      visible: Math.max(0, sim.visibility ?? 0), decoy: [...grid.objects.values()].some((o) => o.kind === 'decoy') }]; })() : [];
+    // Sold shelters keep the ratings they were handed over with; prefab ones (no grid) count as security 1, 1 feature.
+    return [...hq, ...mapSales.sold.map((r) => ({ id: r.id, name: `${r.name} (${r.owner})`, region: r.region, clientName: r.owner,
+      security: r.sealed?.ratings?.security ?? 1, visible: r.sealed?.visibility ?? 1, decoy: !!r.sealed?.decoy }))];
+  };
+  const press = new Press({ pushback: pb, crisis, seed: seeds.world + 7, reputationStore: crisis,
+    getMinutes: () => (clock.total / clock.quarterSeconds) * 27,
+    siegeWatch: { getSites: siegeSites, getTension: () => crisis.tracks.pitchforks?.tension ?? 0, hotRegions: PITCHFORKS_REGIONS } });
+  crisis.on('open', (e) => { if (e.track === 'pitchforks') press.openPitchforks(); });
+  press.on('pitchforks', () => toast('THE PITCHFORKS: mobs now march on your sites in North America and the Middle East every week. Keep them hidden and guarded.'));
+  press.on('siege', (r) => toast(r.decoy ? `SIEGE at ${r.name}: the mob stormed the decoy entrance. Next loss this quarter is real.`
+    : r.occupied ? `SIEGE: ${r.name} is OCCUPIED (mob ${r.strength.toFixed(1)} vs security ${r.defence}). Retake it from the press desk (P).`
+      : `Siege repelled at ${r.name} (mob ${r.strength.toFixed(1)} vs security ${r.defence}): reputation +1.`));
   pb.press = press; // endings read Iris's trust from here
   crisis.on('week', () => press.tickWeek());
   pb.on('whispers', () => { const who = press.startStory(); toast(`WHISPERS: ${who ? `${who === 'iris' ? 'Iris Kemp' : 'Gil Marsh'} has started a story about you` : 'the press is asking questions'}. Schemes cost 10% more.`); });
@@ -324,7 +340,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   pressOverlay.hidden = true;
   const pressClose = el('button', 'report-continue', 'CLOSE [P]');
   pressClose.type = 'button';
-  const pressDesk = createPressDesk({ press, pushback: pb, showSites: false,
+  const pressDesk = createPressDesk({ press, pushback: pb,
     onAction: (r) => { if (r && !r.ok) toast(r.reason); else if (r?.notes?.length) toast(r.notes.join(' ')); ui.update(hudState()); } });
   pressOverlay.append(pressDesk.el, pressClose);
   document.body.append(pressOverlay);
@@ -456,6 +472,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   slot.register('world', { toJSON: () => ({ roster: world.roster, opened: world.opened }), load: (d) => { if (d.roster?.length === 6) world.roster = d.roster; world.opened = d.opened ?? []; } });
   delete doom.tensions.world; // saves from before #69 carried pushback's stand-in track
   for (const id of world.opened) crisis.openTrack(id); // already a no-op for tracks the crisis save reopened
+  if (crisis.tracks.pitchforks?.open) press.openPitchforks();
   ledger.setQuarter(clock.quarter);
 
   // Midnight grades the HQ grid alongside every shelter sold (sold ones join this list from the map/clients).
@@ -755,7 +772,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
 
   session = {
     mood, setMood: (m) => { moodForce = m; }, // #130
-    difficulty: diff, clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, megas, megaScreen, shelters, world, threats, campaignMinutes, crisis, board, consequences, market, schemes, mapSales, mapScreen, slot, leads, social, company, story, telemetry, firstBreach,
+    difficulty: diff, clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, megas, megaScreen, shelters, world, threats, campaignMinutes, crisis, press, board, consequences, market, schemes, mapSales, mapScreen, slot, leads, social, company, story, telemetry, firstBreach,
     endings: { watch: endingWatch, end: (id) => endCampaign(id) }, // #32 debug: __game.endings.end('indicted')
     destroy() {
       cancelAnimationFrame(raf);
@@ -814,6 +831,20 @@ function collapseTrack(g, id) {
 const DEBUG_PRESETS = {
   // Shelter-in-place (#66): two shelters in the Middle East (Atomic Standoff's high-exposure region), one built
   // for it and one that isn't, a third in Europe out of the blast zone; then Atomic Standoff breaches.
+  // Sieges (#150): The Pitchforks opens at tension 80 with three shelters in its regions: a guarded, hidden one
+  // that holds, an exposed one that falls, and an exposed one with a Decoy Entrance that absorbs the first loss.
+  pitchforks(g) {
+    const shelters = [
+      { region: 'nam', name: 'The Quiet Keep', occupants: 6, rooms: ['bunk', 'air_vent', 'water_tank', 'pantry'], sealed: { daysSealed: 600, ratings: { seal: 3, blast: 3, security: 5, morale: 3 }, visibility: 0 } },
+      { region: 'mea', name: 'Helipad Palace', occupants: 6, rooms: ['bunk', 'gold_taps', 'wine_cellar'], sealed: { daysSealed: 90, ratings: { seal: 1, blast: 1, security: 1, morale: 4 }, visibility: 3 } },
+      { region: 'mea', name: 'Decoy Manor', occupants: 6, rooms: ['bunk', 'air_vent', 'pantry'], sealed: { daysSealed: 300, ratings: { seal: 2, blast: 2, security: 2, morale: 3 }, visibility: 2, decoy: true } },
+    ];
+    for (const sh of shelters) { const s = g.mapSales.addFinished(sh); g.market.addLeads(sh.region, 1); g.mapSales.sell(sh.region, s.id); }
+    if (!g.world.opened.includes('pitchforks')) g.world.opened.push('pitchforks');
+    g.crisis.openTrack('pitchforks', { tension: 80 });
+    g.crisis.setTension('pitchforks', 80, 'debug preset');
+    g.mapScreen.refresh();
+  },
   breach(g) {
     for (const id of g.world.roster) { if (!g.world.opened.includes(id)) g.world.opened.push(id); g.crisis.openTrack(id, { tension: 30 }); }
     const shelters = [
