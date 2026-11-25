@@ -14,7 +14,9 @@
 :root[data-theme='pixel'] {
   --th-pixel: 'AT Pixel', 'Courier New', ui-monospace, monospace;
   --th-body: 'Courier New', ui-monospace, monospace;
-  --th-x2: 12px; --th-x3: 18px; --th-x4: 24px;
+  /* whole DEVICE px per font px at any pixel ratio (#127): --px-N is N px rounded to device pixels (pixel-perfect.js) */
+  --th-x2: calc(6 * var(--px-2, 2px)); --th-x3: calc(6 * var(--px-3, 3px)); --th-x4: calc(6 * var(--px-4, 4px));
+  --th-f1: var(--px-1, 1px); --th-f2: var(--px-2, 2px); /* one frame pixel at 1x / 2x */
   --th-1: 4px; --th-2: 8px; --th-3: 12px; --th-4: 16px;
 
   /* semantic text colours (palette keys in comments) */
@@ -37,23 +39,23 @@
 
 /* ---------- Frames ---------- */
 :root[data-theme='pixel'] :is(.hud-stat, .research-chip, .ledger-chip) {
-  border-style: solid; border-width: 6px; box-shadow: none; background: none;
-  border-image: var(--th-frame-panel) 6 fill / 6px / 0 repeat; image-rendering: pixelated;
+  border-style: solid; border-width: calc(6 * var(--th-f1)); box-shadow: none; background: none;
+  border-image: var(--th-frame-panel) 6 fill / calc(6 * var(--th-f1)) / 0 repeat; image-rendering: pixelated;
   padding: var(--th-1) var(--th-2);
 }
 :root[data-theme='pixel'] :is(.wm-panel, .pg-panel, .pb-panel, .bk-pal, .bk-side > div, .tw-panel, .research-panel) {
-  border-style: solid; border-width: 12px; box-shadow: 4px 4px 0 rgba(10, 8, 7, .6); background: none;
-  border-image: var(--th-frame-panel) 6 fill / 12px / 0 repeat; image-rendering: pixelated;
+  border-style: solid; border-width: calc(6 * var(--th-f2)); box-shadow: 4px 4px 0 rgba(10, 8, 7, .6); background: none;
+  border-image: var(--th-frame-panel) 6 fill / calc(6 * var(--th-f2)) / 0 repeat; image-rendering: pixelated;
   padding: var(--th-1) var(--th-2);
 }
-:root[data-theme='pixel'] .bk-side > div { border-width: 6px; border-image-width: 6px; box-shadow: none; }
+:root[data-theme='pixel'] .bk-side > div { border-width: calc(6 * var(--th-f1)); border-image-width: calc(6 * var(--th-f1)); box-shadow: none; }
 :root[data-theme='pixel'] :is(.hud, .cb) { background: #241f1a; }
 
 /* buttons: raised, pressed while held, gold when on/primary */
 :root[data-theme='pixel'] :is(.view-btn, .cb button, .bk-tool, .bk-overlay, .bk-actions button, .wm-x, .pg-btn, .tw-mode, .tw-back, .tw-swap, .research-close, .lr-open, .bk-sw button, .mm button) {
   font-family: var(--th-pixel); font-size: var(--th-x2); font-weight: 400; letter-spacing: 0; line-height: 14px;
-  border-style: solid; border-width: 5px; box-shadow: none; background: none; color: var(--th-ink);
-  border-image: var(--th-frame-button) 5 fill / 5px / 0 repeat; image-rendering: pixelated;
+  border-style: solid; border-width: calc(5 * var(--th-f1)); box-shadow: none; background: none; color: var(--th-ink);
+  border-image: var(--th-frame-button) 5 fill / calc(5 * var(--th-f1)) / 0 repeat; image-rendering: pixelated;
   padding: 1px var(--th-1);
 }
 :root[data-theme='pixel'] :is(.view-btn, .cb button, .bk-tool, .bk-overlay, .bk-actions button, .wm-x, .pg-btn, .tw-mode, .tw-back, .tw-swap, .research-close, .lr-open, .bk-sw button, .mm button):hover:not(:disabled) { color: var(--th-money); background: none; }
@@ -72,8 +74,8 @@
 /* money buttons on the map: gold frame, the price in money colour on dark */
 :root[data-theme='pixel'] :is(.wm-sell, .wm-fund, .wm-burn) {
   font-family: var(--th-pixel); font-size: var(--th-x2); font-weight: 400; letter-spacing: 0; line-height: 14px;
-  border-style: solid; border-width: 5px; box-shadow: none; background: none; filter: none;
-  border-image: var(--th-frame-button-on) 5 fill / 5px / 0 repeat; image-rendering: pixelated; color: #2a2118; padding: 0 var(--th-1);
+  border-style: solid; border-width: calc(5 * var(--th-f1)); box-shadow: none; background: none; filter: none;
+  border-image: var(--th-frame-button-on) 5 fill / calc(5 * var(--th-f1)) / 0 repeat; image-rendering: pixelated; color: #2a2118; padding: 0 var(--th-1);
 }
 :root[data-theme='pixel'] :is(.wm-sell, .wm-fund) b { font-size: var(--th-x2); font-weight: 400; }
 :root[data-theme='pixel'] .wm-burn { border-image-source: var(--th-frame-button); color: var(--th-crisis-tipping); }
@@ -81,10 +83,10 @@
 
 /* bars: the recessed meter track */
 :root[data-theme='pixel'] :is(.hud-bar, .pg-bar, .wm-bar, .wm-tbar) {
-  height: 10px; border-style: solid; border-width: 3px; box-shadow: none; background: none; box-sizing: border-box;
-  border-image: var(--th-frame-meter) 3 fill / 3px / 0 repeat; image-rendering: pixelated;
+  height: calc(10 * var(--th-f1)); border-style: solid; border-width: calc(3 * var(--th-f1)); box-shadow: none; background: none; box-sizing: border-box;
+  border-image: var(--th-frame-meter) 3 fill / calc(3 * var(--th-f1)) / 0 repeat; image-rendering: pixelated;
 }
-:root[data-theme='pixel'] .wm-tbar { height: 10px; }
+:root[data-theme='pixel'] .wm-tbar { height: calc(10 * var(--th-f1)); }
 
 /* ---------- Type ---------- */
 :root[data-theme='pixel'] :is(.hud-label, .hud-value, .hud-brand, .dc-time, .dc-sub, .dc-scale, .dc-cd-label, .dc-cd-weeks, .view-hint,
@@ -168,5 +170,6 @@
 :root[data-theme='pixel'] .tw-scheme { grid-template-columns: 170px 1fr 56px 72px 48px; }
 /* row labels are sentences with one number: body font, the number in pixels */
 :root[data-theme='pixel'] :is(.wm-track-lbl, .wm-crisis .wm-lbl) { font-size: 11px; line-height: 14px; align-items: baseline; }
-:root[data-theme='pixel'] .mm-title { font-family: var(--th-pixel); font-weight: 400; font-size: 48px; line-height: 56px; letter-spacing: 0; text-shadow: 6px 6px 0 #0a0807; } /* 8x */
+:root[data-theme='pixel'] .mm-title { font-family: var(--th-pixel); font-weight: 400; font-size: calc(6 * var(--px-8, 8px)); line-height: 1.17; letter-spacing: 0; text-shadow: var(--px-6, 6px) var(--px-6, 6px) 0 #0a0807; } /* 8x */
 :root[data-theme='pixel'] .mm-diff-label { font-family: var(--th-pixel); font-size: var(--th-x2); letter-spacing: 0; }
+:root[data-theme='pixel'] .cb-mid { font-family: var(--th-pixel); font-size: var(--th-x2); letter-spacing: 0; } /* the clock bar's MIDNIGHT (#127) */

@@ -4,6 +4,7 @@
 //   await showMidnight({ root, result: computeMidnight(...), onRestart })
 
 import { STATS } from './midnight.js';
+import { fitCanvas, onPixelRatioChange } from '../ui/pixel-perfect.js';
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -97,6 +98,11 @@ export function showMidnight({ root = document.body, result, onRestart } = {}) {
   const canvas = el('canvas', 'mn-scene');
   canvas.width = 192;
   canvas.height = 64 + Math.max(0, Math.ceil(result.shelters.length / 12) - 1) * 9;
+  // #127: the scene at a whole number of device pixels per art pixel (it was stretched to the column: 3.96x),
+  // centred in the 760 px column, kept on a device pixel
+  const fitScene = () => { fitCanvas(canvas, Math.min(760, innerWidth - 32) - 8); };
+  fitScene(); addEventListener('resize', fitScene); onPixelRatioChange(fitScene);
+  canvas.dataset.snap = '';
   const kind = el('div', 'mn-kind', result.endingName ? `${result.endingName}${result.apocalypse ? ` · ${result.apocalypse.name.toUpperCase()}` : ''}` : result.type === 'engineered' ? 'AN ENGINEERED MIDNIGHT' : 'MIDNIGHT, FAILED TO CONTAIN');
   const kindWhy = el(
     'div',
