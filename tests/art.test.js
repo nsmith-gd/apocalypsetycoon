@@ -25,9 +25,9 @@ test('every sprite has the declared size and only palette colours', () => {
   assert.deepEqual(problems, []);
 });
 
-test('grid tiles are 16px and map tiles 8px', () => {
-  for (const s of [...Object.values(shelter.TILES), ...Object.values(shelter.AMENITIES)]) assert.deepEqual([s.w, s.h], [16, 16]);
-  for (const s of Object.values(map.MAP_TILES)) assert.deepEqual([s.w, s.h], [8, 8]);
+test('grid tiles fill a 16px slot and map tiles an 8px cell, drawn from 64px+ art (#116)', () => {
+  for (const s of [...Object.values(shelter.TILES), ...Object.values(shelter.AMENITIES)]) { assert.deepEqual([s.base.w, s.base.h], [16, 16]); assert.ok(Math.min(s.w, s.h) >= 64); }
+  for (const s of Object.values(map.MAP_TILES)) { assert.deepEqual([s.base.w, s.base.h], [8, 8]); assert.ok(Math.min(s.w, s.h) >= 64); }
 });
 
 test('every researchable amenity has a sprite', () => {

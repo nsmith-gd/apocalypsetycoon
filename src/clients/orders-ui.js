@@ -17,12 +17,12 @@ const el = (tag, cls, text) => {
 
 function roomIcon(id, size = 32) {
   const cv = document.createElement('canvas');
-  cv.width = 16; cv.height = 16;
+  cv.width = 64; cv.height = 64; // #116: the 64 px remaster at full resolution
   cv.className = 'co-icon';
   cv.style.width = cv.style.height = `${size}px`;
   const ctx = cv.getContext('2d');
-  drawSprite(ctx, TILES.roomEmpty, 0, 0);
-  if (id && AMENITIES[id]) drawSprite(ctx, AMENITIES[id], 0, 0);
+  drawSprite(ctx, TILES.roomEmpty, 0, 0, { native: true });
+  if (id && AMENITIES[id]) drawSprite(ctx, AMENITIES[id], 0, 0, { native: true });
   return cv;
 }
 

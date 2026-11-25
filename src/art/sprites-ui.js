@@ -3,7 +3,9 @@
 // Light from the top-left. Frames are cut 3x3 by drawNineSlice() and their edges and
 // centres TILE, so every edge strip is constant along its run.
 
-export const UI_FRAMES = {
+import { remaster, remasterSet } from './remaster.js';
+
+export const UI_FRAMES_SRC = {
   // Industrial bunker panel: K outline, S/d bevel band, riveted corners, recessed D centre.
   panel: {
     border: 6,
@@ -164,7 +166,7 @@ export const UI_FRAMES = {
   },
 };
 
-export const UI_ICONS = {
+export const UI_ICONS_SRC = {
   cash: { w: 12, h: 12, rows: [
     '.KKKKK......',
     'KLLYYYK.....',
@@ -335,7 +337,7 @@ export const UI_ICONS = {
   ] },
 };
 
-export const UI_CURSOR = {
+export const UI_CURSOR_SRC = {
   pointer: { w: 12, h: 12, rows: [
     'K...........',
     'KK..........',
@@ -367,7 +369,7 @@ export const UI_CURSOR = {
 };
 
 // "LRH" monogram badge: bunker hatch wheel + letters on a gold plate.
-export const LOGO = { w: 48, h: 16, rows: [
+export const LOGO_SRC = { w: 48, h: 16, rows: [
   '.KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK.',
   'KLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLK',
   'KLYYYYYKKKKYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYyK',
@@ -385,3 +387,9 @@ export const LOGO = { w: 48, h: 16, rows: [
   'KLyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyK',
   '.KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK.',
 ] };
+
+// #116: the game uses these 64 px+ remasters; the hand-made masters above stay as *_SRC.
+export const UI_FRAMES = remasterSet(UI_FRAMES_SRC);
+export const UI_ICONS = remasterSet(UI_ICONS_SRC);
+export const UI_CURSOR = remasterSet(UI_CURSOR_SRC);
+export const LOGO = remaster(LOGO_SRC);
