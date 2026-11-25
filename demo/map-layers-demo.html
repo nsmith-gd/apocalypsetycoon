@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map Layers Demo</title>
+<link rel="stylesheet" href="../src/ui/ui.css">
+<link rel="stylesheet" href="../src/worldmap/worldmap.css">
+<style>html, body { margin: 0; background: #14110f; color: #f2e6c9; font-family: 'Courier New', monospace; } #stage { padding: 8px; }</style>
+</head>
+<body>
+<div id="stage"></div>
+<script type="module">
+// World map at full screen size with every heat level showing (#123): borders, tints and heat at the terrain's
+// resolution. ?sel=afr picks the selected region; ?patterns=1 turns on Crisis patterns; ?all=95 forces one level.
+import { createWorldMapScreen } from '../src/worldmap/worldmap-ui.js';
+import { REGIONS } from '../src/demand/demand.js';
+import { settings } from '../src/settings/settings.js';
+
+const q = new URLSearchParams(location.search);
+if (q.get('patterns')) settings.set?.('trackPatterns', true);
+const mixed = { nam: 20, lat: 50, eur: 95, afr: 80, mea: 92, sas: 45, eas: 75, oce: 10 };
+const levels = q.get('all') ? Object.fromEntries(REGIONS.map((r) => [r.id, Number(q.get('all'))])) : mixed;
+const rows = REGIONS.map((r) => ({ id: r.id, name: r.name, crisis: levels[r.id] ?? 10, buyers: 2, leadsPerWeek: 1, panicPremium: 1, premium: 1, edgeBonus: 0, siteOwned: false, open: 2 }));
+const noop = () => () => {};
+const sales = { sold: [], stock: [], market: { on: noop, cfg: { rivalAfterWeeks: 4 }, weekNo: 0 }, overview: () => rows, region: (id) => REGIONS.find((r) => r.id === id), regionView: (id) => ({ ...rows.find((r) => r.id === id), buyerList: [], best: null, quotes: [] }), onChange: noop };
+window.__screen = createWorldMapScreen({ root: document.getElementById('stage'), sales, initial: q.get('sel') ?? 'afr' });
+</script>
+</body>
+</html>

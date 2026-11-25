@@ -67,9 +67,12 @@ const VIEWPORTS = [{ w: 1440, h: 900 }, { w: 1920, h: 1080 }, { w: 1280, h: 720 
     r.terrain = await p.evaluate(() => {
       const base = document.querySelector('.wm-map .wm-base');
       if (!base) return null;
-      const cv = __game.mapScreen.canvas;
+      const cv = __game.mapScreen.canvas, lay = document.querySelector('.wm-map .wm-layers');
       const a = base.getBoundingClientRect(), o = cv.getBoundingClientRect();
-      return { artW: base.width, artH: base.height, screenPerArtPx: a.width / base.width, aligned: Math.abs(a.left - o.left) < 0.5 && Math.abs(a.top - o.top) < 0.5 && Math.abs(a.width - o.width) < 0.5 && Math.abs(a.height - o.height) < 0.5 };
+      const same = (r) => Math.abs(r.left - o.left) < 0.5 && Math.abs(r.top - o.top) < 0.5 && Math.abs(r.width - o.width) < 0.5 && Math.abs(r.height - o.height) < 0.5;
+      // #123: the region and heat layers sit on the same pixels as the terrain
+      const layersOk = !lay || (lay.width === base.width && lay.height === base.height && same(lay.getBoundingClientRect()));
+      return { artW: base.width, artH: base.height, screenPerArtPx: a.width / base.width, aligned: same(a) && layersOk };
     });
     r.terrainOk = !r.terrain || (r.terrain.aligned && Math.abs(r.terrain.screenPerArtPx - Math.round(r.terrain.screenPerArtPx)) < 1e-6);
     await p.locator(await p.$('.wm-stage') ? '.wm-stage' : '.wm-map canvas').screenshot({ path: path.join(out, `${label}-map-${vp.w}x${vp.h}.png`) });
