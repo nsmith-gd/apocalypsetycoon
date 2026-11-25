@@ -3,62 +3,62 @@
   {
    "x": 0,
    "y": 0,
-   "w": 24,
-   "h": 24,
+   "w": 96,
+   "h": 96,
    "nineSliceBorder": 6
   }
  ],
  "paper": [
   {
    "x": 0,
-   "y": 25,
-   "w": 24,
-   "h": 24,
+   "y": 97,
+   "w": 96,
+   "h": 96,
    "nineSliceBorder": 6
   }
  ],
  "button": [
   {
    "x": 0,
-   "y": 50,
-   "w": 16,
-   "h": 16,
+   "y": 194,
+   "w": 64,
+   "h": 64,
    "nineSliceBorder": 5
   }
  ],
  "buttonPressed": [
   {
    "x": 0,
-   "y": 75,
-   "w": 16,
-   "h": 16,
+   "y": 291,
+   "w": 64,
+   "h": 64,
    "nineSliceBorder": 5
   }
  ],
  "buttonActive": [
   {
    "x": 0,
-   "y": 100,
-   "w": 16,
-   "h": 16,
+   "y": 388,
+   "w": 64,
+   "h": 64,
    "nineSliceBorder": 5
   }
  ],
  "meter": [
   {
    "x": 0,
-   "y": 125,
-   "w": 12,
-   "h": 8,
+   "y": 485,
+   "w": 96,
+   "h": 64,
    "nineSliceBorder": 3
   }
  ],
  "tooltip": [
   {
    "x": 0,
-   "y": 150,
-   "w": 12,
-   "h": 12,
+   "y": 582,
+   "w": 96,
+   "h": 96,
    "nineSliceBorder": 4
   }
  ]
