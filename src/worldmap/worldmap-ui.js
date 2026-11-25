@@ -20,7 +20,8 @@ import { CLIENT_TYPES } from '../clients/clients.js';
 import { ROOM_CATALOG } from '../clients/rooms.js';
 import { settings } from '../settings/settings.js';
 import { buildRegionMask, drawRegionLayer } from '../art/map-regions.js';
-import { mapBase, mapBaseCanvas } from '../art/map-base.js';
+import { mapBase, mapBaseAt, mapBaseCanvas } from '../art/map-base.js';
+import { createMapLayers } from '../art/map-layers-hd.js';
 import { CELL_REGIONS, earthRegionAt, mapXY } from '../art/earth.js';
 import { drawMarker, drawLabelPlate, drawCountTag } from '../art/map-markers.js';
 import { drawHeatLayer } from '../art/map-heat.js';
@@ -104,7 +105,12 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   canvas.width = MAP_W;
   canvas.height = MAP_H;
   canvas.setAttribute('aria-label', 'World map. Click a region to see its buyers.');
-  stage.append(baseCanvas, canvas);
+  // #123: region tints, borders and demand heat at the terrain's resolution, between the terrain and the labels
+  const layerCanvas = el('canvas', 'wm-layers');
+  layerCanvas.setAttribute('aria-hidden', 'true');
+  const lctx = layerCanvas.getContext('2d');
+  let layers = null;
+  stage.append(baseCanvas, layerCanvas, canvas);
   const legend = el('div', 'wm-legend');
   legend.innerHTML = '<span><i class="wm-ico wm-ico-buyer"></i>buyers waiting</span><span><i class="wm-ico" style="background:var(--at-gold)"></i>uneasy 40+</span><span><i class="wm-ico" style="background:var(--at-amber)"></i>edge 70+</span><span><i class="wm-ico" style="background:var(--at-red)"></i>tipping 90+</span>';
   const toast = el('div', 'wm-toast');
@@ -127,7 +133,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     const scale = Math.max(1, Math.floor(Math.min(availW / MAP_W, availH / MAP_H)));
     const w = `${MAP_W * scale}px`;
     const h = `${MAP_H * scale}px`;
-    for (const cv of [stage, baseCanvas, canvas]) if (cv.style.width !== w || cv.style.height !== h) { cv.style.width = w; cv.style.height = h; } // always both: aspect = click mapping
+    for (const cv of [stage, baseCanvas, layerCanvas, canvas]) if (cv.style.width !== w || cv.style.height !== h) { cv.style.width = w; cv.style.height = h; } // always both: aspect = click mapping
     canvas.dataset.scale = String(scale);
     paintBase(scale);
   }
@@ -150,6 +156,8 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     b.imageSmoothingEnabled = false;
     b.drawImage(src, 0, 0);
     baseCanvas.dataset.artScale = String(s);
+    layers = createMapLayers({ base: mapBaseAt(s), regionAt: (fx, fy) => { const id = earthRegionAt(fx, fy); return id === 'ice' ? null : id; }, document });
+    layerCanvas.width = layers.w; layerCanvas.height = layers.h;
     baseScale = s;
   }
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => fitMap()) : null;
@@ -197,18 +205,19 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   canvas.addEventListener('mouseleave', () => { hover = null; });
   canvas.addEventListener('click', (e) => { const id = regionFromEvent(e); if (id) select(id); });
 
+  const heatLevels = () => Object.fromEntries(rows.map((r) => [r.id, crisisOverlay(r.crisis ?? 0)]));
   function drawMap() {
     const anim = Math.floor(frame / 20) % 2;
     ctx.clearRect(0, 0, MAP_W, MAP_H); // the terrain is on the canvas underneath
     ctx.imageSmoothingEnabled = false;
-    // demand heat (#103): veil + wash + texture + rim per region, readable on busy terrain. The textures
-    // are always on now; Crisis patterns (#94) makes them bolder, Reduced flashing stops the tipping pulse.
-    const levels = Object.fromEntries(rows.map((r) => [r.id, crisisOverlay(r.crisis ?? 0)]));
-    drawHeatLayer(ctx, regionMask(), levels, { frame: Math.floor(frame / 10), strong: settings.get('trackPatterns'), steady: settings.get('reducedFlash') });
+    // demand heat (#103/#111) and region borders and states (#101), at the terrain's resolution (#123): Crisis
+    // patterns (#94) adds the textures, Reduced flashing stops the tipping breath.
+    if (layers) {
+      lctx.clearRect(0, 0, layerCanvas.width, layerCanvas.height);
+      layers.draw(lctx, { levels: heatLevels(), hover, selected, frame: Math.floor(frame / 3), breath: Math.floor(frame / 10), strong: settings.get('trackPatterns'), steady: settings.get('reducedFlash') });
+    }
     // cities (#102): a skyline icon over each city cell, sitting on its cell's bottom edge
     for (let r = 0; r < MAP_ROWS; r++) for (let c = 0; c < MAP_COLS; c++) if (WORLD_LAYOUT[r][c] === 'c') drawMarker(ctx, 'city', c * CELL - 1, r * CELL - 2);
-    // region borders and idle / hover / selected states (#101), on the region hit areas
-    drawRegionLayer(ctx, regionMask(), { hover, selected, frame: Math.floor(frame / 3) });
     // sold bunkers
     const soldIn = {};
     for (const s of sales.sold) soldIn[s.region] = (soldIn[s.region] ?? 0) + 1;
@@ -524,6 +533,9 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       const x = c.getContext('2d');
       x.imageSmoothingEnabled = false;
       x.drawImage(mapBaseCanvas(1, document), 0, 0);
+      // the 320x192 versions of the heat and region layers (the game draws them at the terrain's size, #123)
+      drawHeatLayer(x, regionMask(), heatLevels(), { frame: Math.floor(frame / 10), strong: settings.get('trackPatterns'), steady: settings.get('reducedFlash') });
+      drawRegionLayer(x, regionMask(), { hover, selected, frame: Math.floor(frame / 3) });
       x.drawImage(canvas, 0, 0);
       return c;
     },

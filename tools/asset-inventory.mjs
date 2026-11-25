@@ -99,8 +99,8 @@ export async function inventory() {
   for (const [id, g] of Object.entries(gp.PHOTO_ASSETS)) proc(`photo-mode/${id}`, 'UI', 'src/art/hd/gaze-photo.js', g.w, g.h, `photo mode (#121), ${g.frames} frame(s), drawn at 1x on the screen`);
   const base = await art('map-base.js');
   proc('map-base/world', 'map', 'src/art/map-base.js', base.BASE_W, base.BASE_H, 'painted per pixel; terrain detail on an 8 px cell layout');
-  proc('map-regions/state-layer', 'map', 'src/art/map-regions.js', base.BASE_W, base.BASE_H, 'full-map overlay');
-  proc('map-heat/heat-layer', 'map', 'src/art/map-heat.js', base.BASE_W, base.BASE_H, 'full-map overlay');
+  proc('map-regions/state-layer', 'map', 'src/art/map-layers-hd.js', base.BASE_W * 3, base.BASE_H * 3, 'full-map overlay at the terrain size (#123): 640x384 to 1280x768 with the screen');
+  proc('map-heat/heat-layer', 'map', 'src/art/map-layers-hd.js', base.BASE_W * 3, base.BASE_H * 3, 'full-map overlay at the terrain size (#123): 640x384 to 1280x768 with the screen');
 
   // exported PNGs (sheets are listed whole; their frames are the sprites above)
   for (const f of walk(join(ROOT, 'assets/art')).filter((p) => p.endsWith('.png'))) {

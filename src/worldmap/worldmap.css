@@ -3,7 +3,8 @@
 .wm-map { position: sticky; top: 112px; align-self: start; }
 .wm-stage { position: relative; margin: 4px auto; outline: 4px solid var(--at-border); background: #0a0807; } /* sized by fitMap: whole-number scale (#105) */
 .wm-map canvas { display: block; image-rendering: pixelated; }
-.wm-stage .wm-base { position: absolute; inset: 0; } /* terrain, 2 screen px per terrain pixel (#109) */
+.wm-stage .wm-base { position: absolute; inset: 0; }
+.wm-stage .wm-layers { position: absolute; inset: 0; } /* region tints, borders and heat at the terrain's resolution (#123) */ /* terrain, 2 screen px per terrain pixel (#109) */
 .wm-stage .wm-over { position: relative; } /* borders, heat, markers, labels; takes the clicks */
 .wm-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; font-size: 11px; color: var(--at-dim); margin-top: 6px; }
 .wm-ico { display: inline-block; width: 9px; height: 9px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--at-border); }
