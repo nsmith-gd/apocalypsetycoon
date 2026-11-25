@@ -15,6 +15,7 @@
 
 import { Raster, col, K, box, hash, bayer, rampFromHex } from './raster.js';
 import { reduceRaster } from './amenities64.js';
+import { drawCrisp } from './crisp.js';
 import { STRATUM_ART } from '../bunker-tiles.js';
 
 export const GRID_PX = 64;
@@ -168,13 +169,13 @@ function canvasOf(key, make, tile) {
   }
   return cv;
 }
-const put = (ctx, cv, px, py) => { ctx.imageSmoothingEnabled = false; ctx.drawImage(cv, px, py); };
+const put = (ctx, get, px, py, tile) => drawCrisp(ctx, get, px, py, tile); // sharp at any zoom
 // Ground repeats every STRATA_PERIOD metres, so a plot of any size needs at most PERIOD^2 textures per stratum
 // (an Ark is 64 x 135 tiles; generating every tile froze the editor for ~13 s) (#143).
 const STRATA_PERIOD = 16;
 const wrap = (v) => ((v % STRATA_PERIOD) + STRATA_PERIOD) % STRATA_PERIOD;
-export const drawStrata64 = (ctx, id, px, py, x, y, { tile = 16 } = {}) => { const wx = wrap(x), wy = wrap(y); put(ctx, canvasOf(`s|${id}|${wx}|${wy}|${tile}`, () => strataRaster(id, wx, wy), tile), px, py); };
-export const drawDig64 = (ctx, px, py, t, id, x, y, { tile = 16 } = {}) => put(ctx, canvasOf(`d|${id}|${Math.round(t * 8)}|${x}|${y}|${tile}`, () => digRaster(id, Math.round(t * 8) / 8, x, y), tile), px, py);
-export const drawShell64 = (ctx, px, py, t, kind = 'wall', { tile = 16 } = {}) => put(ctx, canvasOf(`h|${kind}|${Math.round(t * 8)}|${tile}`, () => shellRaster(Math.round(t * 8) / 8, kind), tile), px, py);
+export const drawStrata64 = (ctx, id, px, py, x, y, { tile = 16 } = {}) => { const wx = wrap(x), wy = wrap(y); put(ctx, (tl) => canvasOf(`s|${id}|${wx}|${wy}|${tl}`, () => strataRaster(id, wx, wy), tl), px, py, tile); };
+export const drawDig64 = (ctx, px, py, t, id, x, y, { tile = 16 } = {}) => put(ctx, (tl) => canvasOf(`d|${id}|${Math.round(t * 8)}|${x}|${y}|${tl}`, () => digRaster(id, Math.round(t * 8) / 8, x, y), tl), px, py, tile);
+export const drawShell64 = (ctx, px, py, t, kind = 'wall', { tile = 16 } = {}) => put(ctx, (tl) => canvasOf(`h|${kind}|${Math.round(t * 8)}|${tl}`, () => shellRaster(Math.round(t * 8) / 8, kind), tl), px, py, tile);
 // the dust sheet reads as a sheet, not a crate: the fit-out stage is drawn see-through
-export const drawFitout64 = (ctx, px, py, w, h, t, frame = 0, { tile = 16 } = {}) => { const a = ctx.globalAlpha; ctx.globalAlpha = a * 0.7; put(ctx, canvasOf(`f|${w}|${h}|${Math.round(t * 8)}|${frame % 2}|${tile}`, () => fitoutRaster(w, h, Math.round(t * 8) / 8, frame % 2), tile), px, py); ctx.globalAlpha = a; };
+export const drawFitout64 = (ctx, px, py, w, h, t, frame = 0, { tile = 16 } = {}) => { const a = ctx.globalAlpha; ctx.globalAlpha = a * 0.7; put(ctx, (tl) => canvasOf(`f|${w}|${h}|${Math.round(t * 8)}|${frame % 2}|${tl}`, () => fitoutRaster(w, h, Math.round(t * 8) / 8, frame % 2), tl), px, py, tile); ctx.globalAlpha = a; };

@@ -70,3 +70,11 @@ body.at-photo .gs > *:not(.stage):not(.stage-grid), body.at-photo .pg-panel, bod
 .bk-product b { color: var(--at-gold); }
 .bk-product small { color: var(--at-dim); }
 .bk-rule { color: var(--at-red); font-size: 11px; }
+
+/* Zoom and pan (director, after #24) */
+.bk-zoombox { display: inline-flex; align-items: center; gap: 2px; margin-left: 6px; }
+.bk-zoombox .bk-zoom { min-width: 28px; }
+.bk-zoombox .bk-zoom:disabled { opacity: .4; cursor: default; }
+.bk-zoom-label { min-width: 26px; text-align: center; font-weight: 900; color: var(--at-gold); font-size: 12px; }
+.bk-scroll.bk-pan-ready, .bk-scroll.bk-pan-ready .bk-canvas { cursor: grab; }
+.bk-scroll.bk-panning, .bk-scroll.bk-panning .bk-canvas { cursor: grabbing; }

@@ -13,6 +13,7 @@
 
 import { Raster, col, K, box, cyl, hcyl, screen, led, glowAt, hash, bayer, text, rampFromHex, HD_COLOURS, drawRaster } from './raster.js';
 import { OBJECTS } from '../../shelter/bunker-catalog.js';
+import { drawCrisp } from './crisp.js';
 
 export const AMENITY_PX = 64;
 const M = AMENITY_PX;
@@ -321,10 +322,6 @@ export function amenityCanvas(kind, v = {}, { on = true, frame = 0, tile = M } =
   return cv;
 }
 export function drawAmenity(ctx, kind, px, py, v, { on = true, frame = 0, flip = false, tile = 16 } = {}) {
-  const cv = amenityCanvas(kind, v, { on, frame, tile });
-  ctx.save();
-  ctx.imageSmoothingEnabled = false;
-  if (flip) { ctx.translate(px + cv.width, py); ctx.scale(-1, 1); ctx.drawImage(cv, 0, 0); } else ctx.drawImage(cv, px, py);
-  ctx.restore();
+  drawCrisp(ctx, (tl) => amenityCanvas(kind, v, { on, frame, tile: tl }), px, py, tile, { flip }); // sharp at any zoom
 }
 void cyl; void hcyl; void drawRaster;
