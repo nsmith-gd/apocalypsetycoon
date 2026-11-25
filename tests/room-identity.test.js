@@ -54,11 +54,10 @@ test('a hint names the closest room the space is not yet, and what to add', () =
   assert.equal(identifyRoom({}).hint, null);
 });
 
-test('rooms whose objects are not in the bunker yet exist as data but are never recognised', () => {
-  const planned = ENCLOSED_ROOMS.filter((r) => !buildable(r.requires));
-  assert.ok(planned.some((r) => r.id === 'throne_room'));
-  assert.equal(id({ throne: 1 }), 'storeroom'); // not a real object yet
-  const live = ENCLOSED_ROOMS.filter((r) => buildable(r.requires));
+test('every enclosed catalog room is buildable (#140) and its own definition makes it that room', () => {
+  assert.deepEqual(ENCLOSED_ROOMS.filter((r) => !buildable(r.requires)).map((r) => r.id), []);
+  assert.equal(id({ throne: 1 }), 'throne_room');
+  const live = ENCLOSED_ROOMS.filter((r) => !r.track);
   for (const r of live) {
     const counts = {};
     for (const [o, n] of Object.entries(r.requires.all ?? {})) counts[o] = n;
@@ -71,6 +70,8 @@ test('rooms whose objects are not in the bunker yet exist as data but are never 
 test('alternate-world rooms count only in worlds running their track', () => {
   const alt = ROOM_TYPES.filter((t) => t.track);
   assert.equal(alt.length, 8, 'the 12 alternate entries minus 3 fixtures and the surface Cloud Embassy');
-  // none are buildable yet (planned objects), so the roster filter is the only gate once they are
-  assert.ok(alt.every((t) => !buildable(t.requires)));
+  // all buildable now (#140): the roster is the gate
+  assert.ok(alt.every((t) => buildable(t.requires)));
+  assert.equal(identifyRoom({ boiler: 1 }, { roster: ['atomic'] }).type.id, 'storeroom');
+  assert.equal(identifyRoom({ boiler: 1 }, { roster: ['longshade'] }).type.id, 'boiler_room');
 });

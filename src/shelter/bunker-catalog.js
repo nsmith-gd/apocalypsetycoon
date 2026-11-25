@@ -8,6 +8,8 @@
 //
 // Money: GDD dollars (#91 moved the whole economy to the GDD $M scale). PRICE_SCALE stays as the one knob.
 
+import { catalogObjects } from '../catalog/room-objects.js';
+
 export const PRICE_SCALE = 1;
 export const TILE_M = 1; // 1 tile = 1 m x 1 m (GDD grid spec)
 export const ROOM_DEPTH_M = 4; // the cutaway is 4 m deep: one tile of room holds 4 m3 of air
@@ -39,7 +41,7 @@ export const CONDUITS = Object.freeze({
 // beauty feeds room impressiveness; prestige is what clients pay for; noise radiates 6 tiles.
 // net: the conduits the object must touch to work. door: part of a room boundary but passable.
 const O = (id, name, cat, w, h, cost, extra = {}) => [id, { id, name, cat, w, h, cost, ...extra }];
-export const OBJECTS = Object.freeze(Object.fromEntries([
+const HAND_MADE = [
   // doors (1 x 3 fixtures)
   O('door', 'Door', 'door', 1, 3, 2_000, { door: true }),
   O('airlock', 'Airlock door', 'door', 1, 3, 40_000, { door: true, seal: 1 }),
@@ -132,7 +134,14 @@ export const OBJECTS = Object.freeze(Object.fromEntries([
   // hanging from the ceiling
   O('chandelier', 'Crystal chandelier', 'status', 2, 1, 150_000, { beauty: 5, prestige: 4, power: -1, luxury: true, layer: 'ceiling', net: ['power'] }),
   O('pendant', 'Pendant lamp', 'decor', 1, 1, 5_000, { beauty: 1, power: -0.1, layer: 'ceiling', net: ['power'] }),
-].map(([id, o]) => [id, { ...o, cost: Math.round(o.cost * PRICE_SCALE) }])));
+];
+// #140: every catalog room's defining object (and the fixtures and surface builds) that the list above doesn't
+// have yet, generated from the room's GDD footprint, tier, provides and draws (src/catalog/room-objects.js).
+const GENERATED = catalogObjects(HAND_MADE.map(([id]) => id)).map((o) => [o.id, o]);
+export const OBJECTS = Object.freeze(Object.fromEntries([...HAND_MADE, ...GENERATED]
+  .map(([id, o]) => [id, { ...o, cost: Math.round(o.cost * PRICE_SCALE) }])));
+/** Ids of the generated catalog-room objects, in catalog order. */
+export const CATALOG_OBJECT_IDS = Object.freeze(GENERATED.map(([id]) => id));
 
 export const LAYERS = Object.freeze(['rug', 'floor', 'wall', 'ceiling']);
 export const layerOf = (o) => o.layer ?? 'floor';
