@@ -1,0 +1,25 @@
+== mutation 1: PACING.quarterMinutes 27 -> 26
+ok 1 - decision 1: the Startup tier has 2 shovel crews
+not ok 2 - decision 2: a quarter is 27 minutes of game clock (1620 s), a week a thirteenth of it (about 125 s)
+ok 3 - decision 4: reputation starts at 40 in the tuning table and in the lead market default
+ok 4 - decision 3: the event deck is 220 cards per campaign, 340 with the alternates # SKIP deck data not landed yet (10 sample cards)
+# pass 2
+# fail 1
+== mutation 2: Startup crews 2 -> 1
+not ok 1 - decision 1: the Startup tier has 2 shovel crews
+ok 2 - decision 2: a quarter is 27 minutes of game clock (1620 s), a week a thirteenth of it (about 125 s)
+ok 3 - decision 4: reputation starts at 40 in the tuning table and in the lead market default
+ok 4 - decision 3: the event deck is 220 cards per campaign, 340 with the alternates # SKIP deck data not landed yet (10 sample cards)
+# pass 2
+# fail 1
+== mutation 3: reputation start 40 -> 50
+ok 1 - decision 1: the Startup tier has 2 shovel crews
+ok 2 - decision 2: a quarter is 27 minutes of game clock (1620 s), a week a thirteenth of it (about 125 s)
+not ok 3 - decision 4: reputation starts at 40 in the tuning table and in the lead market default
+ok 4 - decision 3: the event deck is 220 cards per campaign, 340 with the alternates # SKIP deck data not landed yet (10 sample cards)
+# pass 2
+# fail 1
+== restored
+# pass 3
+# fail 0
+# skipped 1
