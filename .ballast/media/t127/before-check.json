@@ -1,0 +1,985 @@
+[
+ {
+  "size": "1080p",
+  "viewport": "1920x1080@1",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "1080p",
+  "viewport": "1920x1080@1",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [
+   {
+    "id": "dc-face",
+    "art": "32x32",
+    "k": 1.5,
+    "ok": false,
+    "problems": [
+     "scale 1.500 x 1.500 device px per art px"
+    ]
+   },
+   {
+    "id": "bk-canvas",
+    "art": "384x720",
+    "k": 1.02,
+    "ok": false,
+    "problems": [
+     "scale 1.021 x 1.011 device px per art px"
+    ]
+   },
+   {
+    "id": "bk-days-emblem",
+    "art": "64x64",
+    "k": 1.13,
+    "ok": false,
+    "problems": [
+     "scale 1.125 x 1.125 device px per art px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "11px = 1.83 device px per font px"
+  ],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3",
+   "11px:1.83"
+  ],
+  "errs": []
+ },
+ {
+  "size": "1080p",
+  "viewport": "1920x1080@1",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [
+   {
+    "id": "dc-face",
+    "art": "32x32",
+    "k": 1.5,
+    "ok": false,
+    "problems": [
+     "scale 1.500 x 1.500 device px per art px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "11px = 1.83 device px per font px"
+  ],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3",
+   "11px:1.83"
+  ],
+  "errs": []
+ },
+ {
+  "size": "1080p",
+  "viewport": "1920x1080@1",
+  "screen": "midnight",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "1440p",
+  "viewport": "2560x1440@1",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "1440p",
+  "viewport": "2560x1440@1",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [
+   {
+    "id": "dc-face",
+    "art": "32x32",
+    "k": 1.5,
+    "ok": false,
+    "problems": [
+     "scale 1.500 x 1.500 device px per art px"
+    ]
+   },
+   {
+    "id": "bk-canvas",
+    "art": "384x720",
+    "k": 1.02,
+    "ok": false,
+    "problems": [
+     "scale 1.021 x 1.011 device px per art px",
+     "offset 689.00,249.41 device px"
+    ]
+   },
+   {
+    "id": "bk-days-emblem",
+    "art": "64x64",
+    "k": 1.13,
+    "ok": false,
+    "problems": [
+     "scale 1.125 x 1.125 device px per art px",
+     "offset 1838.00,222.41 device px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "11px = 1.83 device px per font px"
+  ],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3",
+   "11px:1.83"
+  ],
+  "errs": []
+ },
+ {
+  "size": "1440p",
+  "viewport": "2560x1440@1",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [
+   {
+    "id": "dc-face",
+    "art": "32x32",
+    "k": 1.5,
+    "ok": false,
+    "problems": [
+     "scale 1.500 x 1.500 device px per art px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "11px = 1.83 device px per font px"
+  ],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3",
+   "11px:1.83"
+  ],
+  "errs": []
+ },
+ {
+  "size": "1440p",
+  "viewport": "2560x1440@1",
+  "screen": "midnight",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "4k-200pct",
+  "viewport": "1920x1080@2",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:16",
+   "12px:4"
+  ],
+  "errs": []
+ },
+ {
+  "size": "4k-200pct",
+  "viewport": "1920x1080@2",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [
+   {
+    "id": "bk-canvas",
+    "art": "384x720",
+    "k": 2.04,
+    "ok": false,
+    "problems": [
+     "scale 2.042 x 2.022 device px per art px"
+    ]
+   },
+   {
+    "id": "bk-days-emblem",
+    "art": "64x64",
+    "k": 2.25,
+    "ok": false,
+    "problems": [
+     "scale 2.250 x 2.250 device px per art px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "11px = 3.67 device px per font px"
+  ],
+  "fonts": [
+   "12px:4",
+   "24px:8",
+   "18px:6",
+   "11px:3.67"
+  ],
+  "errs": []
+ },
+ {
+  "size": "4k-200pct",
+  "viewport": "1920x1080@2",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [],
+  "fontBad": [
+   "11px = 3.67 device px per font px"
+  ],
+  "fonts": [
+   "12px:4",
+   "24px:8",
+   "18px:6",
+   "11px:3.67"
+  ],
+  "errs": []
+ },
+ {
+  "size": "4k-200pct",
+  "viewport": "1920x1080@2",
+  "screen": "midnight",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:16",
+   "12px:4"
+  ],
+  "errs": []
+ },
+ {
+  "size": "4k-100pct",
+  "viewport": "3840x2160@1",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "4k-100pct",
+  "viewport": "3840x2160@1",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [
+   {
+    "id": "dc-face",
+    "art": "32x32",
+    "k": 1.5,
+    "ok": false,
+    "problems": [
+     "scale 1.500 x 1.500 device px per art px"
+    ]
+   },
+   {
+    "id": "bk-canvas",
+    "art": "384x720",
+    "k": 1.02,
+    "ok": false,
+    "problems": [
+     "scale 1.021 x 1.011 device px per art px",
+     "offset 1329.00,328.59 device px"
+    ]
+   },
+   {
+    "id": "bk-days-emblem",
+    "art": "64x64",
+    "k": 1.13,
+    "ok": false,
+    "problems": [
+     "scale 1.125 x 1.125 device px per art px",
+     "offset 2478.00,301.59 device px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "11px = 1.83 device px per font px"
+  ],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3",
+   "11px:1.83"
+  ],
+  "errs": []
+ },
+ {
+  "size": "4k-100pct",
+  "viewport": "3840x2160@1",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [
+   {
+    "id": "dc-face",
+    "art": "32x32",
+    "k": 1.5,
+    "ok": false,
+    "problems": [
+     "scale 1.500 x 1.500 device px per art px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "11px = 1.83 device px per font px"
+  ],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3",
+   "11px:1.83"
+  ],
+  "errs": []
+ },
+ {
+  "size": "4k-100pct",
+  "viewport": "3840x2160@1",
+  "screen": "midnight",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "ultrawide",
+  "viewport": "3440x1440@1",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [
+   {
+    "id": "mm-sky",
+    "art": "320x180",
+    "k": 10.75,
+    "ok": false,
+    "problems": [
+     "scale 10.750 x 8.000 device px per art px"
+    ]
+   }
+  ],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "ultrawide",
+  "viewport": "3440x1440@1",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [
+   {
+    "id": "dc-face",
+    "art": "32x32",
+    "k": 1.5,
+    "ok": false,
+    "problems": [
+     "scale 1.500 x 1.500 device px per art px"
+    ]
+   },
+   {
+    "id": "bk-canvas",
+    "art": "384x720",
+    "k": 1.02,
+    "ok": false,
+    "problems": [
+     "scale 1.021 x 1.011 device px per art px",
+     "offset 1129.00,249.41 device px"
+    ]
+   },
+   {
+    "id": "bk-days-emblem",
+    "art": "64x64",
+    "k": 1.13,
+    "ok": false,
+    "problems": [
+     "scale 1.125 x 1.125 device px per art px",
+     "offset 2278.00,222.41 device px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "11px = 1.83 device px per font px"
+  ],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3",
+   "11px:1.83"
+  ],
+  "errs": []
+ },
+ {
+  "size": "ultrawide",
+  "viewport": "3440x1440@1",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [
+   {
+    "id": "dc-face",
+    "art": "32x32",
+    "k": 1.5,
+    "ok": false,
+    "problems": [
+     "scale 1.500 x 1.500 device px per art px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "11px = 1.83 device px per font px"
+  ],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3",
+   "11px:1.83"
+  ],
+  "errs": []
+ },
+ {
+  "size": "ultrawide",
+  "viewport": "3440x1440@1",
+  "screen": "midnight",
+  "canvases": 1,
+  "bad": [
+   {
+    "id": "mm-sky",
+    "art": "320x180",
+    "k": 10.75,
+    "ok": false,
+    "problems": [
+     "scale 10.750 x 8.000 device px per art px"
+    ]
+   }
+  ],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "laptop-125pct",
+  "viewport": "1536x864@1.25",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [
+   "12px = 2.50 device px per font px"
+  ],
+  "fonts": [
+   "48px:10",
+   "12px:2.5"
+  ],
+  "errs": []
+ },
+ {
+  "size": "laptop-125pct",
+  "viewport": "1536x864@1.25",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [
+   {
+    "id": "dc-face",
+    "art": "32x32",
+    "k": 1.88,
+    "ok": false,
+    "problems": [
+     "scale 1.875 x 1.875 device px per art px",
+     "offset 558.75,23.75 device px"
+    ]
+   },
+   {
+    "id": "bk-canvas",
+    "art": "384x720",
+    "k": 1.28,
+    "ok": false,
+    "problems": [
+     "scale 1.276 x 1.264 device px per art px",
+     "offset 598.75,401.25 device px"
+    ]
+   },
+   {
+    "id": "bk-days-emblem",
+    "art": "64x64",
+    "k": 1.41,
+    "ok": false,
+    "problems": [
+     "scale 1.406 x 1.406 device px per art px",
+     "offset 1280.00,292.50 device px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "12px = 2.50 device px per font px",
+   "18px = 3.75 device px per font px",
+   "11px = 2.29 device px per font px"
+  ],
+  "fonts": [
+   "12px:2.5",
+   "24px:5",
+   "18px:3.75",
+   "11px:2.29"
+  ],
+  "errs": []
+ },
+ {
+  "size": "laptop-125pct",
+  "viewport": "1536x864@1.25",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [
+   {
+    "id": "dc-face",
+    "art": "32x32",
+    "k": 1.88,
+    "ok": false,
+    "problems": [
+     "scale 1.875 x 1.875 device px per art px",
+     "offset 558.75,23.75 device px"
+    ]
+   },
+   {
+    "id": "wm-base",
+    "art": "960x576",
+    "k": 1.25,
+    "ok": false,
+    "problems": [
+     "scale 1.250 x 1.250 device px per art px"
+    ]
+   },
+   {
+    "id": "wm-layers",
+    "art": "960x576",
+    "k": 1.25,
+    "ok": false,
+    "problems": [
+     "scale 1.250 x 1.250 device px per art px"
+    ]
+   },
+   {
+    "id": "wm-over",
+    "art": "320x192",
+    "k": 3.75,
+    "ok": false,
+    "problems": [
+     "scale 3.750 x 3.750 device px per art px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "12px = 2.50 device px per font px",
+   "18px = 3.75 device px per font px",
+   "11px = 2.29 device px per font px"
+  ],
+  "fonts": [
+   "12px:2.5",
+   "24px:5",
+   "18px:3.75",
+   "11px:2.29"
+  ],
+  "errs": []
+ },
+ {
+  "size": "laptop-125pct",
+  "viewport": "1536x864@1.25",
+  "screen": "midnight",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [
+   "12px = 2.50 device px per font px"
+  ],
+  "fonts": [
+   "48px:10",
+   "12px:2.5"
+  ],
+  "errs": []
+ },
+ {
+  "size": "laptop-150pct",
+  "viewport": "1280x720@1.5",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:12",
+   "12px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "laptop-150pct",
+  "viewport": "1280x720@1.5",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [
+   {
+    "id": "dc-face",
+    "art": "32x32",
+    "k": 2.25,
+    "ok": false,
+    "problems": [
+     "scale 2.250 x 2.250 device px per art px",
+     "offset 478.50,28.50 device px"
+    ]
+   },
+   {
+    "id": "bk-canvas",
+    "art": "384x720",
+    "k": 1.53,
+    "ok": false,
+    "problems": [
+     "scale 1.531 x 1.517 device px per art px",
+     "offset 313.50,498.00 device px"
+    ]
+   },
+   {
+    "id": "bk-days-emblem",
+    "art": "64x64",
+    "k": 1.69,
+    "ok": false,
+    "problems": [
+     "scale 1.688 x 1.688 device px per art px",
+     "offset 1557.00,412.50 device px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "18px = 4.50 device px per font px",
+   "11px = 2.75 device px per font px"
+  ],
+  "fonts": [
+   "12px:3",
+   "24px:6",
+   "18px:4.5",
+   "11px:2.75"
+  ],
+  "errs": []
+ },
+ {
+  "size": "laptop-150pct",
+  "viewport": "1280x720@1.5",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [
+   {
+    "id": "dc-face",
+    "art": "32x32",
+    "k": 2.25,
+    "ok": false,
+    "problems": [
+     "scale 2.250 x 2.250 device px per art px",
+     "offset 478.50,28.50 device px"
+    ]
+   },
+   {
+    "id": "wm-base",
+    "art": "640x384",
+    "k": 1.5,
+    "ok": false,
+    "problems": [
+     "scale 1.500 x 1.500 device px per art px",
+     "offset 264.00,379.50 device px"
+    ]
+   },
+   {
+    "id": "wm-layers",
+    "art": "640x384",
+    "k": 1.5,
+    "ok": false,
+    "problems": [
+     "scale 1.500 x 1.500 device px per art px",
+     "offset 264.00,379.50 device px"
+    ]
+   },
+   {
+    "id": "wm-over",
+    "art": "320x192",
+    "k": 3,
+    "ok": false,
+    "problems": [
+     "offset 264.00,379.50 device px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "18px = 4.50 device px per font px",
+   "11px = 2.75 device px per font px"
+  ],
+  "fonts": [
+   "12px:3",
+   "24px:6",
+   "18px:4.5",
+   "11px:2.75"
+  ],
+  "errs": []
+ },
+ {
+  "size": "laptop-150pct",
+  "viewport": "1280x720@1.5",
+  "screen": "midnight",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:12",
+   "12px:3"
+  ],
+  "errs": []
+ },
+ {
+  "size": "windowed",
+  "viewport": "1280x720@1",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "windowed",
+  "viewport": "1280x720@1",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [
+   {
+    "id": "dc-face",
+    "art": "32x32",
+    "k": 1.5,
+    "ok": false,
+    "problems": [
+     "scale 1.500 x 1.500 device px per art px"
+    ]
+   },
+   {
+    "id": "bk-canvas",
+    "art": "384x720",
+    "k": 1.02,
+    "ok": false,
+    "problems": [
+     "scale 1.021 x 1.011 device px per art px"
+    ]
+   },
+   {
+    "id": "bk-days-emblem",
+    "art": "64x64",
+    "k": 1.13,
+    "ok": false,
+    "problems": [
+     "scale 1.125 x 1.125 device px per art px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "11px = 1.83 device px per font px"
+  ],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3",
+   "11px:1.83"
+  ],
+  "errs": []
+ },
+ {
+  "size": "windowed",
+  "viewport": "1280x720@1",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [
+   {
+    "id": "dc-face",
+    "art": "32x32",
+    "k": 1.5,
+    "ok": false,
+    "problems": [
+     "scale 1.500 x 1.500 device px per art px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "11px = 1.83 device px per font px"
+  ],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3",
+   "11px:1.83"
+  ],
+  "errs": []
+ },
+ {
+  "size": "windowed",
+  "viewport": "1280x720@1",
+  "screen": "midnight",
+  "canvases": 1,
+  "bad": [],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "windowed-odd",
+  "viewport": "1366x768@1",
+  "screen": "title",
+  "canvases": 1,
+  "bad": [
+   {
+    "id": "mm-sky",
+    "art": "320x180",
+    "k": 4.27,
+    "ok": false,
+    "problems": [
+     "scale 4.269 x 4.267 device px per art px"
+    ]
+   }
+  ],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ },
+ {
+  "size": "windowed-odd",
+  "viewport": "1366x768@1",
+  "screen": "shelter",
+  "canvases": 3,
+  "bad": [
+   {
+    "id": "dc-face",
+    "art": "32x32",
+    "k": 1.5,
+    "ok": false,
+    "problems": [
+     "scale 1.500 x 1.500 device px per art px"
+    ]
+   },
+   {
+    "id": "bk-canvas",
+    "art": "384x720",
+    "k": 0.93,
+    "ok": false,
+    "problems": [
+     "scale 0.927 x 1.011 device px per art px"
+    ]
+   },
+   {
+    "id": "bk-days-emblem",
+    "art": "64x64",
+    "k": 1.13,
+    "ok": false,
+    "problems": [
+     "scale 1.125 x 1.125 device px per art px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "11px = 1.83 device px per font px"
+  ],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3",
+   "11px:1.83"
+  ],
+  "errs": []
+ },
+ {
+  "size": "windowed-odd",
+  "viewport": "1366x768@1",
+  "screen": "map",
+  "canvases": 4,
+  "bad": [
+   {
+    "id": "dc-face",
+    "art": "32x32",
+    "k": 1.5,
+    "ok": false,
+    "problems": [
+     "scale 1.500 x 1.500 device px per art px"
+    ]
+   }
+  ],
+  "fontBad": [
+   "11px = 1.83 device px per font px"
+  ],
+  "fonts": [
+   "12px:2",
+   "24px:4",
+   "18px:3",
+   "11px:1.83"
+  ],
+  "errs": []
+ },
+ {
+  "size": "windowed-odd",
+  "viewport": "1366x768@1",
+  "screen": "midnight",
+  "canvases": 1,
+  "bad": [
+   {
+    "id": "mm-sky",
+    "art": "320x180",
+    "k": 4.27,
+    "ok": false,
+    "problems": [
+     "scale 4.269 x 4.267 device px per art px"
+    ]
+   }
+  ],
+  "fontBad": [],
+  "fonts": [
+   "48px:8",
+   "12px:2"
+  ],
+  "errs": []
+ }
+]
