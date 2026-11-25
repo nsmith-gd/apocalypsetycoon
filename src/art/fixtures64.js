@@ -14,6 +14,7 @@
 //   FIXTURE_KINDS, FIXTURE_PX = 64
 
 import { HEX } from './palette.js';
+import { drawCrisp } from './hd/crisp.js';
 
 export const FIXTURE_PX = 64;
 const M = FIXTURE_PX;
@@ -425,11 +426,7 @@ export function fixtureCanvas(kind, v = {}, { on = true, frame = 0, tile = M } =
 }
 
 export function drawFixture(ctx, kind, px, py, v, { on = true, frame = 0, flip = false, tile = 16 } = {}) {
-  const cv = fixtureCanvas(kind, v, { on, frame, tile });
-  ctx.save();
-  ctx.imageSmoothingEnabled = false;
-  if (flip) { ctx.translate(px + cv.width, py); ctx.scale(-1, 1); ctx.drawImage(cv, 0, 0); } else ctx.drawImage(cv, px, py);
-  ctx.restore();
+  drawCrisp(ctx, (tl) => fixtureCanvas(kind, v, { on, frame, tile: tl }), px, py, tile, { flip }); // sharp at any zoom
 }
 
 export const hasFixture = (kind) => !!RECIPES[kind];

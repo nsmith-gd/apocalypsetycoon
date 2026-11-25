@@ -70,7 +70,20 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
   const photoBtn = el('button', 'bk-tool bk-photo-btn', 'PHOTO');
   photoBtn.title = 'Photo mode: hide the interface and frame the cutaway [O]. ENTER takes the shot, ESC leaves.';
   photoBtn.onclick = () => enterPhoto();
-  toolbar.append(overlaySel, photoBtn);
+  // Zoom (director: the grid zooms and pans). 1x shows the whole site; 4x shows the 64 px art 1:1; 8x is close-up.
+  const zoomOut = el('button', 'bk-tool bk-zoom', '\u2212');
+  zoomOut.title = 'Zoom out [-] (or Ctrl + mouse wheel)';
+  const zoomLabel = el('span', 'bk-zoom-label', '1x');
+  const zoomIn = el('button', 'bk-tool bk-zoom', '+');
+  zoomIn.title = 'Zoom in [+] (or Ctrl + mouse wheel). Pan: drag with the middle mouse button, hold Space and drag, or scroll';
+  const zoomFit = el('button', 'bk-tool bk-zoom', 'FIT');
+  zoomFit.title = 'Show the whole site [0]';
+  zoomOut.onclick = () => setZoom(zoomIndex - 1);
+  zoomIn.onclick = () => setZoom(zoomIndex + 1);
+  zoomFit.onclick = () => setZoom(0);
+  const zoomBox = el('div', 'bk-zoombox');
+  zoomBox.append(zoomOut, zoomLabel, zoomIn, zoomFit);
+  toolbar.append(overlaySel, photoBtn, zoomBox);
   // swatches: colour of the piece being placed, or the finish being painted
   const swatches = el('div', 'bk-sw');
   const chosenVariant = {};
@@ -154,8 +167,15 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
   const scroller = el('div', 'bk-scroll');
   const canvas = el('canvas', 'bk-canvas');
   canvas.dataset.snap = ''; // kept on a device pixel (#127)
-  canvas.width = W * T;
-  canvas.height = (H + S) * T;
+  const LW = W * T, LH = (H + S) * T; // the site in art pixels at 16 px per metre
+  // Zoom: how many screen pixels each art pixel gets, on top of the fitted size. The canvas renders at up to 4x
+  // (64 px per metre, the 64 px art at full detail); 8x shows that 4x render at 2 screen pixels per pixel.
+  const ZOOMS = [1, 2, 4, 8];
+  let zoomIndex = 0;
+  const zoom = () => ZOOMS[zoomIndex];
+  const renderMult = () => Math.min(4, zoom());
+  canvas.width = LW;
+  canvas.height = LH;
   scroller.append(canvas);
   const info = el('div', 'bk-info', 'Drag to dig. Rooms form wherever walls enclose a space; what you put inside decides what it is.');
   const centre = el('div', 'bk-centre');
@@ -277,6 +297,9 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     if (mount.hidden || ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target?.tagName)) return;
     if (photo) { if (e.key === 'Escape' || e.key.toLowerCase() === 'o') leavePhoto(); else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); snap(); } return; }
     if (e.key.toLowerCase() === 'o') { enterPhoto(); return; }
+    if (e.key === '+' || e.key === '=') { setZoom(zoomIndex + 1); return; }
+    if (e.key === '-' || e.key === '_') { setZoom(zoomIndex - 1); return; }
+    if (e.key === '0') { setZoom(0); return; }
     if (e.key.toLowerCase() === 'f' && OBJECTS[tool]) { flipNext = !flipNext; renderSwatches(); draw(); return; }
     const t = TOOLS.find(([, , key]) => key.toLowerCase() === e.key.toLowerCase());
     if (t) { tool = t[0]; sync(); }
@@ -320,7 +343,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       if (o.layer !== 'wall') shadows.push(box);
     }
     drawShelterLight(ctx, lights, shadows, mood.grade, { time: now, reduced, T });
-    drawGrade(ctx, canvas.width, canvas.height, mood.grade, { time: now, reduced });
+    drawGrade(ctx, LW, LH, mood.grade, { time: now, reduced });
   }
 
   // ---------- build feedback (#128) ----------
@@ -349,10 +372,19 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
   function draw() {
     const frame = getFrame();
     const sim = site.simulate();
+    const rm = renderMult();
+    if (canvas.width !== LW * rm) { canvas.width = LW * rm; canvas.height = LH * rm; }
+    ctx.setTransform(rm, 0, 0, rm, 0, 0); // everything below draws in 16 px-per-metre units; 64 px art sharpens itself
     ctx.imageSmoothingEnabled = false;
+    // Zoomed in, only the part of the site in view is drawn (a 4x canvas is 1536 x 6000+ px): clip to it, skip tiles
+    // outside it, and redraw when the view scrolls.
+    const vis = visibleTiles();
+    ctx.save();
+    if (zoom() > 1) { ctx.beginPath(); ctx.rect(PX(vis.x0), PY(vis.y0), (vis.x1 - vis.x0 + 1) * T, (vis.y1 - vis.y0 + 1) * T); ctx.clip(); }
+    const offView = (x, y) => x < vis.x0 || x > vis.x1 || y < vis.y0 || y > vis.y1;
     // sky
     for (let y = -S; y < 0; y++) { ctx.fillStyle = ['#1a1430', '#241a40', '#30204c', '#3c2a58', '#4c3866'][y + S] ?? '#4c3866'; ctx.fillRect(0, PY(y), W * T, T); }
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    for (let y = Math.max(0, vis.y0); y < Math.min(H, vis.y1 + 1); y++) for (let x = vis.x0; x <= vis.x1; x++) {
       const i = site.idx(x, y);
       if (!site.dug[i]) {
         drawStrata64(ctx, site.stratum(y).id, PX(x), PY(y), x, y, { tile: T }); // R32 strata, redrawn at 64 px (#24)
@@ -375,6 +407,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     }
     // floor finishes: laid on the slab under each finished tile
     if (site.finish) for (let y = 0; y < H - 1; y++) for (let x = 0; x < W; x++) {
+      if (offView(x, y)) continue;
       const f = site.finish.floor[site.idx(x, y)];
       if (!f || site.passable(x, y + 1)) continue;
       const d = FINISHES.floor[f];
@@ -443,6 +476,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     for (const l of ['wall', 'rug', 'floor', 'ceiling']) for (const obj of byLayer[l]) drawObject(obj, 1, sim.online.has(obj.id), frame);
     // lighting
     if (site.finish) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (offView(x, y)) continue;
       const f = site.finish.light[site.idx(x, y)];
       if (f) { ctx.fillStyle = FINISHES.light[f].tint; ctx.fillRect(PX(x), PY(y), T, T); }
     }
@@ -534,6 +568,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
         }
       }
     }
+    ctx.restore(); // the view clip
   }
 
   let doorSealed = false;
@@ -681,14 +716,14 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     // frame the built part of the shelter: scroll its middle to the middle of the screen
     requestAnimationFrame(() => {
       if (!photo) return;
-      const [mx, my] = subject(), sc = canvas.getBoundingClientRect().width / canvas.width;
+      const [mx, my] = subject(), sc = canvas.getBoundingClientRect().width / LW;
       scroller.scrollLeft = Math.max(0, mx * sc - scroller.clientWidth / 2); scroller.scrollTop = Math.max(0, my * sc - scroller.clientHeight / 2);
     });
   }
   /** The middle of the rooms (canvas px): what the photo is of. Falls back to the middle of the dig. */
   function subject() {
     const rooms = site.simulate().rooms.filter((r) => !r.touchesSky);
-    if (!rooms.length) return [canvas.width / 2, PY(0) + T * 4];
+    if (!rooms.length) return [LW / 2, PY(0) + T * 4];
     const x0 = Math.min(...rooms.map((r) => r.minX)), x1 = Math.max(...rooms.map((r) => r.maxX + 1));
     const y0 = Math.min(...rooms.map((r) => r.minY)), y1 = Math.max(...rooms.map((r) => r.maxY + 1));
     return [(PX(x0) + PX(x1)) / 2, (PY(y0) + PY(y1)) / 2];
@@ -708,7 +743,8 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     const card = el('canvas'); card.width = PHOTO_ASSETS.card.w; card.height = PHOTO_ASSETS.card.h;
     const c2 = card.getContext('2d'); c2.imageSmoothingEnabled = false;
     c2.fillStyle = '#0a0807'; c2.fillRect(PHOTO_CARD_WINDOW.x, PHOTO_CARD_WINDOW.y, w, h);
-    c2.drawImage(canvas, Math.round(Math.max(0, Math.min(canvas.width - w, cx - w / 2))), Math.round(Math.max(0, Math.min(canvas.height - h, cy - h / 2))), w, h, PHOTO_CARD_WINDOW.x, PHOTO_CARD_WINDOW.y, w, h);
+    const rm = renderMult(); // the canvas may be rendered at the zoom's resolution: sample it back at 1 art pixel per pixel
+    c2.drawImage(canvas, Math.round(Math.max(0, Math.min(LW - w, cx - w / 2))) * rm, Math.round(Math.max(0, Math.min(LH - h, cy - h / 2))) * rm, w * rm, h * rm, PHOTO_CARD_WINDOW.x, PHOTO_CARD_WINDOW.y, w, h);
     drawPhoto(c2, 'card', 0, 0);
     photo.card = card;
   }
@@ -742,11 +778,63 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
   function fit(maxW, maxH) {
     lastFit = [maxW, maxH];
     // #127: whole device pixels per art pixel; the scroller scrolls the rest (the canvas is never squeezed)
-    const scale = sizeCanvas(canvas, canvas.width, canvas.height, deviceScale(canvas.width, canvas.height, maxW));
+    baseScale = deviceScale(LW, LH, maxW);
     scroller.style.maxHeight = `${Math.max(240, maxH)}px`;
-    snapToDevice(canvas);
-    return scale;
+    applyZoom();
+    return baseScale;
   }
+  let baseScale = 1;
+  /** The tiles in view (with a 2-tile margin), in grid coordinates (y from -S). Everything at 1x. */
+  function visibleTiles() {
+    const all = { x0: 0, x1: W - 1, y0: -S, y1: H - 1 };
+    if (zoom() === 1 || !canvas.isConnected) return all;
+    const r = canvas.getBoundingClientRect(), sr = scroller.getBoundingClientRect();
+    if (!r.width || !sr.width) return all;
+    const tx = (px) => Math.floor(((px - r.left) / r.width) * W), ty = (py) => Math.floor(((py - r.top) / r.height) * (H + S)) - S;
+    return { x0: Math.max(0, tx(sr.left) - 2), x1: Math.min(W - 1, tx(sr.right) + 2), y0: Math.max(-S, ty(sr.top) - 2), y1: Math.min(H - 1, ty(sr.bottom) + 2) };
+  }
+  let scrollQueued = false;
+  scroller.addEventListener('scroll', () => { if (scrollQueued || zoom() === 1) return; scrollQueued = true; requestAnimationFrame(() => { scrollQueued = false; draw(); }); });
+  /** Size the canvas on screen: the fitted whole-device scale times the zoom. The scroller pans the rest. */
+  function applyZoom() {
+    sizeCanvas(canvas, LW, LH, baseScale * zoom());
+    snapToDevice(canvas);
+    zoomLabel.textContent = `${zoom()}x`;
+    zoomOut.disabled = zoomIndex === 0; zoomIn.disabled = zoomIndex === ZOOMS.length - 1;
+  }
+  /** Change the zoom, keeping the point under the cursor (or the middle of the view) where it is. */
+  function setZoom(i, anchor = null) {
+    i = Math.max(0, Math.min(ZOOMS.length - 1, i));
+    if (i === zoomIndex) return;
+    const r = canvas.getBoundingClientRect(), sr = scroller.getBoundingClientRect();
+    const ax = anchor ? anchor.x : sr.left + scroller.clientWidth / 2, ay = anchor ? anchor.y : sr.top + scroller.clientHeight / 2;
+    const fx = (ax - r.left) / r.width, fy = (ay - r.top) / r.height; // where the anchor sits on the site, 0..1
+    zoomIndex = i;
+    applyZoom();
+    draw();
+    const r2 = canvas.getBoundingClientRect();
+    scroller.scrollLeft += (r2.left + fx * r2.width) - ax;
+    scroller.scrollTop += (r2.top + fy * r2.height) - ay;
+  }
+  // Ctrl/Cmd + wheel (and trackpad pinch) zooms at the cursor; a plain wheel scrolls the view as before.
+  scroller.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    setZoom(zoomIndex + (e.deltaY < 0 ? 1 : -1), { x: e.clientX, y: e.clientY });
+  }, { passive: false });
+  // Pan: middle-button drag, or hold Space and drag with the left button.
+  let pan = null, spaceDown = false;
+  const onSpace = (e) => { if (e.code === 'Space' && !photo && !mount.hidden && !['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(e.target?.tagName)) { spaceDown = e.type === 'keydown'; scroller.classList.toggle('bk-pan-ready', spaceDown); if (spaceDown) e.preventDefault(); } };
+  addEventListener('keydown', onSpace); addEventListener('keyup', onSpace);
+  scroller.addEventListener('mousedown', (e) => {
+    if (e.button !== 1 && !(e.button === 0 && spaceDown)) return;
+    e.preventDefault(); e.stopPropagation();
+    pan = { x: e.clientX, y: e.clientY, sl: scroller.scrollLeft, st: scroller.scrollTop };
+    scroller.classList.add('bk-panning');
+  }, true);
+  const onPanMove = (e) => { if (!pan) return; scroller.scrollLeft = pan.sl - (e.clientX - pan.x); scroller.scrollTop = pan.st - (e.clientY - pan.y); };
+  const onPanUp = () => { if (pan) { pan = null; scroller.classList.remove('bk-panning'); } };
+  addEventListener('mousemove', onPanMove); addEventListener('mouseup', onPanUp);
   let lastFit = null;
   onPixelRatioChange(() => { if (lastFit) fit(...lastFit); });
   sync();
@@ -761,6 +849,8 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     fx: () => fx.active,
     chromeHeight: () => toolbar.offsetHeight + info.offsetHeight + 24,
     refresh() { dirty = true; syncLocks(); render(); },
-    destroy() { leavePhoto(); offChange(); removeEventListener('keydown', onKey); removeEventListener('mouseup', onUp); wrap.remove(); },
+    destroy() { leavePhoto(); offChange(); removeEventListener('keydown', onKey); removeEventListener('mouseup', onUp); removeEventListener('keydown', onSpace); removeEventListener('keyup', onSpace); removeEventListener('mousemove', onPanMove); removeEventListener('mouseup', onPanUp); wrap.remove(); },
+    setZoom: (z) => setZoom(ZOOMS.indexOf(z)), // 1, 2, 4 or 8 (demos, captures)
+    get zoom() { return zoom(); },
   };
 }
