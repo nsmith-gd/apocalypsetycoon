@@ -84,12 +84,15 @@ Nine-slice frames in `src/art/sprites-ui.js` (`UI_FRAMES`) are drawn with `drawN
 - `button`, `buttonPressed` and `buttonActive` are the button states.
 - `meter` is the bar track, and `tooltip` is a small dark box with a gold border.
 
-## UI theme (#126)
-DOM screens share one theme: `src/ui/theme.js` (installed at boot) + `src/ui/theme.css` (loaded last). `?theme=off` shows the old look.
-- **Font:** `AT Pixel`, the 3x5 glyphs above (plus wider `$ M W`) built into a web font at runtime (`src/ui/pixel-font.js`). Only at whole-number scales: 12px = 2x, 18px = 3x, 24px = 4x (`--th-x2..x4`). Labels, numbers, titles and buttons use it; sentences stay in the mono body font at 12px / 11px.
-- **Frames:** the `UI_FRAMES` nine-slices above, as CSS border images: `panel` at 2x for side panels and modals, 1x for HUD tiles; `button` / `buttonPressed` / `buttonActive` for buttons; `meter` for bars.
-- **Spacing:** a 4px grid (`--th-1..4`).
-- **Meaning colours** (one each, everywhere): money `Y` gold, gain `G`, loss `R`, heat `v` neon, tension `C` ice, crisis `p` -> `O` -> `R` (uneasy, edge, tipping), research `T`.
+## UI theme (#126, overhauled in #159)
+DOM screens share one theme: `src/ui/theme.css` (loaded last), switched on by `src/ui/theme.js`; `?theme=off` shows the old look.
+The direction comes from the director's references: the world fills the screen and the interface is thin, lit instrument glass over it.
+- **Type:** two open-licence pixel fonts in `assets/fonts` (SIL OFL, licences alongside). **Jersey 10** for titles, numbers and buttons at 20 / 30 / 40 px; **VT323** for labels and sentences at 16 px. Each only at whole multiples of its own grid, in device pixels (`--th-t16..t40`, #127). No faux bold (`font-synthesis: none`).
+- **Glass panels:** near-black glass, a 1 px teal hairline, bright teal corner brackets, faint inner glow. No brown frames.
+- **Buttons:** neon signs. A dim outline when off, lit teal on hover, filled and glowing when on. Money actions glow gold; the one primary action on a screen is solid gold.
+- **HUD:** an instrument strip of separated readouts (small teal label, big Jersey number), with the Doom Clock as the crown.
+- **Spacing:** a 4 px grid (`--th-1..4`).
+- **Meaning colours** (one each, everywhere): the interface is teal; money `Y` gold, gain `G`, loss `R`, heat `v` neon, tension `C` ice, crisis `p` -> `O` -> `R` (uneasy, edge, tipping), research `T`.
 
 ## Files
 - `src/art/palette.js`: the palette

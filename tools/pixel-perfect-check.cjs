@@ -3,7 +3,7 @@
 //   - scale: device pixels per art pixel is a whole number on both axes, and the same on both (no uneven pixels)
 //   - snap:  the canvas's top-left sits on a device pixel (a half-pixel offset doubles every other column)
 //   - filter: image-rendering is pixelated (no blur)
-// and the pixel font is drawn at a whole number of device pixels per font pixel.
+// and the theme's pixel fonts are drawn at a whole number of device pixels per font pixel.
 // Serve the repo first:  python3 -m http.server 8123
 //   node tools/pixel-perfect-check.cjs [outDir=.ballast/media/t127] [label=after]
 const { chromium } = require('playwright');
@@ -52,8 +52,10 @@ const AUDIT = () => {
   for (const e of document.querySelectorAll('body *')) {
     if (!e.firstChild || e.firstChild.nodeType !== 3 || !e.firstChild.textContent.trim()) continue;
     const st = getComputedStyle(e);
-    if (!st.fontFamily.includes('AT Pixel') || e.getBoundingClientRect().width === 0) continue;
-    const px = (parseFloat(st.fontSize) / 6) * dpr;
+    // the theme's pixel fonts (#159): Jersey 10 is drawn on a 10 px grid, VT323 on an 8 px grid
+    const grid = st.fontFamily.startsWith('"Jersey 10"') || st.fontFamily.startsWith("'Jersey 10'") ? 10 : /^["']?VT323/.test(st.fontFamily) ? 8 : 0;
+    if (!grid || e.getBoundingClientRect().width === 0) continue;
+    const px = (parseFloat(st.fontSize) / grid) * dpr;
     if (!fonts.has(st.fontSize)) fonts.set(st.fontSize, [px, e.className || e.tagName]);
   }
   const fontBad = [...fonts].filter(([, [px]]) => !near(px)).map(([fs, [px, who]]) => `${fs} = ${px.toFixed(2)} device px per font px (${who})`);
