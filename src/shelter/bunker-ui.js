@@ -6,7 +6,8 @@
 // (drag a line), any object from the palette (click; ghost shows where and why not), REMOVE (right-click
 // anywhere also removes). Overlays: rooms, air, water, power, noise.
 
-import { OBJECTS, STRUCTURES, CONDUITS, STRATA, TIER_COLORS, WATER_TABLE_M, FINISHES, variantsFor, layerOf } from './bunker-catalog.js';
+import { OBJECTS, STRUCTURES, CONDUITS, STRATA, TIER_COLORS, WATER_TABLE_M, FINISHES, variantsFor, layerOf, STYLE_KITS } from './bunker-catalog.js';
+import { drawWallPiece, drawFloorPiece } from '../art/finish-art.js';
 import { drawText } from '../art/font.js';
 import { drawStratumTile, drawDigStage, drawShellStage, drawFitoutStage } from '../art/bunker-tiles.js';
 import { drawObjectSprite, drawResident, drawThought, hasSprite } from './bunker-sprites.js';
@@ -31,9 +32,9 @@ const CATS = [
   ['ON THE WALL', ['painting', 'mirror', 'faux_window', 'led_sky', 'sconce', 'wall_shelf', 'neon_sign', 'trophy']],
   ['CEILING', ['chandelier', 'pendant']],
 ];
-const TOOLS = [['look', 'INSPECT', 'Q'], ['dig', 'DIG', 'D'], ['wall', 'WALL', 'W'], ['spine', 'SPINE', 'S'], ['air', 'AIR DUCT', '1'], ['water', 'WATER PIPE', '2'], ['power', 'POWER CABLE', '3'], ['paint', 'PAINT', 'P'], ['recolor', 'RECOLOUR', 'C'], ['flip', 'FLIP', 'F'], ['remove', 'REMOVE', 'X']];
+const TOOLS = [['look', 'INSPECT', 'Q'], ['dig', 'DIG', 'D'], ['wall', 'WALL', 'W'], ['spine', 'SPINE', 'S'], ['air', 'AIR DUCT', '1'], ['water', 'WATER PIPE', '2'], ['power', 'POWER CABLE', '3'], ['style', 'STYLE', 'Y'], ['paint', 'PAINT', 'P'], ['recolor', 'RECOLOUR', 'C'], ['flip', 'FLIP', 'F'], ['remove', 'REMOVE', 'X']];
 const OVERLAYS = [['rooms', 'ROOMS'], ['decor', 'INTERIOR'], ['air', 'AIR'], ['water', 'WATER'], ['power', 'POWER'], ['noise', 'NOISE'], ['none', 'PLAIN']];
-const DECOR_TOOLS = new Set(['paint', 'recolor', 'flip', 'look']);
+const DECOR_TOOLS = new Set(['style', 'paint', 'recolor', 'flip', 'look']);
 const NEED_NAMES = { energy: 'ENERGY', hunger: 'HUNGER', bladder: 'BLADDER', hygiene: 'HYGIENE', fun: 'FUN', social: 'SOCIAL' };
 const needColor = (v) => (v < 25 ? '#ff5a4f' : v < 50 ? '#ff9f1c' : '#7ed957');
 
@@ -62,6 +63,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
   let flipNext = false;
   let paintKind = 'wall';
   const paintFinish = { wall: 'marble', floor: 'oak', light: 'warm' };
+  let styleKit = 'gilded';
   const chip = (a, b) => `<i style="background:linear-gradient(135deg, ${a} 60%, ${b ?? a} 60%)"></i>`;
   function renderSwatches() {
     swatches.innerHTML = '';
@@ -79,6 +81,12 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
         const sw = f.tint !== undefined ? chip(f.tint ? f.tint.replace(/,[.\d]+\)$/, ',1)') : '#8a8680') : chip(f.a, f.b);
         btn(`${sw}${f.name}${f.cost ? ` ${k(f.cost)}/m²` : ''}`, id === paintFinish[paintKind], `${f.name}: beauty ${f.beauty}, ${k(f.cost)} per m². Click a room to finish all of it; Shift-click for one tile.`, () => { paintFinish[paintKind] = id; renderSwatches(); });
       }
+    } else if (tool === 'style') {
+      for (const [id, kitDef] of Object.entries(STYLE_KITS)) {
+        const w = FINISHES.wall[kitDef.wall];
+        btn(`${chip(w.a, w.b)}${kitDef.name.toUpperCase()}`, id === styleKit, `${kitDef.name}: ${kitDef.blurb}. Walls: ${w.name}; floor: ${FINISHES.floor[kitDef.floor].name}; light: ${FINISHES.light[kitDef.light].name}; furniture recoloured to match.`, () => { styleKit = id; renderSwatches(); });
+      }
+      swatches.append(el('span', 'lbl', 'CLICK A ROOM TO DRESS IT: WALLS, FLOOR, LIGHT AND FURNITURE COLOURS. CHANGE ANY PIECE AFTER WITH PAINT OR RECOLOUR.'));
     } else if (tool === 'recolor') swatches.append(el('span', 'lbl', 'CLICK ANY PIECE TO CYCLE ITS COLOUR (FREE)'));
     else if (tool === 'flip') swatches.append(el('span', 'lbl', 'CLICK ANY PIECE TO TURN IT AROUND'));
     else if (tool === 'look') swatches.append(el('span', 'lbl', 'CLICK A RESIDENT TO SEE WHAT THEY NEED, OR A ROOM TO INSPECT IT'));
@@ -183,6 +191,9 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       const f = FINISHES[paintKind][paintFinish[paintKind]];
       const r = site.paint(paintKind, paintFinish[paintKind], b.x, b.y, { single: outline });
       toast(!r.ok ? `${r.reason}.` : r.tiles ? `${f.name}: ${r.tiles} m² for ${k(f.cost * r.tiles)}.` : `Already ${f.name.toLowerCase()}.`);
+    } else if (which === 'style') {
+      const r = site.applyStyle(styleKit, b.x, b.y);
+      toast(!r.ok ? `${r.reason}.` : `${STYLE_KITS[styleKit].name} room: walls, floor and light${r.cost ? ` for ${k(r.cost)}` : ''}${r.recoloured ? `, ${r.recoloured} piece${r.recoloured > 1 ? 's' : ''} recoloured` : ''}.`);
     } else if (which === 'recolor' || which === 'flip') {
       const obj = pieceAt(b.x, b.y);
       if (!obj) toast('Nothing there to change.');
@@ -294,6 +305,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       const f = site.finish.floor[site.idx(x, y)];
       if (!f || site.passable(x, y + 1)) continue;
       const d = FINISHES.floor[f];
+      if (drawFloorPiece(ctx, f, PX(x), PY(y + 1), x, T, 4)) continue;
       ctx.fillStyle = d.a; ctx.fillRect(PX(x), PY(y + 1), T, 4);
       ctx.fillStyle = d.b;
       if (f === 'checker') { ctx.fillRect(PX(x) + (x % 2 ? 0 : 8), PY(y + 1), 8, 4); }
@@ -404,7 +416,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       } else if (tool === 'recolor' || tool === 'flip') {
         const obj = pieceAt(hover.x, hover.y);
         if (obj) { const o = OBJECTS[obj.kind]; ctx.strokeStyle = '#f5c542'; ctx.lineWidth = 1; ctx.strokeRect(PX(obj.x) + 0.5, PY(obj.y - o.h + 1) + 0.5, o.w * T - 1, o.h * T - 1); }
-      } else if (tool === 'paint') {
+      } else if (tool === 'paint' || tool === 'style') {
         const sim2 = site.simulate();
         const rid = hover.y >= 0 ? sim2.roomOf[site.idx(hover.x, hover.y)] : -1;
         const tiles = drag?.shift || !(rid >= 0) ? [[hover.x, hover.y]] : sim2.rooms[rid].tiles;
@@ -448,6 +460,8 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
 
   function wallFinish(x, y, f) {
     const px = PX(x), py = PY(y);
+    const id = Object.keys(FINISHES.wall).find((kk) => FINISHES.wall[kk] === f);
+    if (drawWallPiece(ctx, id, px, py, x, y, T)) return;
     ctx.fillStyle = f.a; ctx.fillRect(px, py, T, T);
     ctx.fillStyle = f.b;
     switch (f.pattern) {
@@ -501,6 +515,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       ${sys('POWER', s.days.power, `${f.power.supply ?? 0} kW for ${f.power.demand} kW · ${f.power.fuel ?? 0} L fuel · ${f.power.battery ?? 0} kWh`)}
       <div class="bk-rat">${['seal', 'blast', 'security'].map((key) => `<span>${key.toUpperCase()} <b>${s.ratings[key]}</b>/5</span>`).join('')}<span>MORALE <b>${s.ratings.morale}</b></span><span>PRESTIGE <b>${s.prestige}</b></span></div>
       ${r ? `<div class="bk-room"><b style="color:${TIER_COLORS[r.type.tier]}">${r.type.name.toUpperCase()}</b> ${r.width}x${r.height} m · ${r.size} tiles<br>
+        Style <b>${r.style ? STYLE_KITS[r.style].name : 'none'}</b>${r.styleVotes ? ` <small>(${Object.entries(r.styleVotes).filter(([, v]) => v).map(([sid, v]) => `${STYLE_KITS[sid].name} ${v}`).join(' · ') || 'no style pieces'})</small>` : ''}<br>
         Impressiveness <b>${r.impressiveness}</b> · beauty ${r.beauty}${r.finishBeauty ? ` (finishes +${r.finishBeauty})` : ''} · prestige ${Math.round(r.prestige)}${r.beds ? ` · beds ${r.beds}` : ''}<br>
         ${[r.noise ? `noise -${r.noise}` : '', r.rough ? 'raw rock walls -3' : '', r.cramped ? `cramped (needs ${r.type.minW} wide)` : '', r.seeps ? 'SEEPING' : ''].filter(Boolean).join(' · ') || 'No complaints.'}<br>
         <small>${Object.entries(r.counts).map(([kk, n]) => `${n}x ${OBJECTS[kk].name}`).join(', ') || 'Empty'}</small>${r.hint ? `<br><small class="bk-hint">Add ${r.hint.missing.map((m) => m.orAny ? m.orAny.filter((o) => OBJECTS[o]).map((o) => OBJECTS[o].name).join(' or ') : `${m.count}x ${OBJECTS[m.object]?.name ?? m.object}`).join(' and ')} to make it ${/^[AEIOU]/.test(r.hint.name) ? 'an' : 'a'} ${r.hint.name}.</small>` : ''}</div>` : '<div class="bk-room"><small>Click inside a room to inspect it.</small></div>'}
