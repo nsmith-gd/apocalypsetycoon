@@ -39,6 +39,11 @@
   <h2>SHELTER CROSS-SECTION (3X)</h2>
   <div class="scroll"><canvas id="shelter-view" width="160" height="96"></canvas></div>
 
+  <h2 id="fixtures">SURVIVAL FIXTURES: AIR, WATER, FOOD (64 PX PER METRE, 2X)</h2>
+  <p>Authored at the 64 px minimum: 1 m = 64 px, so a 2 x 3 m water tank is 128 x 192. Steel plus one accent per need (mint air, blue water, green food), lit from the top-left with clustered wear. Top row: native art at 2x. Bottom row: what the editor draws while it is still 16 px per metre (a crisp reduction of the same art).</p>
+  <div class="scroll"><canvas id="fixtures-native"></canvas></div>
+  <div class="scroll"><canvas id="fixtures-lod"></canvas></div>
+
   <h2 id="styles">ROOM STYLES: BRUTALIST &amp; GILDED (32PX ROOMS, 4X)</h2>
   <p>Design-layer room styles, drawn at 32 pixels per room on one shared template. Brutalist: board-formed concrete with form seams, rusted tie holes and drips, a stencilled bay number, a conduit run, a cast dado and a polished floor, lit by a sodium lamp whose amber cone fades out in dither. Gilded: velvet damask wallpaper with gold pinstripes, a crown moulding, a gilt-framed portrait under its picture light, a sconce, a chandelier with glinting crystals, walnut wainscot and a marble checkerboard floor. The machines are palette-swapped (cast concrete or brass). The beam across the top is the needs-tier trim and never changes with style: hazard stripes (Survive), walnut (Comfort), gold and emerald (Status), shimmering violet (Delusion).</p>
   <div class="scroll"><table class="style-table" id="style-table"></table></div>
@@ -69,6 +74,7 @@ import { drawShelter } from '../src/art/shelterView.js';
 import { drawWorldMap } from '../src/art/worldmap.js';
 import { drawText } from '../src/art/font.js';
 import { drawStyledRoom } from '../src/art/styleArt.js';
+import { FIXTURE_KINDS, FIXTURE_SIZE, FIXTURE_PX, drawFixture } from '../src/art/fixtures64.js';
 import { drawStyledShelter } from '../src/art/styleView.js';
 import { ROOM_TIERS } from '../src/shelter/styles.js';
 
@@ -127,7 +133,27 @@ for (const amenity of [null, ...Object.keys(AMENITIES)]) {
 const styledRooms = (style) => ['bunk', 'pantry', 'gold_taps', 'wine_cellar', 'cryo_pod', 'ai_butler', 'air_vent', 'hydroponics', 'water_tank', 'gold_taps', 'mil_scrubber', 'water_recycler', null, 'wine_cellar']
   .map((amenity, i) => ({ col: 1 + (i % 7), row: 1 + Math.floor(i / 7), amenity, style }));
 const styleCvs = ['brutalist', 'gilded'].map((style) => { const cv = document.getElementById(`style-${style}`); cv.style.width = `${320 * 3}px`; return [cv, style]; });
+// ---- survival fixtures at 64 px per metre ----
+const fxNative = document.getElementById('fixtures-native');
+const fxLod = document.getElementById('fixtures-lod');
+const fxW = FIXTURE_KINDS.reduce((s, k) => s + FIXTURE_SIZE[k][0] * FIXTURE_PX + 8, 8);
+fxNative.width = fxW; fxNative.height = 3 * FIXTURE_PX + 16; fxNative.style.width = `${fxW * 2}px`;
+fxLod.width = Math.ceil(fxW / 4); fxLod.height = 3 * 16 + 8; fxLod.style.width = `${Math.ceil(fxW / 4) * 4}px`;
+const STEEL = { a: '#a8acb0', b: '#6a6e72' };
+function drawFixtures(f) {
+  for (const [cv, tile] of [[fxNative, FIXTURE_PX], [fxLod, 16]]) {
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#16120f'; ctx.fillRect(0, 0, cv.width, cv.height);
+    let x = tile === 16 ? 2 : 8;
+    for (const k of FIXTURE_KINDS) {
+      const [w, h] = FIXTURE_SIZE[k];
+      drawFixture(ctx, k, x, cv.height - h * tile - (tile === 16 ? 2 : 8), STEEL, { on: true, frame: f, tile });
+      x += w * tile + (tile === 16 ? 2 : 8);
+    }
+  }
+}
 function drawStyleViews(f) {
+  drawFixtures(f);
   styleDraws.forEach((d) => d(f));
   for (const [cv, style] of styleCvs) drawStyledShelter(cv.getContext('2d'), { cols: 10, rows: 4, rooms: styledRooms(style), frame: f });
 }
