@@ -13,6 +13,7 @@ import { drawRoomTile, ROOM_TILE_IDS, DESIGN_STYLES } from '../art/hd/room-tiles
 import { drawStratumTile, drawDigStage, drawShellStage, drawFitoutStage } from '../art/bunker-tiles.js';
 import { drawObjectSprite, drawResident, drawThought, hasSprite } from './bunker-sprites.js';
 import { daysSealedCanvas } from '../art/hd/shelter-life64.js';
+import { deviceScale, sizeCanvas, snapToDevice, onPixelRatioChange, dpr } from '../ui/pixel-perfect.js';
 import { NEED_IDS } from './bunker-catalog.js';
 import { createBuildFx, drawCrew, drawSnap } from './build-fx.js'; // #128
 import { drawGaze, drawPhoto, gazeLevel, PHOTO_ASSETS, PHOTO_CARD_WINDOW } from '../art/hd/gaze-photo.js'; // #121
@@ -142,6 +143,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
   // ---------- canvas ----------
   const scroller = el('div', 'bk-scroll');
   const canvas = el('canvas', 'bk-canvas');
+  canvas.dataset.snap = ''; // kept on a device pixel (#127)
   canvas.width = W * T;
   canvas.height = (H + S) * T;
   scroller.append(canvas);
@@ -599,7 +601,10 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     renderResidents();
     // Days Sealed emblem (#122): 64 px native, the ring fills toward twice the 30-day pressure test
     const emblem = side.querySelector('.bk-days-emblem');
-    if (emblem) { const ec = emblem.getContext('2d'); ec.imageSmoothingEnabled = false; ec.clearRect(0, 0, 64, 64); ec.drawImage(daysSealedCanvas(s.daysSealed, 30), 0, 0); }
+    if (emblem) {
+      const ec = emblem.getContext('2d'); ec.imageSmoothingEnabled = false; ec.clearRect(0, 0, 64, 64); ec.drawImage(daysSealedCanvas(s.daysSealed, 30), 0, 0);
+      sizeCanvas(emblem, 64, 64, Math.max(1, Math.round(dpr()))); emblem.dataset.snap = ''; // 1 art px = whole device px (#127)
+    }
     side.querySelector('.bk-test').onclick = () => { const res = site.startPressureTest(); toast(res.ok ? 'Pressure test running: 30 days sealed.' : res.reason); render(); };
     const hb = side.querySelector('.bk-hand');
     if (hb) hb.onclick = () => { const res = site.handOver(`Shelter #${site.handedOver + 1}`); if (res.ok) { onHandOver?.(res.shelter); toast('Handed over. A fresh plot is being surveyed.'); } else toast(res.reason); render(); };
@@ -680,12 +685,15 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     else if (Math.abs(getFrame() - lastRes) >= 20) { renderResidents(); lastRes = getFrame(); }
   }
   function fit(maxW, maxH) {
-    const scale = Math.max(1, Math.floor(maxW / canvas.width));
-    canvas.style.width = `${canvas.width * scale}px`;
-    canvas.style.height = `${canvas.height * scale}px`;
+    lastFit = [maxW, maxH];
+    // #127: whole device pixels per art pixel; the scroller scrolls the rest (the canvas is never squeezed)
+    const scale = sizeCanvas(canvas, canvas.width, canvas.height, deviceScale(canvas.width, canvas.height, maxW));
     scroller.style.maxHeight = `${Math.max(240, maxH)}px`;
+    snapToDevice(canvas);
     return scale;
   }
+  let lastFit = null;
+  onPixelRatioChange(() => { if (lastFit) fit(...lastFit); });
   sync();
   render();
   return {

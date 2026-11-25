@@ -10,7 +10,7 @@
 @keyframes mn-fade { from { background: #fff; } }
 .mn-screen { width: min(760px, 100%); text-align: center; }
 .mn-clock { font-size: 12px; letter-spacing: 4px; color: var(--at-dim); margin: 6px 0 8px; animation: at-blink 1s steps(2) 4; }
-.mn-scene { width: 100%; image-rendering: pixelated; border: 4px solid var(--at-border); box-shadow: 6px 6px 0 rgba(0,0,0,.5); display: block; }
+.mn-scene { margin: 0 auto; image-rendering: pixelated; border: 4px solid var(--at-border); box-shadow: 6px 6px 0 rgba(0,0,0,.5); display: block; }
 .mn-kind { margin-top: 14px; font-size: 12px; font-weight: 900; letter-spacing: 3px; color: #c8a8ff; }
 .mn-overlay[data-type='failed'] .mn-kind { color: var(--at-amber); }
 .mn-kind-why { font-size: 11px; color: var(--at-dim); margin-top: 2px; }

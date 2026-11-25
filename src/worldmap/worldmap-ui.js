@@ -25,6 +25,7 @@ import { createMapLayers } from '../art/map-layers-hd.js';
 import { CELL_REGIONS, CITIES, earthRegionAt, mapXY } from '../art/earth.js';
 import { drawMarker, drawLabelPlate, drawCountTag } from '../art/map-markers.js';
 import { drawHeatLayer } from '../art/map-heat.js';
+import { deviceScale, cssLen, snapToDevice, onPixelRatioChange } from '../ui/pixel-perfect.js';
 
 let MASK = null;
 let PX = null;
@@ -106,6 +107,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   // screen pixels, like the reference, so the map gains detail as it grows); on top, a transparent 320x192 canvas
   // for borders, heat, cities, markers and labels at a whole-number zoom. Clicks land on the top canvas.
   const stage = el('div', 'wm-stage');
+  stage.dataset.snap = ''; // kept on a device pixel (#127)
   const baseCanvas = el('canvas', 'wm-base');
   baseCanvas.setAttribute('aria-hidden', 'true');
   const canvas = el('canvas', 'wm-over');
@@ -137,12 +139,14 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     const availW = mapWrap.clientWidth || MAP_W;
     const top = mapWrap.getBoundingClientRect().top;
     const availH = Math.max(MAP_H, (window.innerHeight || 0) - Math.max(0, top) - 70); // legend + breathing room
-    const scale = Math.max(1, Math.floor(Math.min(availW / MAP_W, availH / MAP_H)));
-    const w = `${MAP_W * scale}px`;
-    const h = `${MAP_H * scale}px`;
+    // #127: whole DEVICE pixels per map pixel (a 125% screen turns a 3x CSS scale into 3.75 real pixels)
+    const scale = deviceScale(MAP_W, MAP_H, availW, availH);
+    const w = `${cssLen(MAP_W, scale)}px`;
+    const h = `${cssLen(MAP_H, scale)}px`;
     for (const cv of [stage, baseCanvas, layerCanvas, canvas]) if (cv.style.width !== w || cv.style.height !== h) { cv.style.width = w; cv.style.height = h; } // always both: aspect = click mapping
     canvas.dataset.scale = String(scale);
     paintBase(scale);
+    requestAnimationFrame(() => snapToDevice(stage));
   }
   // terrain resolution: half the zoom (2 screen px per terrain pixel), at least the 320x192 map
   let baseScale = 0;
@@ -170,6 +174,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => fitMap()) : null;
   ro?.observe(mapWrap);
   addEventListener('resize', fitMap);
+  const offDpr = onPixelRatioChange(() => fitMap()); // browser zoom or another screen (#127)
 
   const ctx = canvas.getContext('2d');
   let selected = initial;
@@ -566,6 +571,6 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       x.drawImage(canvas, 0, 0);
       return c;
     },
-    destroy() { cancelAnimationFrame(raf); clearTimeout(baseTimer); ro?.disconnect(); removeEventListener('resize', fitMap); off(); offLeads?.(); offMarket(); offSchemes?.(); root.replaceChildren(); },
+    destroy() { cancelAnimationFrame(raf); clearTimeout(baseTimer); ro?.disconnect(); removeEventListener('resize', fitMap); offDpr(); off(); offLeads?.(); offMarket(); offSchemes?.(); root.replaceChildren(); },
   };
 }
