@@ -18,7 +18,17 @@ test('each heat level has its own colour and draws more than the one below it', 
 test('calm regions draw nothing; the tipping pulse stops under reduced flashing', () => {
   const c = ctx(); drawHeatLayer(c, mask, { nam: null, eur: null });
   assert.equal(c.n, 0);
-  const a = ctx(); drawHeat(a, mask, 'oce', 'tipping', { frame: 2 });
-  const b = ctx(); drawHeat(b, mask, 'oce', 'tipping', { frame: 2, steady: true });
-  assert.notDeepEqual(a.seq, b.seq);
+  // #111: tipping breathes by brightness (the glow), not by flipping colours
+  const alphas = (opts) => { const c = { alphas: [], globalAlpha: 1, fillRect() { c.alphas.push(c.globalAlpha); } }; drawHeat(c, mask, 'oce', 'tipping', opts); return c.alphas; };
+  assert.notDeepEqual(alphas({ frame: 0 }), alphas({ frame: 4 }), 'it breathes');
+  assert.deepEqual(alphas({ frame: 0, steady: true }), alphas({ frame: 4, steady: true }), 'held still under Reduced flashing');
+});
+
+test('the default look is clean (#111): no textures unless Crisis patterns is on', () => {
+  const n = (strong) => { const c = ctx(); drawHeat(c, mask, 'afr', 'edge', { steady: true, strong }); return c.n; };
+  const plain = n(false), patterned = n(true);
+  assert.ok(patterned > plain * 1.5, `${plain} vs ${patterned}`);
+  // no dark veil: every fill uses the level's own colour
+  const c = ctx(); drawHeat(c, mask, 'afr', 'tipping', { steady: true });
+  assert.deepEqual([...c.colors], [HEAT_STYLE.tipping.wash]);
 });

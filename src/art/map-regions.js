@@ -80,11 +80,14 @@ function tint(ctx, mask, id, color, alpha) {
   ctx.globalAlpha = 1;
 }
 
-/** Idle borders for every region: a dotted dark line where two regions meet. */
+/**
+ * Idle borders for every region: a quiet, solid dark line where two regions meet. (It was dotted; next to the
+ * crisis rims the dots crawled and read as busy and dated, #111.)
+ */
 export function drawIdleBorders(ctx, mask) {
   for (const id of mask.ids) {
     const e = mask.edges[id];
-    px(ctx, e.border.filter(([x, y]) => (x + y) % 2 === 0), HEX.K, 0.75);
+    px(ctx, e.border, HEX.K, 0.35);
   }
 }
 

@@ -20,6 +20,7 @@
 // FLOW      survey (1 week) -> dig -> shell -> fit-out -> pressure test (30 days) -> walkthrough -> handover.
 
 import { ResidentSim } from './residents.js';
+import { QUARTER_SECONDS } from '../campaign/clock.js';
 import { identifyRoom } from '../catalog/identify.js';
 import { STRATA, stratumAt, STRUCTURES, CONDUITS, OBJECTS, NEEDS, ROOM_DEPTH_M, WATER_TABLE_M, fitDays, LAYERS, layerOf, FINISHES, variantsFor, familyOf, STYLE_KITS } from './bunker-catalog.js';
 
@@ -27,7 +28,7 @@ export const BUNKER = Object.freeze({
   width: 24, // Family Vault plot
   depth: 40,
   sky: 5,
-  daySeconds: 120 / 7, // GDD: a week is 120 s at 1x
+  daySeconds: QUARTER_SECONDS / 13 / 7, // a week is a 13th of the 27-minute quarter, about 125 s at 1x (#96, #108)
   surveyDays: 7,
   pressureTestDays: 30,
   noiseRadius: 6,
