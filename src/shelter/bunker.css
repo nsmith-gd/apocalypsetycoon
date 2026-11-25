@@ -55,3 +55,10 @@
 /* #117: the selected room's 64 px tile, shown at 1x (scrolls sideways for the big rooms) */
 .bk-room-tile { overflow-x: auto; margin: 0 0 6px; background: #0a0807; line-height: 0; }
 .bk-room-tile canvas { image-rendering: pixelated; display: block; }
+/* Photo mode (#121): the interface steps aside and the cutaway fills the screen; the frame is drawn on top. */
+.bk.bk-photo .bk-tools, .bk.bk-photo .bk-sw, .bk.bk-photo .bk-info, .bk.bk-photo .bk-pal, .bk.bk-photo aside, .bk.bk-photo .bk-side { visibility: hidden; }
+.bk.bk-photo .bk-scroll { position: fixed; inset: 0; z-index: 900; max-height: none !important; background: #0a0807; display: block; overflow: auto; }
+.bk.bk-photo .bk-scroll .bk-canvas { display: block; margin: 0 auto; }
+body.at-photo .gs > *:not(.stage):not(.stage-grid), body.at-photo .pg-panel, body.at-photo .pb-panel { visibility: hidden; }
+.bk-photo-layer { position: fixed; inset: 0; z-index: 901; pointer-events: none; image-rendering: pixelated; }
+.bk-photo-btn { border-color: var(--at-gold); }

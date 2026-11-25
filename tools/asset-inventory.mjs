@@ -82,6 +82,9 @@ export async function inventory() {
   const rooms = await art('hd/room-tiles.js');
   for (const id of rooms.ROOM_TILE_IDS) { const { w, h } = rooms.roomTileSize(id); for (const d of rooms.DESIGN_STYLES) proc(`room-styles/${id}/${d}`, 'rooms and grid tiles', 'src/art/hd/room-tiles.js', w * rooms.TILE_PX_PER_M, h * rooms.TILE_PX_PER_M, `${d} style of the ${id} tile (#120)`); }
   for (const id of rooms.ROOM_TILE_IDS) { const { w, h } = rooms.roomTileSize(id); proc(`room-tiles/${id}`, 'rooms and grid tiles', 'src/art/hd/room-tiles.js', w * rooms.TILE_PX_PER_M, h * rooms.TILE_PX_PER_M, `${w}x${h} m at ${rooms.TILE_PX_PER_M} px per metre (#117), 2 frames`); }
+  const gp = await art('hd/gaze-photo.js');
+  for (const [id, g] of Object.entries(gp.GAZE_ASSETS)) proc(`client-gaze/${id}`, 'UI', 'src/art/hd/gaze-photo.js', g.w, g.h, `Client Gaze overlay (#121), ${g.frames} frame(s); the 16 px builder draws a reduced copy`);
+  for (const [id, g] of Object.entries(gp.PHOTO_ASSETS)) proc(`photo-mode/${id}`, 'UI', 'src/art/hd/gaze-photo.js', g.w, g.h, `photo mode (#121), ${g.frames} frame(s), drawn at 1x on the screen`);
   const base = await art('map-base.js');
   proc('map-base/world', 'map', 'src/art/map-base.js', base.BASE_W, base.BASE_H, 'painted per pixel; terrain detail on an 8 px cell layout');
   proc('map-regions/state-layer', 'map', 'src/art/map-regions.js', base.BASE_W, base.BASE_H, 'full-map overlay');
