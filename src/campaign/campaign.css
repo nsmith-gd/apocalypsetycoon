@@ -48,6 +48,10 @@ html, body { margin: 0; height: 100%; background: var(--at-bg); }
    map column, enough for the map at 2x (#105). */
 @media (min-width: 1100px) { .gs .stage-map { padding: 0 280px; max-width: none; } /* the side panels sit at the window's edges (#100) */ .gs .stage-map.wm { grid-template-columns: minmax(0, 1fr) 226px; gap: 8px; } }
 .gs .stage-map .wm-map { position: static; }
+/* #109: on the world map view the Pressure and Clients rails step aside so the map can take the screen (they
+   are one click away on the shelter view; the HUD keeps cash, clock and tension). */
+.gs[data-view='map'] .pg-panel, .gs[data-view='map'] .pb-panel { display: none; }
+@media (min-width: 1100px) { .gs[data-view='map'] .stage-map { padding: 0 16px; } .gs[data-view='map'] .stage-map.wm { grid-template-columns: minmax(0, 1fr) 280px; } }
 /* #102: give the map the whole stage between the side rails, so it can show at 2x */
 .gs .stage-map.wm, .gs .stage-map .wm { max-width: none; }
 
