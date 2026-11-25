@@ -2,6 +2,7 @@
 // variant (a = main colour, b = trim) and can be mirrored. 16 px = 1 m.
 
 import { OBJECTS } from './bunker-catalog.js';
+import { hasFixture, drawFixture } from '../art/fixtures64.js';
 
 const T = 16;
 const shade = (hex, f) => {
@@ -12,6 +13,8 @@ const shade = (hex, f) => {
 
 /** Draw one object into its tile box (px, py = top-left). */
 export function drawObjectSprite(ctx, kind, px, py, { a, b }, { on = true, frame = 0, flip = false } = {}) {
+  // Air, water and food fixtures are authored at 64 px per metre (#119); here they draw at the editor's scale.
+  if (hasFixture(kind)) { drawFixture(ctx, kind, px, py, { a, b }, { on, frame: Math.floor(frame / 6), flip, tile: T }); return; }
   const o = OBJECTS[kind];
   const w = o.w * T, h = o.h * T;
   ctx.save();
@@ -182,4 +185,4 @@ export function drawThought(ctx, x, y, good) {
 }
 
 /** Whether a kind has a hand-drawn sprite (machines without one use the labelled block in the UI). */
-export const hasSprite = (kind) => !!RECIPES[kind];
+export const hasSprite = (kind) => !!RECIPES[kind] || hasFixture(kind);
