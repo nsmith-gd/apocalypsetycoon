@@ -1,0 +1,1 @@
+PASS: 48 asset(s) checked at 64px minimum.
