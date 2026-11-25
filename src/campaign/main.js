@@ -7,6 +7,7 @@
 import { Ledger } from '../ledger/ledger.js';
 import { MONEY } from '../config/tuning.js';
 import { createGameUI } from '../ui/hud.js';
+import { installTheme } from '../ui/theme.js';
 import { createResearchPanel } from '../ui/researchPanel.js';
 import { Pushback } from '../pushback/pushback.js';
 import { Board, quarterRevenue } from '../board/board.js';
@@ -708,5 +709,6 @@ const DEBUG_PRESETS = {
   },
 };
 
+installTheme(); // #126: pixel font + nine-slice frames (theme.css)
 showMainMenu();
 window.__menu = { showMainMenu, startCampaign };
