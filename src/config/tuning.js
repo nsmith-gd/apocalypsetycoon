@@ -219,6 +219,37 @@ export const PUSHBACK_DEFAULTS = {
 };
 
 // ---------------- Shelter life systems (src/shelter/life.js) ----------------
+// Megaprojects (#143): Compound (4:20) and Ark (5:00). GDD: Shelter canvas > Product lines. Plot widths, site count,
+// the Abyss depth and the Ark modules are GDD; the rest are this game's stand-ins until the GDD gives a number.
+export const MEGAPROJECTS = {
+  compound: {
+    unlockAt: '4:20',
+    sites: 3, // GDD: three linked bunkers
+    siteWidth: 24, siteDepth: 40, // (stand-in) each site is a Family Vault-sized plot
+    tunnels: [['A', 'B'], ['B', 'C']], // (stand-in) a chain; A-C can be added
+    tunnelCostPerMetre: 30_000, // GDD dollars (stand-in)
+    tunnelLength: 40, // metres between neighbouring sites (stand-in)
+    waterTable: 12, // m: tunnels below it can flood (same water table as the bunker)
+    floodChancePerWeek: 0.05, // per tunnel below the water table (stand-in)
+    breachChancePerWeekAtSiege: 0.15, // per tunnel while The Pitchforks besiege a linked site (stand-in)
+    pumpOutCost: 500_000, // GDD dollars (stand-in)
+  },
+  ark: {
+    unlockAt: '5:00',
+    width: 64, // GDD
+    depth: 130, // m: down past 120 m, the Abyss
+    abyssDepth: 120, // GDD: The Abyss is 120 m and below
+    // GDD: Ark modules. Greybox definition (stand-in): a room of at least this width holding these pieces.
+    modules: {
+      governance_hall: { name: 'Governance Hall', minW: 8, needs: { dining_table: 1, dining_chair: 6 } },
+      schoolhouse: { name: 'Schoolhouse', minW: 6, needs: { desk: 4, bookshelf: 1 } },
+    },
+    occupants: { min: 200, max: 500 }, // GDD
+    price: { min: 500_000_000 }, // GDD: $500M+ from a consortium
+    tableClass: 'C5', // The Table's leads
+  },
+};
+
 export const LIFE = {
   noiseRadius: 6, // tiles
   noiseComfort: 1, // comfort lost per noisy room within range of quarters (once per pair)
