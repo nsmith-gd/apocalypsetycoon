@@ -111,3 +111,10 @@
   .pr-site { grid-template-columns: 1fr; grid-template-areas: 'name' 'flags' 'vs' 'actions'; }
 }
 .pr-fp-overlay { z-index: 130; } /* the story sits above the raid or blackmail it causes */
+
+/* Campaign press desk overlay (#149): centred, scrolls on short screens, CLOSE under the desk. */
+.press-overlay { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px; box-sizing: border-box; }
+.press-overlay[hidden] { display: none; }
+.press-overlay .pr-desk { max-height: calc(100vh - 100px); overflow: auto; }
+.pr-call-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.pr-call-actions .report-continue { margin: 0; }

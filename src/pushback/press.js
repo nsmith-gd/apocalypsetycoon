@@ -308,7 +308,7 @@ export class Press {
     j.restWeeks = cfg.cooldownWeeks;
     const evt = {
       journalist: id, name: cfg.name, outlet: cfg.outlet, angle: story.angle,
-      heat: A.heat, reputation: Math.min(0, repHit), leverage: A.leverage, track, fired,
+      heat: A.heat, reputation: Math.min(0, repHit), leverage: A.leverage, track, trackName: this.crisis?.tracks?.[track]?.name ?? track, fired,
     };
     this._note('aired', `STORY RUNS: ${cfg.outlet}, "${story.angle}"`, { journalist: id });
     this._emit('aired', evt);

@@ -220,7 +220,7 @@ export function createPressDesk({ press, pushback, onAction = () => {}, showSite
     week.textContent = `WEEK ${s.week}${s.intel ? ` · INTEL ${s.intel}` : ''}`;
     renderRep(s);
     journos.replaceChildren(...s.journalists.map(renderJourno));
-    if (showSites) renderSites(s); else sitesBox.hidden = true;
+    if (showSites) renderSites(s); else sitesBox.remove();
   }
   press.on('change', render);
   pushback.on('change', render);
@@ -249,7 +249,7 @@ export function createFrontPage({ root, press, onClose }) {
       el('li', null, `Reputation ${evt.reputation}`),
       el('li', null, `Every client +${evt.leverage} leverage`),
     );
-    if (evt.track) fx.append(el('li', null, `${evt.track === 'world' ? 'World tension' : `${evt.track} track`} +${PRESS.journalists.gil.trackShove}: the scare spreads`));
+    if (evt.track) fx.append(el('li', null, `${evt.track === 'world' ? 'World tension' : evt.trackName ?? evt.track} +${PRESS.journalists.gil.trackShove}: the scare spreads`));
     paper.append(fx);
     const ok = btn('report-continue', 'NO COMMENT', () => {
       overlay.remove();
