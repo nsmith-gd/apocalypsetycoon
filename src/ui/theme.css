@@ -1,175 +1,277 @@
-/* UI theme (#126). One look for HUD, build menu, map panels and scheme panels.
-   Installed by src/ui/theme.js (sets <html data-theme="pixel">, the frame images and the pixel font).
-   Load this file LAST so it wins over the per-screen sheets. `?theme=off` shows the old look.
+/* UI theme (#126, overhauled in #159 after "this needs a total overhaul").
+   Direction (the director's reference images): the world fills the screen; the interface is thin, lit
+   instrument glass laid over it, not brown boxes. Loaded LAST; applies with <html data-theme="pixel">
+   (src/ui/theme.js). `?theme=off` shows the old look.
 
-   Rules
-   - Type: the pixel font ('AT Pixel', the game's 3x5 glyphs) only at whole-number scales: 12px = 2x, 18px = 3x,
-     24px = 4x (multiples of 6). It is for labels, numbers, titles and buttons. Sentences stay in the body mono
-     font, at 12px (11px for secondary lines).
-   - Frames: the UI_FRAMES nine-slices from src/art/sprites-ui.js, at 1x (rows, buttons, HUD tiles) or 2x (panels).
-   - Spacing: a 4px grid (--th-1 .. --th-4). Gaps and padding use only these.
-   - Colours: the "Last Resort 28" palette (src/art/palette.js). Each meaning has one colour, used everywhere:
-     money gold, heat neon, tension ice, crisis sodium -> amber -> alarm, gain leaf, loss alarm. */
+   - Type: Jersey 10 for titles, numbers and buttons at 20 / 30 / 40 px; VT323 for labels and sentences at 16 px.
+     Both are pixel fonts drawn on their own grid (10 px and 8 px), so they only appear at whole multiples,
+     in whole DEVICE pixels via --px-N (#127).
+   - Glass: near-black panels, a 1 px teal hairline, bright corner brackets, a faint inner glow.
+   - Buttons: neon-sign states. Off: a dim outline. Hover: lit. On: filled and glowing. Money actions glow gold.
+   - Spacing: a 4 px grid (--th-1 .. --th-4).
+   - Colour: from the palette ramps. Teal is the interface itself. Each meaning keeps one colour:
+     money gold, gain leaf, loss alarm, heat neon, tension ice, crisis sodium -> amber -> alarm. */
+
+@font-face { font-family: 'Jersey 10'; src: url('../../assets/fonts/jersey-10-latin-400-normal.woff2') format('woff2'); font-display: block; }
+@font-face { font-family: 'VT323'; src: url('../../assets/fonts/vt323-latin-400-normal.woff2') format('woff2'); font-display: block; }
 
 :root[data-theme='pixel'] {
-  --th-pixel: 'AT Pixel', 'Courier New', ui-monospace, monospace;
-  --th-body: 'Courier New', ui-monospace, monospace;
-  /* whole DEVICE px per font px at any pixel ratio (#127): --px-N is N px rounded to device pixels (pixel-perfect.js) */
-  --th-x2: calc(6 * var(--px-2, 2px)); --th-x3: calc(6 * var(--px-3, 3px)); --th-x4: calc(6 * var(--px-4, 4px));
-  --th-f1: var(--px-1, 1px); --th-f2: var(--px-2, 2px); /* one frame pixel at 1x / 2x */
+  --th-title: 'Jersey 10', 'Courier New', monospace;
+  --th-text: 'VT323', 'Courier New', monospace;
+  /* whole device px per font px at any pixel ratio (#127) */
+  --th-t16: calc(8 * var(--px-2, 2px));   /* VT323 labels and sentences */
+  --th-t20: calc(10 * var(--px-2, 2px));  /* Jersey: buttons, headings, values */
+  --th-t30: calc(10 * var(--px-3, 3px));  /* Jersey: the numbers that matter */
+  --th-t40: calc(10 * var(--px-4, 4px));  /* Jersey: cash and the clock */
+  --th-hair: var(--px-1, 1px);
   --th-1: 4px; --th-2: 8px; --th-3: 12px; --th-4: 16px;
 
-  /* semantic text colours (palette keys in comments) */
-  --th-money: #f5c542;   /* Y gold */
-  --th-gain: #7ed957;    /* G leaf */
-  --th-loss: #ff5a4f;    /* R alarm */
-  --th-heat: #c070ff;    /* v neon: the people watching you */
-  --th-tension: #8fd3ff; /* C ice: the world's nerves */
-  --th-crisis-uneasy: #f0b052; /* p sodium lamp */
-  --th-crisis-edge: #ff9f1c;   /* O edge amber */
-  --th-crisis-tipping: #ff5a4f;/* R alarm */
-  --th-research: #b8e0c8;      /* T clean air */
-  --th-ink: #f2e6c9;     /* W bone */
-  --th-dim: #a8977a;     /* S dust */
-  --th-label: #a8977a;
+  /* the interface: teal ramp */
+  --th-ui: #4fa391;
+  --th-ui-hi: #8fd0b8;
+  --th-ui-dim: rgba(79, 163, 145, 0.35);
+  --th-glass: rgba(10, 8, 7, 0.86);
+  --th-glass-top: rgba(21, 58, 59, 0.55);
+  --th-ink: #f2e6c9;
+  --th-dim: #a8977a;
+  --th-mute: #6c655f;
 
-  /* the old tokens follow the theme, so unthemed screens pick up the colours too */
-  --at-font: var(--th-body);
-}
+  /* meaning colours */
+  --th-money: #f5c542;
+  --th-gain: #7ed957;
+  --th-loss: #ff5a4f;
+  --th-heat: #c070ff;
+  --th-tension: #8fd3ff;
+  --th-crisis-uneasy: #f0b052;
+  --th-crisis-edge: #ff9f1c;
+  --th-crisis-tipping: #ff5a4f;
+  --th-research: #b8e0c8;
 
-/* ---------- Frames ---------- */
-:root[data-theme='pixel'] :is(.hud-stat, .research-chip, .ledger-chip) {
-  border-style: solid; border-width: calc(6 * var(--th-f1)); box-shadow: none; background: none;
-  border-image: var(--th-frame-panel) 6 fill / calc(6 * var(--th-f1)) / 0 repeat; image-rendering: pixelated;
-  padding: var(--th-1) var(--th-2);
 }
+:root[data-theme='pixel'] body { -webkit-font-smoothing: none; }
+/* pixel fonts have no bold: never let the browser smear a fake one (emphasis is colour and size) */
+:root[data-theme='pixel'] { font-synthesis: none; }
+
+/* ============================================================ glass panels */
 :root[data-theme='pixel'] :is(.wm-panel, .pg-panel, .pb-panel, .bk-pal, .bk-side > div, .tw-panel, .research-panel) {
-  border-style: solid; border-width: calc(6 * var(--th-f2)); box-shadow: 4px 4px 0 rgba(10, 8, 7, .6); background: none;
-  border-image: var(--th-frame-panel) 6 fill / calc(6 * var(--th-f2)) / 0 repeat; image-rendering: pixelated;
-  padding: var(--th-1) var(--th-2);
+  --c: var(--th-ui-hi);
+  border: var(--th-hair) solid var(--th-ui-dim); border-radius: 0; border-image: none;
+  background:
+    linear-gradient(var(--c), var(--c)) top left / 10px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) top left / 2px 10px no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / 10px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / 2px 10px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / 10px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / 2px 10px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / 10px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / 2px 10px no-repeat,
+    linear-gradient(180deg, var(--th-glass-top), var(--th-glass) 64px);
+  box-shadow: 0 0 0 var(--th-hair) #0a0807, inset 0 0 24px rgba(79, 163, 145, 0.07), 0 8px 24px rgba(0, 0, 0, 0.55);
+  color: var(--th-ink); font-family: var(--th-text); font-size: var(--th-t16); line-height: 1.05;
+  padding: var(--th-3);
 }
-:root[data-theme='pixel'] .bk-side > div { border-width: calc(6 * var(--th-f1)); border-image-width: calc(6 * var(--th-f1)); box-shadow: none; }
-:root[data-theme='pixel'] :is(.hud, .cb) { background: #241f1a; }
+:root[data-theme='pixel'] .bk-side > div { --c: rgba(143, 208, 184, 0.6); padding: var(--th-2) var(--th-3); box-shadow: inset 0 0 18px rgba(79, 163, 145, 0.06); }
+:root[data-theme='pixel'] .bk-side { gap: var(--th-2); font-size: var(--th-t16); }
+:root[data-theme='pixel'] .bk-pal { padding: var(--th-2); gap: 2px; }
+/* the floating rails sit lighter: they are over the world */
+:root[data-theme='pixel'] :is(.pg-panel, .pb-panel) { --th-glass: rgba(10, 8, 7, 0.78); width: 236px; }
 
-/* buttons: raised, pressed while held, gold when on/primary */
-:root[data-theme='pixel'] :is(.view-btn, .cb button, .bk-tool, .bk-overlay, .bk-actions button, .wm-x, .pg-btn, .tw-mode, .tw-back, .tw-swap, .research-close, .lr-open, .bk-sw button, .mm button) {
-  font-family: var(--th-pixel); font-size: var(--th-x2); font-weight: 400; letter-spacing: 0; line-height: 14px;
-  border-style: solid; border-width: calc(5 * var(--th-f1)); box-shadow: none; background: none; color: var(--th-ink);
-  border-image: var(--th-frame-button) 5 fill / calc(5 * var(--th-f1)) / 0 repeat; image-rendering: pixelated;
-  padding: 1px var(--th-1);
+/* panel headings */
+:root[data-theme='pixel'] :is(.pg-head, .pb-panel-head, .lr-title) {
+  font-family: var(--th-title); font-size: var(--th-t20); font-weight: 400; letter-spacing: 1px; line-height: 1;
+  color: var(--th-ui-hi); text-shadow: 0 0 6px rgba(79, 163, 145, 0.55); margin: 0 0 var(--th-2);
 }
-:root[data-theme='pixel'] :is(.view-btn, .cb button, .bk-tool, .bk-overlay, .bk-actions button, .wm-x, .pg-btn, .tw-mode, .tw-back, .tw-swap, .research-close, .lr-open, .bk-sw button, .mm button):hover:not(:disabled) { color: var(--th-money); background: none; }
-:root[data-theme='pixel'] :is(.view-btn, .cb button, .bk-tool, .bk-overlay, .bk-actions button, .wm-x, .pg-btn, .tw-mode, .tw-back, .tw-swap, .research-close, .lr-open, .bk-sw button, .mm button):active:not(:disabled) {
-  border-image-source: var(--th-frame-button-down); padding: 2px var(--th-1) 0;
+:root[data-theme='pixel'] :is(.wm-h, .tw-title, .research-title) {
+  font-family: var(--th-title); font-size: var(--th-t30); font-weight: 400; letter-spacing: 1px; line-height: 1;
+  color: var(--th-ink); text-shadow: 0 0 10px rgba(143, 208, 184, 0.35); margin: 0 0 var(--th-2);
 }
-:root[data-theme='pixel'] :is(.view-btn.active, .cb button.on, .bk-tool.on, .tw-mode.on, .tw-start, .bk-sw button.on, .mm .mm-diff button.mm-diff-btn[aria-pressed='true']) {
-  border-image-source: var(--th-frame-button-on); color: #2a2118; background: none;
+:root[data-theme='pixel'] :is(.wm-h3, .bk-grp, .research-col-title, .tw-group) {
+  font-family: var(--th-text); font-size: var(--th-t16); font-weight: 400; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--th-ui); border: 0; border-bottom: var(--th-hair) solid var(--th-ui-dim); padding: var(--th-2) 0 2px; margin: var(--th-2) 0 var(--th-1);
 }
-:root[data-theme='pixel'] :is(.view-btn.active, .cb button.on, .bk-tool.on):hover { color: #2a2118; }
-:root[data-theme='pixel'] .mm button { padding: var(--th-1) var(--th-2); }
-:root[data-theme='pixel'] .mm button:hover:not(:disabled), :root[data-theme='pixel'] .mm button:focus-visible { border-image-source: var(--th-frame-button-on); color: #2a2118; background: none; }
-:root[data-theme='pixel'] .pg-btn { font-size: var(--th-x2); text-align: left; }
-:root[data-theme='pixel'] .bk-photo-btn { border-image-source: var(--th-frame-button-on); color: #2a2118; }
+/* sentences and secondary lines */
+:root[data-theme='pixel'] :is(.co-tier-sub, .wm-dim, .pg-next, .bk-info, .pb-tick, .rc-blurb, .tw-line, .tw-premise, .tw-sub, .wm-buyers li, .bk-notes div, .sg-line, .dc-sub, .ledger-chip-last, .research-chip-project) {
+  font-family: var(--th-text); font-size: var(--th-t16); line-height: 1.05; letter-spacing: 0;
+}
+:root[data-theme='pixel'] :is(.wm-dim, .pg-next, .tw-line, .tw-sub, .dc-sub, .ledger-chip-last) { color: var(--th-dim); }
+:root[data-theme='pixel'] .pg-next { color: var(--th-mute); }
 
-/* money buttons on the map: gold frame, the price in money colour on dark */
-:root[data-theme='pixel'] :is(.wm-sell, .wm-fund, .wm-burn) {
-  font-family: var(--th-pixel); font-size: var(--th-x2); font-weight: 400; letter-spacing: 0; line-height: 14px;
-  border-style: solid; border-width: calc(5 * var(--th-f1)); box-shadow: none; background: none; filter: none;
-  border-image: var(--th-frame-button-on) 5 fill / calc(5 * var(--th-f1)) / 0 repeat; image-rendering: pixelated; color: #2a2118; padding: 0 var(--th-1);
+/* ============================================================ HUD: an instrument strip, not a row of boxes */
+:root[data-theme='pixel'] .hud {
+  background: linear-gradient(180deg, rgba(21, 58, 59, 0.35), rgba(10, 8, 7, 0.96) 70%), #0a0807;
+  border-bottom: var(--th-hair) solid var(--th-ui-dim); box-shadow: 0 2px 0 #0a0807, 0 6px 18px rgba(0, 0, 0, 0.5);
+  gap: 0; padding: 0 var(--th-3); align-items: stretch;
 }
-:root[data-theme='pixel'] :is(.wm-sell, .wm-fund) b { font-size: var(--th-x2); font-weight: 400; }
-:root[data-theme='pixel'] .wm-burn { border-image-source: var(--th-frame-button); color: var(--th-crisis-tipping); }
-:root[data-theme='pixel'] :is(.wm-sell, .wm-fund):disabled { border-image-source: var(--th-frame-button-down); color: var(--th-dim); background: none; }
+:root[data-theme='pixel'] :is(.hud-stat, .research-chip, .ledger-chip) {
+  background: none; border: 0; box-shadow: none; border-image: none;
+  border-right: var(--th-hair) solid rgba(79, 163, 145, 0.18);
+  padding: var(--th-2) var(--th-4); min-width: 0; gap: 2px; justify-content: flex-start;
+}
+:root[data-theme='pixel'] :is(.research-chip, .ledger-chip):hover { background: rgba(79, 163, 145, 0.08); }
+:root[data-theme='pixel'] .hud-label {
+  font-family: var(--th-text); font-size: var(--th-t16); font-weight: 400; letter-spacing: 2px; color: var(--th-ui); line-height: 1;
+}
+:root[data-theme='pixel'] :is(.hud-value, .hud-meter .hud-value, .research-chip .hud-value, .ledger-chip .hud-value) {
+  font-family: var(--th-title); font-size: var(--th-t20); font-weight: 400; letter-spacing: 1px; line-height: 1;
+}
+:root[data-theme='pixel'] :is(.hud-cash .hud-value, .hud-quarter .hud-value) { font-size: var(--th-t40); line-height: 0.85; }
+:root[data-theme='pixel'] .hud-cash .hud-value { color: var(--th-money); text-shadow: 0 0 12px rgba(245, 197, 66, 0.35); }
+:root[data-theme='pixel'] .hud-brand { font-family: var(--th-title); font-size: var(--th-t20); font-weight: 400; color: var(--th-money); letter-spacing: 1px; line-height: 0.9; max-width: 120px; }
+:root[data-theme='pixel'] :is(.hud-delta, .hud-strikes) { font-family: var(--th-title); font-size: var(--th-t20); font-weight: 400; }
+:root[data-theme='pixel'] .hud-pips .pip { width: 6px; height: 6px; background: rgba(79, 163, 145, 0.18); }
+:root[data-theme='pixel'] .hud-pips .pip.done { background: var(--th-ui); }
+:root[data-theme='pixel'] .hud-pips .pip.now { background: var(--th-money); box-shadow: 0 0 6px var(--th-money); }
+/* the Doom Clock crown */
+:root[data-theme='pixel'] .hud-crown { border-bottom: var(--th-hair) solid rgba(79, 163, 145, 0.18); margin: 0 calc(-1 * var(--th-3)); padding: 0 var(--th-3); min-height: 0; }
+:root[data-theme='pixel'] .dc-center { border: 0; border-right: 0; background: none; padding: var(--th-1) var(--th-3); }
+:root[data-theme='pixel'] .dc-center .dc-time { font-family: var(--th-title); font-size: var(--th-t40); font-weight: 400; line-height: 0.85; letter-spacing: 1px; }
+:root[data-theme='pixel'] .dc-time { font-family: var(--th-title); font-size: var(--th-t30); font-weight: 400; }
+:root[data-theme='pixel'] .dc-hud[data-zone='countdown'] .dc-time { text-shadow: 0 0 12px rgba(255, 90, 79, 0.6); }
+:root[data-theme='pixel'] :is(.dc-scale, .dc-cd-label) { font-family: var(--th-text); font-size: var(--th-t16); font-weight: 400; letter-spacing: 1px; }
+:root[data-theme='pixel'] .dc-cd-weeks { font-family: var(--th-title); font-size: var(--th-t30); font-weight: 400; }
+:root[data-theme='pixel'] .dc-track { height: 6px; border: var(--th-hair) solid var(--th-ui-dim); }
 
-/* bars: the recessed meter track */
+/* bars: a thin lit track */
 :root[data-theme='pixel'] :is(.hud-bar, .pg-bar, .wm-bar, .wm-tbar) {
-  height: calc(10 * var(--th-f1)); border-style: solid; border-width: calc(3 * var(--th-f1)); box-shadow: none; background: none; box-sizing: border-box;
-  border-image: var(--th-frame-meter) 3 fill / calc(3 * var(--th-f1)) / 0 repeat; image-rendering: pixelated;
+  height: 6px; border: var(--th-hair) solid rgba(79, 163, 145, 0.3); background: rgba(10, 8, 7, 0.9); box-shadow: none; box-sizing: border-box; border-image: none;
 }
-:root[data-theme='pixel'] .wm-tbar { height: calc(10 * var(--th-f1)); }
 
-/* ---------- Type ---------- */
-:root[data-theme='pixel'] :is(.hud-label, .hud-value, .hud-brand, .dc-time, .dc-sub, .dc-scale, .dc-cd-label, .dc-cd-weeks, .view-hint,
-  .cb, .pg-head, .pg-top, .pb-panel-head, .bk-grp, .bk-days span, .bk-days small, .bk-sys b, .bk-sys span, .bk-rat,
-  .wm-h, .wm-h3, .wm-big, .wm-num, .wm-c, .wm-b, .wm-crisis .wm-lbl b, .wm-track-lbl b, .wm-legend,
-  .tw-title, .tw-group, .tw-slot, .tw-kind, .tw-cost, .tw-heat, .tw-when, .research-title, .rc-name, .rc-meta, .research-col-title, .lr-title,
-  .ledger-chip-last, .research-chip-project, .hud-strikes, .hud-delta) {
-  font-family: var(--th-pixel); font-weight: 400; letter-spacing: 0;
+/* ============================================================ buttons: neon signs */
+:root[data-theme='pixel'] :is(.view-btn, .cb button, .bk-tool, .bk-overlay, .bk-actions button, .wm-x, .pg-btn, .tw-mode, .tw-back, .tw-swap, .tw-start, .research-close, .lr-open, .bk-sw button, .mm button, .wm-burn) {
+  font-family: var(--th-title); font-size: var(--th-t20); font-weight: 400; letter-spacing: 1px; line-height: 1;
+  color: var(--th-ink); background: rgba(10, 8, 7, 0.55); border: var(--th-hair) solid var(--th-ui-dim); border-image: none;
+  box-shadow: none; padding: 3px var(--th-2) 2px; border-radius: 0;
 }
-/* sizes: everything pixel is 2x, numbers that matter 3x, cash and the clock 4x */
-:root[data-theme='pixel'] :is(.hud-label, .dc-sub, .dc-scale, .dc-cd-label, .view-hint, .cb, .pg-head, .pg-top, .pb-panel-head, .bk-grp, .bk-days small,
-  .wm-h3, .wm-track-lbl b, .wm-legend, .wm-crisis .wm-lbl b, .tw-slot, .tw-kind, .tw-cost, .tw-heat, .tw-when, .rc-meta, .research-col-title,
-  .ledger-chip-last, .research-chip-project, .hud-strikes, .hud-delta, .bk-sys b, .bk-sys span, .bk-rat, .wm-c, .wm-b) { font-size: var(--th-x2); line-height: 14px; }
-:root[data-theme='pixel'] :is(.hud-value, .hud-meter .hud-value, .research-chip .hud-value, .ledger-chip .hud-value, .wm-h, .wm-big, .tw-group, .rc-name, .lr-title, .hud-brand) { font-size: var(--th-x2); line-height: 14px; }
-:root[data-theme='pixel'] :is(.hud-big, .hud-quarter .hud-value, .tw-title, .research-title, .wm-num, .dc-cd-weeks, .dc-time) { font-size: var(--th-x3); line-height: 21px; }
-:root[data-theme='pixel'] :is(.hud-cash .hud-value, .dc-center .dc-time, .bk-days span) { font-size: var(--th-x4); line-height: 28px; }
-:root[data-theme='pixel'] .wm-h { font-size: var(--th-x3); line-height: 21px; }
-:root[data-theme='pixel'] .hud-label, :root[data-theme='pixel'] .pg-name, :root[data-theme='pixel'] .wm-h3, :root[data-theme='pixel'] .bk-grp { color: var(--th-label); }
-:root[data-theme='pixel'] .wm-h3 { border-top: 0; padding-top: var(--th-2); margin: var(--th-2) 0 var(--th-1); }
-/* body copy: one mono size for sentences, one for secondary lines */
-:root[data-theme='pixel'] :is(.wm-dim, .pg-next, .bk-info, .wm-scheme, .wm-buyers li, .pb-tick, .rc-blurb, .tw-line, .tw-premise) { font-size: 11px; line-height: 14px; }
-:root[data-theme='pixel'] :is(.wm-panel, .pg-panel, .pb-panel, .bk-side) { font-size: 12px; line-height: 16px; }
+:root[data-theme='pixel'] :is(.view-btn, .cb button, .bk-tool, .bk-overlay, .bk-actions button, .wm-x, .pg-btn, .tw-mode, .tw-back, .tw-swap, .research-close, .lr-open, .bk-sw button, .mm button):hover:not(:disabled) {
+  color: var(--th-ui-hi); border-color: var(--th-ui-hi); background: rgba(21, 58, 59, 0.6); box-shadow: 0 0 8px rgba(79, 163, 145, 0.45);
+}
+:root[data-theme='pixel'] :is(.view-btn, .cb button, .bk-tool, .pg-btn, .tw-mode, .mm button):active:not(:disabled) { background: rgba(79, 163, 145, 0.35); }
+:root[data-theme='pixel'] :is(.view-btn.active, .cb button.on, .bk-tool.on, .tw-mode.on, .bk-sw button.on, .mm .mm-diff button.mm-diff-btn[aria-pressed='true']) {
+  color: #e8fff6; background: rgba(79, 163, 145, 0.3); border-color: var(--th-ui-hi);
+  box-shadow: 0 0 10px rgba(79, 163, 145, 0.6), inset 0 0 8px rgba(143, 208, 184, 0.25); text-shadow: 0 0 6px rgba(143, 208, 184, 0.8);
+}
+:root[data-theme='pixel'] :is(.view-btn, .cb button, .bk-tool, .mm button):disabled { color: var(--th-mute); border-color: rgba(79, 163, 145, 0.15); background: none; }
+:root[data-theme='pixel'] .pg-btn { width: 100%; text-align: left; padding: var(--th-1) var(--th-2); }
+:root[data-theme='pixel'] .mm button { padding: var(--th-2) var(--th-3); }
+:root[data-theme='pixel'] .mm > button:first-of-type:not(:disabled), :root[data-theme='pixel'] .tw-start {
+  color: #2a2118; background: var(--th-money); border-color: #fff1a8; box-shadow: 0 0 14px rgba(245, 197, 66, 0.55);
+}
+:root[data-theme='pixel'] .mm > button:first-of-type:hover:not(:disabled) { color: #2a2118; background: #fff1a8; border-color: #fff1a8; box-shadow: 0 0 18px rgba(245, 197, 66, 0.8); }
+:root[data-theme='pixel'] .bk-photo-btn { border-color: var(--th-money); color: var(--th-money); }
+:root[data-theme='pixel'] .wm-burn { color: var(--th-crisis-tipping); border-color: rgba(255, 90, 79, 0.5); }
+:root[data-theme='pixel'] .wm-burn:hover { color: #ffa090; border-color: var(--th-crisis-tipping); box-shadow: 0 0 8px rgba(255, 90, 79, 0.5); background: rgba(107, 31, 26, 0.5); }
+/* money actions: gold neon */
+:root[data-theme='pixel'] :is(.wm-sell, .wm-fund) {
+  font-family: var(--th-title); font-size: var(--th-t20); font-weight: 400; letter-spacing: 1px; line-height: 0.95;
+  color: var(--th-money); background: rgba(94, 60, 16, 0.35); border: var(--th-hair) solid rgba(245, 197, 66, 0.7); border-image: none;
+  box-shadow: 0 0 8px rgba(245, 197, 66, 0.3); padding: 3px var(--th-2); filter: none; min-width: 72px;
+}
+:root[data-theme='pixel'] :is(.wm-sell, .wm-fund) b { font-weight: 400; font-size: var(--th-t20); color: #fff1a8; }
+:root[data-theme='pixel'] :is(.wm-sell, .wm-fund):hover:not(:disabled) { background: rgba(245, 197, 66, 0.25); box-shadow: 0 0 14px rgba(245, 197, 66, 0.6); }
+:root[data-theme='pixel'] :is(.wm-sell, .wm-fund):disabled { color: var(--th-mute); border-color: rgba(108, 101, 95, 0.4); background: none; box-shadow: none; }
+:root[data-theme='pixel'] :is(.wm-sell, .wm-fund):disabled b { color: var(--th-mute); }
 
-/* ---------- Semantic colours ---------- */
-:root[data-theme='pixel'] .hud-cash .hud-value, :root[data-theme='pixel'] .lr-cash b, :root[data-theme='pixel'] :is(.wm-sell b, .wm-fund b) { color: var(--th-money); }
-:root[data-theme='pixel'] :is(.wm-sell, .wm-fund) b { color: #2a2118; } /* on the gold button the price is dark */
-:root[data-theme='pixel'] .hud-cash[data-negative='true'] .hud-value { color: var(--th-loss); }
+/* ============================================================ build menu */
+:root[data-theme='pixel'] .bk-obj {
+  font-family: var(--th-text); font-size: var(--th-t16); line-height: 1; color: var(--th-ink);
+  background: none; border: 0; border-left: 2px solid transparent; box-shadow: none; padding: 3px var(--th-1) 3px var(--th-2);
+}
+:root[data-theme='pixel'] .bk-obj:hover { background: rgba(79, 163, 145, 0.12); border-left-color: var(--th-ui); }
+:root[data-theme='pixel'] .bk-obj.on { background: rgba(79, 163, 145, 0.22); border-left-color: var(--th-ui-hi); color: #e8fff6; }
+:root[data-theme='pixel'] .bk-obj small { font-size: var(--th-t16); color: var(--th-money); }
+:root[data-theme='pixel'] .bk-obj[data-locked='true'] { opacity: 0.45; }
+:root[data-theme='pixel'] .bk-obj[data-locked='true'] small { color: var(--th-dim); }
+:root[data-theme='pixel'] .bk-obj[data-locked='true']::after { font-family: var(--th-text); font-size: var(--th-t16); }
+:root[data-theme='pixel'] .bk-scroll { border: var(--th-hair) solid var(--th-ui-dim); box-shadow: 0 0 0 var(--th-hair) #0a0807, 0 8px 24px rgba(0, 0, 0, 0.5); }
+:root[data-theme='pixel'] .gs .stage canvas.bk-canvas { border: 0; }
+:root[data-theme='pixel'] .bk-tools { gap: var(--th-1); }
+:root[data-theme='pixel'] :is(.bk-sys b, .bk-room b, .bk-res b) { font-family: var(--th-title); font-size: var(--th-t20); font-weight: 400; letter-spacing: 1px; color: var(--th-ui-hi); }
+:root[data-theme='pixel'] .bk-sys span { font-family: var(--th-title); font-size: var(--th-t20); font-weight: 400; }
+:root[data-theme='pixel'] .bk-sys small { font-size: var(--th-t16); }
+:root[data-theme='pixel'] .bk-rat { font-family: var(--th-title); font-size: var(--th-t20); letter-spacing: 1px; }
+:root[data-theme='pixel'] .bk-rat b { color: var(--th-money); }
+:root[data-theme='pixel'] .bk-days span { font-family: var(--th-title); font-size: var(--th-t40); font-weight: 400; color: var(--th-ui-hi); text-shadow: 0 0 10px rgba(79, 163, 145, 0.5); }
+:root[data-theme='pixel'] .bk-days small { font-family: var(--th-text); font-size: var(--th-t16); letter-spacing: 1px; color: var(--th-dim); }
+
+/* ============================================================ pressure and clients rails */
+:root[data-theme='pixel'] .pg-top { font-family: var(--th-text); font-size: var(--th-t16); font-weight: 400; letter-spacing: 1px; }
+:root[data-theme='pixel'] .pg-row[data-k='heat'] .pg-name { color: var(--th-heat); }
+:root[data-theme='pixel'] .pg-row[data-k='tension'] .pg-name { color: var(--th-tension); }
+:root[data-theme='pixel'] .pg-row[data-k='heat']:not([data-zone='hot']):not([data-zone='watched']) .pg-fill { background: var(--th-heat); }
+:root[data-theme='pixel'] .pg-row[data-k='tension']:not([data-zone='momentum']):not([data-zone='edge']) .pg-fill { background: var(--th-tension); }
+:root[data-theme='pixel'] .pg-relief { border-top: var(--th-hair) solid var(--th-ui-dim); }
+:root[data-theme='pixel'] .pb-client { font-size: var(--th-t16); }
+
+/* ============================================================ map side panel and schemes */
+:root[data-theme='pixel'] .wm-crisis .wm-lbl, :root[data-theme='pixel'] .wm-track-lbl { font-family: var(--th-text); font-size: var(--th-t16); color: var(--th-dim); line-height: 1; }
+:root[data-theme='pixel'] :is(.wm-crisis .wm-lbl b, .wm-track-lbl b, .wm-c, .wm-b) { font-family: var(--th-title); font-size: var(--th-t20); font-weight: 400; }
+:root[data-theme='pixel'] .wm-track-lbl em { font-size: var(--th-t16); }
+:root[data-theme='pixel'] .wm-track { margin-bottom: var(--th-2); }
+:root[data-theme='pixel'] .wm-num { font-family: var(--th-title); font-size: var(--th-t40); font-weight: 400; }
+:root[data-theme='pixel'] .wm-big { font-family: var(--th-title); font-size: var(--th-t20); font-weight: 400; letter-spacing: 1px; }
+:root[data-theme='pixel'] .wm-scheme { border-bottom: var(--th-hair) solid rgba(79, 163, 145, 0.18); padding: var(--th-2) 0; font-size: var(--th-t16); line-height: 1.05; }
+:root[data-theme='pixel'] :is(.wm-scheme b, .wm-card-name) { font-family: var(--th-title); font-size: var(--th-t20); font-weight: 400; letter-spacing: 1px; color: var(--th-ink); }
+:root[data-theme='pixel'] .wm-legend { font-family: var(--th-text); font-size: var(--th-t16); }
+:root[data-theme='pixel'] :is(.wm-edge-note, .wm-edge) { font-family: var(--th-text); font-size: var(--th-t16); background: rgba(255, 159, 28, 0.15); color: var(--th-crisis-edge); border: var(--th-hair) solid rgba(255, 159, 28, 0.6); padding: 2px var(--th-1); }
+:root[data-theme='pixel'] :is(.wm-card, .wm-lead) { background: rgba(21, 58, 59, 0.25); border: var(--th-hair) solid rgba(79, 163, 145, 0.25); }
+:root[data-theme='pixel'] .wm-row { font-family: var(--th-text); font-size: var(--th-t16); background: none; border: 0; box-shadow: none; border-bottom: var(--th-hair) solid rgba(79, 163, 145, 0.15); }
+:root[data-theme='pixel'] .wm-row:hover { background: rgba(79, 163, 145, 0.12); }
+
+/* threat tracks overlay */
+:root[data-theme='pixel'] .tw-card { background: rgba(10, 8, 7, 0.6); border: var(--th-hair) solid rgba(79, 163, 145, 0.2); border-left: 3px solid var(--tw); box-shadow: inset 8px 0 18px -10px var(--tw); font-size: var(--th-t16); padding: var(--th-2) var(--th-3); }
+:root[data-theme='pixel'] .tw-name { font-family: var(--th-title); font-size: var(--th-t20); letter-spacing: 1px; text-shadow: 0 0 8px var(--tw); }
+:root[data-theme='pixel'] :is(.tw-slot, .tw-kind, .tw-open, .tw-cost, .tw-heat, .tw-when) { font-family: var(--th-text); font-size: var(--th-t16); font-weight: 400; }
+:root[data-theme='pixel'] .tw-scheme { font-size: var(--th-t16); border-bottom: var(--th-hair) solid rgba(79, 163, 145, 0.15); padding: 3px var(--th-1); grid-template-columns: 190px 1fr 64px 72px 52px; }
+:root[data-theme='pixel'] .tw-scheme > :first-child { font-family: var(--th-title); font-size: var(--th-t20); letter-spacing: 1px; font-weight: 400; }
+:root[data-theme='pixel'] :is(.tw-overlay, .report-overlay) { background: rgba(5, 4, 6, 0.72); }
+
+/* ============================================================ clock bar */
+:root[data-theme='pixel'] .cb {
+  font-family: var(--th-title); font-size: var(--th-t20); font-weight: 400; letter-spacing: 1px;
+  background: linear-gradient(0deg, rgba(21, 58, 59, 0.3), rgba(10, 8, 7, 0.96) 70%), #0a0807;
+  border-top: var(--th-hair) solid var(--th-ui-dim); box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.5); gap: var(--th-2); padding: var(--th-1) var(--th-3);
+}
+:root[data-theme='pixel'] .cb-label { color: var(--th-money); }
+:root[data-theme='pixel'] .cb-mid { font-family: var(--th-title); font-size: var(--th-t20); color: var(--th-crisis-tipping); text-shadow: 0 0 8px rgba(255, 90, 79, 0.6); letter-spacing: 1px; }
+:root[data-theme='pixel'] .cb-q { height: 6px; border: var(--th-hair) solid rgba(79, 163, 145, 0.3); background: rgba(10, 8, 7, 0.9); }
+:root[data-theme='pixel'] .cb-q i { background: var(--th-money); }
+:root[data-theme='pixel'] .cb-q[data-state='done'] i { background: var(--th-ui); }
+:root[data-theme='pixel'] .view-hint { font-family: var(--th-text); font-size: var(--th-t16); color: var(--th-mute); }
+:root[data-theme='pixel'] .view-toggle { gap: var(--th-1); padding: var(--th-1) 0; }
+
+/* ============================================================ title */
+:root[data-theme='pixel'] .mm-title { font-family: var(--th-title); font-weight: 400; font-size: calc(10 * var(--px-8, 8px)); line-height: 0.9; letter-spacing: 2px;
+  color: var(--th-money); text-shadow: 0 0 24px rgba(245, 197, 66, 0.45), 0 4px 0 #5e3c10, 0 8px 0 #0a0807; }
+:root[data-theme='pixel'] :is(.mm-tag, .mm-sub, .mm-diff-note, .mm-foot, .mm-link, .mm-diff-label) { font-family: var(--th-text); font-size: var(--th-t16); letter-spacing: 1px; }
+:root[data-theme='pixel'] .mm-tag { color: var(--th-ui-hi); text-shadow: 0 0 8px rgba(79, 163, 145, 0.6); }
+
+/* ============================================================ meaning colours */
+:root[data-theme='pixel'] :is(.lr-cash b, .sg-cost, .tw-cost, .rc-cost) { color: var(--th-money); }
+:root[data-theme='pixel'] .hud-cash[data-negative='true'] .hud-value { color: var(--th-loss); text-shadow: 0 0 10px rgba(255, 90, 79, 0.5); }
 :root[data-theme='pixel'] :is(.hud-value, .lr-line-amt, .lr-net-value, .lr-cat-val, .hud-delta)[data-dir='up'] { color: var(--th-gain); }
-:root[data-theme='pixel'] :is(.hud-value[data-dir='down'], .lr-line-amt[data-dir='down'], .lr-net-value[data-dir='down'], .hud-delta[data-dir='down']) { color: var(--th-loss); }
-:root[data-theme='pixel'] .hud-heat .hud-label, :root[data-theme='pixel'] .hud-heat .hud-value { color: var(--th-heat); }
+:root[data-theme='pixel'] :is(.hud-value, .lr-line-amt, .lr-net-value, .lr-cat-val, .hud-delta)[data-dir='down'] { color: var(--th-loss); }
+:root[data-theme='pixel'] .hud-heat :is(.hud-label, .hud-value) { color: var(--th-heat); }
 :root[data-theme='pixel'] .hud-heat .hud-bar-fill { background: var(--th-heat); }
-:root[data-theme='pixel'] .hud-tension .hud-label, :root[data-theme='pixel'] .hud-tension .hud-value { color: var(--th-tension); }
+:root[data-theme='pixel'] .hud-tension :is(.hud-label, .hud-value) { color: var(--th-tension); }
 :root[data-theme='pixel'] .hud-tension .hud-bar-fill { background: var(--th-tension); }
-/* past the edge the meter turns crisis colours, whatever it measures */
 :root[data-theme='pixel'] .hud-meter[data-zone='edge'] .hud-bar-fill { background: var(--th-crisis-edge); }
 :root[data-theme='pixel'] .hud-meter[data-zone='edge'] .hud-value { color: var(--th-crisis-edge); }
 :root[data-theme='pixel'] .hud-meter[data-zone='tipping'] .hud-bar-fill { background: var(--th-crisis-tipping); }
 :root[data-theme='pixel'] .hud-meter[data-zone='tipping'] .hud-value { color: var(--th-crisis-tipping); }
-:root[data-theme='pixel'] .research-chip .hud-value, :root[data-theme='pixel'] .research-chip .hud-bar-fill { color: var(--th-research); }
+:root[data-theme='pixel'] .research-chip .hud-value { color: var(--th-research); }
 :root[data-theme='pixel'] .research-chip .hud-bar-fill { background: var(--th-research); }
-/* the pressure rail: heat row neon, tension row ice */
-:root[data-theme='pixel'] .pg-row[data-k='heat'] .pg-name { color: var(--th-heat); }
-:root[data-theme='pixel'] .pg-row[data-k='tension'] .pg-name { color: var(--th-tension); }
-/* crisis ramp on the map: numbers, bars and the scheme panel's track rows */
-:root[data-theme='pixel'] :is(.wm-c, .wm-crisis .wm-lbl b, .wm-track .wm-track-lbl b)[data-zone='uneasy'],
-:root[data-theme='pixel'] :is(.wm-crisis, .wm-track)[data-zone='uneasy'] :is(.wm-lbl b, .wm-track-lbl b) { color: var(--th-crisis-uneasy); }
+:root[data-theme='pixel'] .wm-c[data-zone='uneasy'], :root[data-theme='pixel'] :is(.wm-crisis, .wm-track)[data-zone='uneasy'] :is(.wm-lbl b, .wm-track-lbl b) { color: var(--th-crisis-uneasy); }
+:root[data-theme='pixel'] .wm-c[data-zone='edge'], :root[data-theme='pixel'] :is(.wm-crisis, .wm-track)[data-zone='edge'] :is(.wm-lbl b, .wm-track-lbl b) { color: var(--th-crisis-edge); }
+:root[data-theme='pixel'] .wm-c[data-zone='tipping'] { color: var(--th-crisis-tipping); }
 :root[data-theme='pixel'] :is(.wm-crisis, .wm-track)[data-zone='uneasy'] :is(.wm-bar i, .wm-tbar i) { background: var(--th-crisis-uneasy); }
 :root[data-theme='pixel'] :is(.wm-crisis, .wm-track)[data-zone='edge'] :is(.wm-bar i, .wm-tbar i) { background: var(--th-crisis-edge); }
-:root[data-theme='pixel'] :is(.wm-crisis, .wm-track)[data-zone='edge'] :is(.wm-lbl b, .wm-track-lbl b) { color: var(--th-crisis-edge); }
-:root[data-theme='pixel'] .wm-c[data-zone='uneasy'] { color: var(--th-crisis-uneasy); }
-:root[data-theme='pixel'] .wm-c[data-zone='edge'] { color: var(--th-crisis-edge); }
-:root[data-theme='pixel'] .wm-c[data-zone='tipping'] { color: var(--th-crisis-tipping); }
-:root[data-theme='pixel'] :is(.wm-risk, .tw-heat) { color: var(--th-heat); } /* a scheme's heat cost reads as heat */
+:root[data-theme='pixel'] :is(.wm-risk, .tw-heat) { color: var(--th-heat); }
 :root[data-theme='pixel'] .wm-gain { color: var(--th-crisis-edge); }
-:root[data-theme='pixel'] .tw-cost, :root[data-theme='pixel'] .sg-cost { color: var(--th-money); }
-:root[data-theme='pixel'] .wm-edge, :root[data-theme='pixel'] .wm-edge-note { background: var(--th-crisis-edge); }
 
-/* ---------- Spacing (4px grid) ---------- */
-:root[data-theme='pixel'] .hud { gap: var(--th-1); padding: var(--th-1) var(--th-2); }
-:root[data-theme='pixel'] .hud-stat { gap: var(--th-1); }
-:root[data-theme='pixel'] .cb { gap: var(--th-2); padding: var(--th-1) var(--th-2); }
-:root[data-theme='pixel'] .cb-group, :root[data-theme='pixel'] .view-toggle, :root[data-theme='pixel'] .bk-tools { gap: var(--th-1); }
-:root[data-theme='pixel'] .bk-pal { gap: var(--th-1); }
-:root[data-theme='pixel'] .bk-obj { border: 0; padding: var(--th-1); background: #2f2821; box-shadow: inset 0 -2px 0 #0a0807, inset 2px 0 0 #3b2f26; }
-:root[data-theme='pixel'] .bk-obj.on { box-shadow: inset 0 0 0 2px var(--th-money); color: var(--th-money); }
-:root[data-theme='pixel'] .bk-obj small { color: var(--th-money); }
-:root[data-theme='pixel'] .bk-obj[data-locked='true'] small { color: var(--th-dim); }
-:root[data-theme='pixel'] .bk-grp { margin: var(--th-2) 0 0; }
-:root[data-theme='pixel'] .wm-scheme { padding: var(--th-1) 0; border-bottom: 2px solid #0a0807; }
-:root[data-theme='pixel'] .wm-track { margin-bottom: var(--th-2); }
-:root[data-theme='pixel'] .wm-panel { padding: var(--th-2); }
-:root[data-theme='pixel'] .tw-scheme { padding: var(--th-1); border-bottom: 2px solid #0a0807; }
-:root[data-theme='pixel'] .tw-card { border-width: 0 0 0 8px; padding: var(--th-2); box-shadow: inset 0 0 0 2px #0a0807, inset 2px 2px 0 4px #3b2f26; }
-/* pressure rail bars follow the HUD: heat neon, tension ice until the edge */
-:root[data-theme='pixel'] .pg-row[data-k='heat']:not([data-zone='hot']):not([data-zone='watched']) .pg-fill { background: var(--th-heat); }
-:root[data-theme='pixel'] .pg-row[data-k='tension']:not([data-zone='momentum']):not([data-zone='edge']) .pg-fill { background: var(--th-tension); }
+/* the shelter's tool row: small terminal keys, so it stays on one or two lines */
+:root[data-theme='pixel'] .bk :is(.bk-tool, .bk-overlay) { font-family: var(--th-text); font-size: var(--th-t16); letter-spacing: 1px; text-transform: uppercase; padding: 2px var(--th-2) 1px; }
+:root[data-theme='pixel'] .bk .bk-overlay { background: rgba(10, 8, 7, 0.55); color: var(--th-ink); }
 
-/* frames are thicker than the old 3px borders: keep the floating rails the same outer width (272px) */
-:root[data-theme='pixel'] :is(.pg-panel, .pb-panel) { width: 232px; }
-/* the threats list: room for 'HEAT +12' at 2x */
-:root[data-theme='pixel'] .tw-scheme { grid-template-columns: 170px 1fr 56px 72px 48px; }
-/* row labels are sentences with one number: body font, the number in pixels */
-:root[data-theme='pixel'] :is(.wm-track-lbl, .wm-crisis .wm-lbl) { font-size: 11px; line-height: 14px; align-items: baseline; }
-:root[data-theme='pixel'] .mm-title { font-family: var(--th-pixel); font-weight: 400; font-size: calc(6 * var(--px-8, 8px)); line-height: 1.17; letter-spacing: 0; text-shadow: var(--px-6, 6px) var(--px-6, 6px) 0 #0a0807; } /* 8x */
-:root[data-theme='pixel'] .mm-diff-label { font-family: var(--th-pixel); font-size: var(--th-x2); letter-spacing: 0; }
-:root[data-theme='pixel'] .cb-mid { font-family: var(--th-pixel); font-size: var(--th-x2); letter-spacing: 0; } /* the clock bar's MIDNIGHT (#127) */
+/* small print inside themed panels stays on VT323's grid (16 px) */
+:root[data-theme='pixel'] :is(.bk-side, .wm-panel, .pg-panel, .pb-panel, .bk-pal, .hud) small,
+:root[data-theme='pixel'] :is(.pb-lev-word, .pb-client-name, .pb-empty) { font-family: var(--th-text); font-size: var(--th-t16); font-weight: 400; }

@@ -1,55 +1,31 @@
-// #126 UI theme: the pixel web font is a valid TrueType built from the game's glyphs, and the theme only uses it
-// at whole-number scales.
+// #159 UI theme: the two vendored pixel fonts exist with their licences, and the theme only uses them at whole
+// multiples of their own pixel grids (Jersey 10: 10 px, VT323: 8 px), in device-rounded units (#127).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { buildPixelFont, pixelFontCharset, PIXEL_FONT_STEP, WIDE_GLYPHS } from '../src/ui/pixel-font.js';
-import { GLYPH_TABLE } from '../src/art/font.js';
+import { readFileSync, existsSync } from 'node:fs';
 
-const u32 = (b, o) => ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0;
-const u16 = (b, o) => (b[o] << 8) | b[o + 1];
-function tables(b) {
-  const n = u16(b, 4); const out = {};
-  for (let i = 0; i < n; i++) { const r = 12 + i * 16; out[String.fromCharCode(...b.slice(r, r + 4))] = { sum: u32(b, r + 4), off: u32(b, r + 8), len: u32(b, r + 12) }; }
-  return out;
-}
-const sum = (b) => { let s = 0; for (let i = 0; i < b.length; i += 4) s = (s + (((b[i] ?? 0) << 24) | ((b[i + 1] ?? 0) << 16) | ((b[i + 2] ?? 0) << 8) | (b[i + 3] ?? 0))) >>> 0; return s; };
+const css = readFileSync(new URL('../src/ui/theme.css', import.meta.url), 'utf8');
 
-test('pixel font is a well-formed TrueType file', () => {
-  const b = buildPixelFont();
-  assert.equal(u32(b, 0), 0x00010000);
-  const t = tables(b);
-  for (const tag of ['OS/2', 'cmap', 'glyf', 'head', 'hhea', 'hmtx', 'loca', 'maxp', 'name', 'post']) assert.ok(t[tag], `missing ${tag}`);
-  const tags = Object.keys(t); assert.deepEqual(tags, [...tags].sort(), 'table records sorted');
-  for (const [tag, { sum: s, off, len }] of Object.entries(t)) {
-    assert.equal(off % 4, 0, `${tag} aligned`);
-    const data = Uint8Array.from(b.slice(off, off + len));
-    if (tag === 'head') data.fill(0, 8, 12);
-    assert.equal(sum(data), s, `${tag} checksum`);
+test('the theme fonts are vendored with their open font licences', () => {
+  for (const f of ['jersey-10-latin-400-normal.woff2', 'vt323-latin-400-normal.woff2', 'LICENSE-jersey-10.txt', 'LICENSE-vt323.txt']) {
+    assert.ok(existsSync(new URL(`../assets/fonts/${f}`, import.meta.url)), f);
   }
-  assert.equal(sum(b), 0xb1b0afba, 'whole-font checksum adjustment');
-  assert.equal(u16(b, t.head.off + 18), 128 * PIXEL_FONT_STEP, 'unitsPerEm = 6 font pixels');
+  for (const f of ['LICENSE-jersey-10.txt', 'LICENSE-vt323.txt']) assert.match(readFileSync(new URL(`../assets/fonts/${f}`, import.meta.url), 'utf8'), /SIL Open Font License/);
+  assert.match(css, /@font-face \{ font-family: 'Jersey 10'; src: url\('\.\.\/\.\.\/assets\/fonts\/jersey-10/);
+  assert.match(css, /@font-face \{ font-family: 'VT323'; src: url\('\.\.\/\.\.\/assets\/fonts\/vt323/);
 });
 
-test('pixel font covers the glyph table, lowercase and the wide glyphs', () => {
-  const cs = pixelFontCharset();
-  for (const ch of Object.keys(GLYPH_TABLE)) assert.ok(cs.has(ch.codePointAt(0)), ch);
-  for (const ch of 'abcxyz') assert.deepEqual(cs.get(ch.charCodeAt(0)), cs.get(ch.toUpperCase().charCodeAt(0)));
-  for (const [ch, rows] of Object.entries(WIDE_GLYPHS)) { assert.equal(rows.length, 5); assert.ok(rows.every((r) => r.length === 5)); assert.deepEqual(cs.get(ch.charCodeAt(0)), rows); }
-});
-
-test('theme uses the pixel font only at whole-number scales', () => {
-  const css = readFileSync(new URL('../src/ui/theme.css', import.meta.url), 'utf8');
-  // #127: --th-xN = 6 font px at N device-rounded px each (calc(6 * var(--px-N)))
-  const sizes = [...css.matchAll(/--th-x(\d):\s*calc\((\d+) \* var\(--px-(\d)/g)];
-  assert.ok(sizes.length >= 3);
-  for (const [, k, six, n] of sizes) { assert.equal(Number(six), PIXEL_FONT_STEP, `--th-x${k}`); assert.equal(n, k, `--th-x${k}`); }
-  // every rule that switches to the pixel font sizes it with a token or a multiple of 6
+test('type sizes are whole multiples of each font grid, in device-rounded px', () => {
+  const tok = Object.fromEntries([...css.matchAll(/--th-t(\d+):\s*calc\((\d+) \* var\(--px-(\d)/g)].map(([, n, a, k]) => [n, Number(a) * Number(k)]));
+  assert.deepEqual(tok, { 16: 16, 20: 20, 30: 30, 40: 40 });
+  // every font-size in the theme is a token (or the title's 10 x 8)
+  for (const [, v] of css.matchAll(/font-size:\s*([^;]+);/g)) assert.ok(/^var\(--th-t\d+\)$/.test(v.trim()) || v.trim() === 'calc(10 * var(--px-8, 8px))', `font-size ${v}`);
+  // VT323 only at 16, Jersey only at 20/30/40
   for (const rule of css.split('}')) {
-    if (!/font-family:\s*var\(--th-pixel\)/.test(rule)) continue;
-    const fs = rule.match(/font-size:\s*([^;]+);/);
-    if (!fs) continue;
-    const v = fs[1].trim();
-    assert.ok(/^var\(--th-x\d\)$/.test(v) || /^calc\(6 \* var\(--px-\d/.test(v), `font-size ${v} in: ${rule.trim().slice(0, 80)}`);
+    const fam = rule.match(/font-family:\s*var\(--th-(title|text)\)/)?.[1];
+    const fs = rule.match(/font-size:\s*var\(--th-t(\d+)\)/)?.[1];
+    if (!fam || !fs) continue;
+    if (fam === 'text') assert.equal(fs, '16', rule.slice(0, 80));
+    else assert.ok(['20', '30', '40'].includes(fs), rule.slice(0, 80));
   }
 });
