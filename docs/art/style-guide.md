@@ -120,8 +120,8 @@ The world map is the one place where these rules replace the general ones above:
 **7. Readable beside the shelter grid.** The map is the world above: cooler and calmer than the warm, lit bunker. Its brightest land tone stays below the bunker's gold and lamp colours, so a glance tells the two canvases apart. The crisis overlays (gold, amber, red tints and rims) must read on every biome at 1×; check any new biome against all three.
 ![readability](world-map-rules/07-readability.png)
 
-## The 64 px minimum (art note D4; room tiles #117)
-Director's note D4: "all assets need to be 64bit now minimum". Until #113 records the exact definition, the art built for it reads this as **64 px per metre, and never under 64 px on a side**. That is four times the old 16 px grid, so a 4 × 3 m Bunk Room tile is 256 × 192 px.
+## Room tiles at 64 px (#117)
+Room tiles follow the "64" rule above (#113): **64 px per metre, never under 64 px on a side**, and in-world text at least 8 px tall (the 3×5 glyphs drawn at 2× or more). A 4 × 3 m Bunk Room tile is 256 × 192 px.
 
 At this size flat fills look like vector art, so 64 px art follows these rules (`src/art/hd/`):
 1. **Ramps, not colours.** Every material is a 5–8 step ramp in `HD_RAMPS` (`src/art/hd/raster.js`): steel, teal lab tile, concrete, walnut, plaster, gold, velvet, marble, emerald, violet and so on. No colour outside them can be drawn.
@@ -131,4 +131,4 @@ At this size flat fills look like vector art, so 64 px art follows these rules (
 5. **Wear in clusters.** Grime streaks run down from seams in 2–3 px columns, and cracks are 1 px lines. No single-pixel noise.
 6. **Two frames** at 500 ms, as before: LEDs, fans, screens, flames and pod glow.
 
-Tiles: `renderRoomTile(id)` headless or `drawRoomTile(ctx, id, x, y)` in the browser; `node tools/export-room-tiles.mjs` writes `assets/art/room-tiles.png` and its atlas. `tests/room-tiles.test.js` checks that every room has a tile at 64 px per metre, uses palette colours only, is fully painted and is distinct from every other tile.
+Tiles: `renderRoomTile(id)` headless or `drawRoomTile(ctx, id, x, y)` in the browser; `node tools/export-room-tiles.mjs` writes `assets/art/room-tiles.png` and its atlas. `tests/room-tiles.test.js` checks that every room has a tile at 64 px per metre, uses palette colours only, is fully painted and is distinct from every other tile. Each tile is also listed in the asset inventory, so `node tools/check-asset-minimum.mjs` measures it.

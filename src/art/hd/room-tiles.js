@@ -182,14 +182,14 @@ function signage(b, W, wallTop, style, label, tier) {
   const s = style === 'surface' || style === 'garden' ? null : style;
   if (!s) return;
   if (tier === 'survive' && s !== 'comfort') {
-    const scale = textW(label, 3) <= W - 40 ? 3 : textW(label, 2) <= W - 30 ? 2 : textW(label, 1) <= W - 20 ? 1 : 0;
+    const scale = textW(label, 3) <= W - 40 ? 3 : textW(label, 2) <= W - 30 ? 2 : 0;
     if (!scale) return;
     text(b, label, SIDE + 10, wallTop + 8, col(s === 'lab' ? 'teal' : s === 'concrete' ? 'concrete' : s === 'tile' ? 'marble' : 'steel', 0), scale, { worn: 0.12 });
     if (W >= 160) for (let x = SIDE + 10; x < Math.min(W - SIDE - 10, SIDE + 10 + textW(label, scale)); x++) for (let j = 0; j < 4; j++) b.set(x, wallTop + 8 + 5 * scale + 4 + j, ((x + j) >> 2) % 2 ? K : col('hazard', 3));
   } else {
-    const tw = textW(label, 1); if (tw + 12 > W - 2 * SIDE) return;
+    const tw = textW(label, 2); if (tw + 40 > W - 2 * SIDE) return;
     const px = SIDE + 14;
-    box(b, px, wallTop + 28, tw + 10, 11, 'gold', 4); text(b, label, px + 5, wallTop + 31, col('gold', 1), 1);
+    box(b, px, wallTop + 6, tw + 10, 16, 'gold', 4); text(b, label, px + 5, wallTop + 9, col('gold', 1), 2);
   }
 }
 
@@ -372,9 +372,9 @@ export function renderRoomTile(id, { frame = 0 } = {}) {
   ceiling(b, W, styleName);
   (TRIMS[tier] ?? TRIMS.survive)(b, W, o.frame);
   FLOORS[st.floor](b, 0, W, fy, H);
-  signage(b, W, wallTop, styleName, spec.label ?? (room?.name ?? id).toUpperCase(), tier);
   for (const [name, fx, dy] of spec.wall ?? []) { const p = WALL_PROPS[name]; const x = Math.round(fx * W - p.w / 2); p.draw(b, Math.max(SIDE + 2, Math.min(W - SIDE - 2 - p.w, x)), wallTop + dy, o); }
   if (spec.extra) spec.extra(b, W, H, fy, o);
+  signage(b, W, wallTop, styleName, spec.label ?? (room?.name ?? id).toUpperCase(), tier);
   layout(b, spec.floor ?? [], W, fy, o, spec.extra === airlockDoor || spec.extra === vaultDoor || spec.extra === wellShaft || spec.extra === liftDoor ? 130 : 0, spec.extra === infinityPool ? W - 150 : 0);
   const lampKind = spec.lamp ?? st.lamp;
   const n = Math.max(1, Math.round(W / 140));

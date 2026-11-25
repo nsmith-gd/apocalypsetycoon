@@ -204,9 +204,12 @@ const G = {
   9: ['###', '#.#', '###', '..#', '##.'], '-': ['...', '...', '###', '...', '...'], '.': ['...', '...', '...', '...', '.#.'],
   ' ': ['...', '...', '...', '...', '...'], "'": ['.#.', '.#.', '...', '...', '...'], '&': ['.#.', '#.#', '.#.', '#.#', '.##'],
 };
-export const textW = (s, scale = 1) => Math.max(0, String(s).length * 4 * scale - scale);
-/** Stencil text. `worn` knocks out a few pixels so painted signs look old. */
-export function text(b, s, x, y, ci, scale = 1, { worn = 0, glow = 0 } = {}) {
+export const textW = (s, scale = 2) => Math.max(0, String(s).length * 4 * scale - scale);
+/** Stencil text. `worn` knocks out a few pixels so painted signs look old. Glyphs are never under 10 px tall
+ *  (style guide rule 3: in-world text at least 8 px), so the scale is at least 2. */
+export const MIN_TEXT_SCALE = 2;
+export function text(b, s, x, y, ci, scale = MIN_TEXT_SCALE, { worn = 0, glow = 0 } = {}) {
+  scale = Math.max(MIN_TEXT_SCALE, scale);
   [...String(s).toUpperCase()].forEach((ch, i) => {
     const g = G[ch] ?? G[' '];
     g.forEach((row, gy) => {

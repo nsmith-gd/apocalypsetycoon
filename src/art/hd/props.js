@@ -148,7 +148,7 @@ export const PROPS = {
     box(b, x + 104, fy - 84, 52, 70, 'steel', 3); fan(b, x + 130, fy - 50, 22, o.frame);
     box(b, x + 24, fy - 132, 12, 40, 'steel', 3); box(b, x + 20, fy - 138, 20, 8, 'steel', 2);
     if (o.frame) for (let i = 0; i < 8; i++) b.rect(x + 24 + Math.floor(hash(i, 2) * 12), fy - 150 - i * 2, 3, 2, col('concrete', 4));
-    screen(b, x + 72, fy - 74, 22, 12, 'amber', o.frame, { bars: false }); text(b, '12KW', x + 74, fy - 72, col('amber', 6), 1, { glow: 1 });
+    screen(b, x + 64, fy - 76, 34, 14, 'amber', o.frame, { bars: false }); text(b, '12KW', x + 66, fy - 74, col('amber', 6), 2, { glow: 1 });
   } },
   battery: { w: 72, draw(b, x, fy, o) {
     shadow(b, x, fy, 72); box(b, x, fy - 140, 72, 140, 'steel', 2);
@@ -201,7 +201,7 @@ export const PROPS = {
   } },
   condenser: { w: 120, draw(b, x, fy, o) {
     shadow(b, x, fy, 120); box(b, x, fy - 120, 120, 120, 'steel', 4); for (let i = 8; i < 112; i += 6) box(b, x + i, fy - 112, 3, 70, 'steel', 6, { outline: false });
-    fan(b, x + 34, fy - 22, 16, o.frame); cyl(b, x + 64, fy - 40, 48, 36, 'water', 3); text(b, '2000L', x + 64, fy - 36, col('water', 6), 1, { glow: 1 });
+    fan(b, x + 34, fy - 22, 16, o.frame); cyl(b, x + 64, fy - 40, 48, 36, 'water', 2); text(b, '2000L', x + 69, fy - 30, col('water', 6), 2, { glow: 1 });
   } },
   // ---------------- kitchens, seating, rec
   stove: { w: 136, draw(b, x, fy, o) {

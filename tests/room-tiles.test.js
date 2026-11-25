@@ -39,3 +39,8 @@ test('room tiles: palette-only, fully painted, detailed, and each one distinct',
     seen.set(sha, id);
   }
 });
+
+test('room tiles: in-world text is never under 8 px tall (style guide rule 3)', async () => {
+  const { MIN_TEXT_SCALE } = await import('../src/art/hd/raster.js');
+  assert.ok(MIN_TEXT_SCALE * 5 >= 8);
+});
