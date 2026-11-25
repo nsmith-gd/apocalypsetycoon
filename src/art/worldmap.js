@@ -10,6 +10,7 @@ import { drawSprite } from './render.js';
 import { drawText, textWidth } from './font.js';
 import { HEX } from './palette.js';
 import { drawMapBase } from './map-base.js';
+import { WORLD_LAYOUT as EARTH_LAYOUT, CELL_REGIONS } from './earth.js';
 
 export const CELL = 8;
 export const MAP_COLS = 40;
@@ -17,49 +18,27 @@ export const MAP_ROWS = 24;
 export const MAP_W = MAP_COLS * CELL;
 export const MAP_H = MAP_ROWS * CELL;
 
-// ~ ocean, # land, f forest, d desert, m mountain, c city, i ice
-export const WORLD_LAYOUT = [
-  '~~~iiiiii~~~~~~~~~~~~~iiiiiiiiiii~~~~~~~',
-  '~~iiiiiii~~~~~~iii~~~~~~~~~~~~~~~~~~~~~~',
-  '~~~###mm###~~~~~~~~~~f#ff####mm####~~~~~',
-  '~~####mm####~~~~~~~#f###f###mm#####~~~~~',
-  '~~~###mm#c##~~~~~~##c##ff#####mm#c##~~~~',
-  '~~~~##m####~~~~~~~#####~~###ddd####c#~~~',
-  '~~~~~#m##c#~~~~~~~~~~#~~#ddddd####f##~~~',
-  '~~~~~~####~~~~~~~#ddddddddd#ddd#c##~~~~~',
-  '~~~~~~~##~~~~~~~~#ddddddd#~~##m#####~~~~',
-  '~~~~~~~~#~~~~~~~~##dddd###~~~#####c#~~~~',
-  '~~~~~~~~~##~~~~~~~##ffff##~~~~~##~#~~~~~',
-  '~~~~~~~~~#f##~~~~~~#fff#c#~~~~~~~~##~~~~',
-  '~~~~~~~~~#fff##~~~~~##f##~~~~~~~~~~~~~~~',
-  '~~~~~~~~~#ffff#~~~~~~###~~~~~~~~~~~#~~~~',
-  '~~~~~~~~~~#ff#c~~~~~~##~~~~~~~~~~~~~~~~~',
-  '~~~~~~~~~~#m##~~~~~~~#~~~~~~~~~~#dd###~~',
-  '~~~~~~~~~~~#m#~~~~~~~~~~~~~~~~~#dddd##~~',
-  '~~~~~~~~~~~#m~~~~~~~~~~~~~~~~~~~##dd#c~~',
-  '~~~~~~~~~~~~#~~~~~~~~~~~~~~~~~~~~~~~~~~~',
-  '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
-  '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
-  '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
-  '~~iiiiiiiiiii~~~~iiiiiiiiiiiiiiiiiiiii~~',
-  'iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii',
-];
+// ~ ocean, # land, f forest, d desert, m mountain, c city, i ice. Since #138 the layout is derived from the real
+// Earth (src/art/earth.js): each 8px cell is land when 30%+ of it is land, its letter is the biome there.
+export const WORLD_LAYOUT = EARTH_LAYOUT;
 
-
-// Regions: rect = [col, row, cols, rows]; first match wins. label anchor in cells.
+// Regions (the six art regions of the old renderer; the game's eight demand regions are in worldmap-ui.js). Since
+// #138 a cell's region comes from the real country under it (CELL_REGIONS); rect stays as the rough label area.
 export const MAP_REGIONS = [
-  { id: 'na', name: 'N.America', rect: [1, 2, 12, 8], label: [3, 9] },
-  { id: 'sa', name: 'S.America', rect: [7, 10, 9, 9], label: [5, 19] },
-  { id: 'eu', name: 'Europe', rect: [16, 2, 8, 5], label: [16, 1] },
-  { id: 'af', name: 'Africa', rect: [16, 7, 9, 9], label: [15, 16] },
-  { id: 'as', name: 'Asia', rect: [24, 1, 14, 13], label: [33, 1] },
-  { id: 'oc', name: 'Oceania', rect: [29, 14, 11, 6], label: [31, 19] },
+  { id: 'na', name: 'N.America', rect: [0, 2, 13, 8], label: [3, 9] },
+  { id: 'sa', name: 'S.America', rect: [5, 9, 9, 10], label: [5, 19] },
+  { id: 'eu', name: 'Europe', rect: [17, 3, 8, 5], label: [16, 1] },
+  { id: 'af', name: 'Africa', rect: [16, 8, 9, 9], label: [15, 16] },
+  { id: 'as', name: 'Asia', rect: [21, 2, 19, 13], label: [33, 1] },
+  { id: 'oc', name: 'Oceania', rect: [30, 13, 10, 6], label: [31, 19] },
 ];
+const ART_OF = { nam: 'na', lat: 'sa', eur: 'eu', afr: 'af', mea: 'as', sas: 'as', eas: 'as', oce: 'oc' };
 
 export function regionAt(col, row) {
   const t = WORLD_LAYOUT[row]?.[col];
   if (!t || t === '~' || t === 'i') return null;
-  return MAP_REGIONS.find(({ rect: [x, y, w, h] }) => col >= x && col < x + w && row >= y && row < y + h) ?? null;
+  const id = ART_OF[CELL_REGIONS[row]?.[col]];
+  return MAP_REGIONS.find((r) => r.id === id) ?? null;
 }
 
 export function crisisOverlay(level) {

@@ -31,23 +31,23 @@ test('a finer land mask (the redone base layer) narrows the regions to its coast
   assert.ok(fine.data.filter(Boolean).length < coarse.data.filter(Boolean).length);
 });
 
-test('regions follow the painted land (#134): coasts and nearby islands join their region, sea and ice do not', async () => {
-  const { regionAtPx, regionMask, REGION_REACH_PX } = await import('../src/worldmap/worldmap-ui.js');
+test('regions follow the real countries (#138): the click map, no sea or ice, every region where it is on Earth', async () => {
+  const { regionAtPx, regionMask } = await import('../src/worldmap/worldmap-ui.js');
   const { mapBase } = await import('../src/art/map-base.js');
+  const { mapXY } = await import('../src/art/earth.js');
   const base = mapBase();
   const mask = regionMask();
   assert.equal(mask.ids.length, 8);
-  let kept = 0, gained = 0, wet = 0;
+  let wet = 0;
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
     const id = regionAtPx(x, y);
     const k = mask.data[y * MAP_W + x];
     assert.equal(k ? mask.ids[k - 1] : null, id); // the mask IS the click map
     if (id && !base.isLandPx(x, y)) wet++;
-    const cellId = regionAtCell(Math.floor(x / CELL), Math.floor(y / CELL));
-    if (cellId && base.isLandPx(x, y)) { assert.equal(id, cellId, `land inside ${cellId}'s cells stays ${cellId}`); kept++; }
-    else if (id) gained++;
   }
   assert.equal(wet, 0, 'no sea or ice belongs to a region');
-  assert.ok(gained > 0, 'painted land outside the old cells now belongs to a region');
-  assert.ok(REGION_REACH_PX >= CELL);
+  const places = [[-98, 39, 'nam', 'Kansas'], [-102, 24, 'lat', 'Mexico'], [-48, -15.8, 'lat', 'Brasilia'], [10, 51, 'eur', 'Germany'], [40, 57, 'eur', 'western Russia'],
+    [19, 15, 'afr', 'Chad'], [30, 26, 'mea', 'Egypt'], [45, 24, 'mea', 'Saudi Arabia'], [78, 22, 'sas', 'India'], [114, 0, 'sas', 'Borneo'],
+    [105, 35, 'eas', 'China'], [100, 62, 'eas', 'Siberia'], [68, 48, 'eas', 'Kazakhstan'], [134, -25, 'oce', 'Australia']];
+  for (const [lon, lat, want, name] of places) { const [fx, fy] = mapXY(lon, lat); assert.equal(regionAtPx(fx * MAP_W, fy * MAP_H), want, name); }
 });
