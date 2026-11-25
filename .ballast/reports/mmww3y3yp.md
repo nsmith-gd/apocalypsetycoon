@@ -6,7 +6,7 @@ The bunker builder now zooms and pans. The 64 px ground, furniture and fixtures 
 - Older pieces not yet redrawn at 64 px (the generator, fuel and battery boxes, and the people) look blocky up close. They belong to the furniture redo.
 - Assumptions: the view opens at 1×, the whole site, like today. Plain scrolling still scrolls, and zooming needs Ctrl, so the page doesn't zoom by accident.
 - Captures: zoom-1x-whole-site.png, zoom-2x.png, zoom-4x.png, zoom-4x-lounge-native.png, zoom-8x.png, zoom-8x-panned.png and zoom-4x-hover.png.
-PR: https://github.com/nsmith-gd/apocalypsetycoon/pull/PRNUM
+PR: https://github.com/nsmith-gd/apocalypsetycoon/pull/128
 
 ## Questions
 ### Should the bunker builder open zoomed in rather than showing the whole site?
