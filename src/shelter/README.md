@@ -57,3 +57,13 @@
 - Clients: every client type has a `wealthClass` and preferred `style`, copied onto each order.
 - Placeholder until the needs-ladder work lands: `met_k` from room counts per tier (`TIER_TARGETS`).
 - Demo: `demo/styles-demo.html`.
+
+## Style kits: rooms made of pieces (#97)
+- `STYLE_KITS` (bunker-catalog): Brutalist = board-formed concrete walls, polished slab, sodium lamps, black/ebony/leather;
+  Gilded = gold damask, marble checker, chandelier glow, gold/ebony/burgundy/silk. Finishes carry `style`.
+- `site.applyStyle(styleId, x, y)` dresses the room under (x, y): paints walls, floor and light (per m²) and recolours its
+  furniture to the kit colour of each family. Pieces stay individually editable (PAINT, RECOLOUR).
+- `site.roomStyle(room)` / `room.style` from `simulate()`: one vote each for walls, floor, light (majority of tiles), half a
+  vote per kit-coloured piece; 2+ votes and a clear lead = that style. `styles.js` `satisfaction()` reads `room.style`.
+- Editor: STYLE tool [Y] (pick a kit, click a room); the inspector shows the room's style and votes.
+- `src/art/finish-art.js`: detailed per-pixel board concrete, damask, polished slab and marble checker, laid in world pixels.
