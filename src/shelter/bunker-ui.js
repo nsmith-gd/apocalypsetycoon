@@ -16,6 +16,7 @@ import { daysSealedCanvas } from '../art/hd/shelter-life64.js';
 import { deviceScale, sizeCanvas, snapToDevice, onPixelRatioChange, dpr } from '../ui/pixel-perfect.js';
 import { NEED_IDS, CATALOG_OBJECT_IDS } from './bunker-catalog.js';
 import { GDD_ROOM_BY_ID } from '../catalog/rooms.js';
+import { PLOT_PRODUCTS, plotOf, productUnlocked, PRODUCT_BY_ID } from '../catalog/products.js';
 import { createBuildFx, drawCrew, drawSnap } from './build-fx.js'; // #128
 import { moodOf, drawGrade, drawShelterLight, LIGHT_SOURCES } from '../art/atmosphere.js'; // #130
 import { settings } from '../settings/settings.js';
@@ -386,6 +387,17 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       else ctx.fillRect(PX(x), PY(y + 1) + 3, T, 1);
       ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(PX(x), PY(y + 1), T, 1);
     }
+    // #141: outside the product's plot, the rock is fenced off
+    const plot = site.plot;
+    if (plot) {
+      ctx.fillStyle = 'rgba(10,8,7,.62)';
+      if (plot.width < W) ctx.fillRect(PX(plot.width), PY(0), (W - plot.width) * T, H * T);
+      if (plot.maxDepth < H) ctx.fillRect(PX(0), PY(plot.maxDepth), plot.width * T, (H - plot.maxDepth) * T);
+      ctx.fillStyle = '#ff9f1c';
+      for (let y = 0; y < Math.min(H, plot.maxDepth); y += 2) ctx.fillRect(PX(plot.width) - 1, PY(y), 2, T);
+      for (let x = 0; x < plot.width; x += 2) ctx.fillRect(PX(x), PY(plot.maxDepth) - 1, T, 2);
+      for (let f = 1; f < plot.maxFloors; f++) drawText(ctx, `F${f + 1}`, PX(plot.width) + 3, PY(f * 4) + 2, '#ff9f1c');
+    }
     // water table
     ctx.fillStyle = 'rgba(90,170,255,.45)';
     for (let x = 0; x < W; x += 2) ctx.fillRect(PX(x), PY(WATER_TABLE_M), T, 1);
@@ -600,6 +612,21 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       ${list.map((p) => `<div class="who" data-res="${p.id}"><span>${p.name}</span><b style="color:${needColor(p.mood)}">${p.mood}</b><small>${sim.doing(p)}</small></div>`).join('')}
       ${sim.complaints.slice(0, 3).map((c) => `<div class="th bad">${c}</div>`).join('')}`;
   }
+  // #141: the plot's product line. Picked before breaking ground; then it shows the plot and floors used.
+  function productBlock() {
+    const p = site.plot;
+    if (p) {
+      const u = site.floorsUsed();
+      return `<div class="bk-product"><b>${p.name.toUpperCase()}</b> · ${p.width} m plot · floors <b>${u.deepest}</b> of ${p.minFloors > 1 ? `${p.minFloors}-` : 'up to '}${p.maxFloors}${p.households ? ` · household units <b>${u.units}</b> (${p.households.min}-${p.households.max})` : ''}</div>`;
+    }
+    const fresh = !site.jobs.length && !site.objects.size;
+    if (!fresh) return '';
+    const minutes = site.catalog?.minutes?.() ?? Infinity;
+    return `<div class="bk-product"><b>CHOOSE THE PRODUCT</b><br><small>The plot's width and floor limit come from it.</small><div class="bk-actions">${PLOT_PRODUCTS.map((id) => {
+      const pl = plotOf(id); const open = productUnlocked(id, minutes);
+      return `<button data-product="${id}" ${open ? '' : 'disabled'} title="${open ? `${pl.width} m wide, ${pl.minFloors > 1 ? `${pl.minFloors}-` : 'up to '}${pl.maxFloors} floors` : `Unlocks at ${Math.floor(PRODUCT_BY_ID[id].unlockAt / 60)}:${String(PRODUCT_BY_ID[id].unlockAt % 60).padStart(2, '0')}`}">${pl.name.toUpperCase()}</button>`;
+    }).join('')}</div></div>`;
+  }
   function renderSide() {
     const s = site.simulate();
     const ph = site.phase();
@@ -618,6 +645,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
         Impressiveness <b>${r.impressiveness}</b> · beauty ${r.beauty}${r.finishBeauty ? ` (finishes +${r.finishBeauty})` : ''} · prestige ${Math.round(r.prestige)}${r.beds ? ` · beds ${r.beds}` : ''}<br>
         ${[r.noise ? `noise -${r.noise}` : '', r.rough ? 'raw rock walls -3' : '', r.cramped ? `cramped (needs ${r.type.minW} wide)` : '', r.seeps ? 'SEEPING' : ''].filter(Boolean).join(' · ') || 'No complaints.'}<br>
         <small>${Object.entries(r.counts).map(([kk, n]) => `${n}x ${OBJECTS[kk].name}`).join(', ') || 'Empty'}</small>${r.hint ? `<br><small class="bk-hint">Add ${r.hint.missing.map((m) => m.orAny ? m.orAny.filter((o) => OBJECTS[o]).map((o) => OBJECTS[o].name).join(' or ') : `${m.count}x ${OBJECTS[m.object]?.name ?? m.object}`).join(' and ')} to make it ${/^[AEIOU]/.test(r.hint.name) ? 'an' : 'a'} ${r.hint.name}.</small>` : ''}</div>` : '<div class="bk-room"><small>Click inside a room to inspect it.</small></div>'}
+      ${productBlock()}
       <div class="bk-phase"><b>${ph.name.toUpperCase()}</b> · ${ph.detail}<br><small>${site.crews()} crew${site.crews() === 1 ? '' : 's'} · ${site.jobs.length} job${site.jobs.length === 1 ? '' : 's'} queued${site.jobs.some((j) => !site._workable(j, site.reachable())) ? ' · some unreachable: dig a way in' : ''}</small>
         <div class="bk-actions"><button class="bk-test" ${ph.id === 'ready' || ph.id === 'walkthrough' ? '' : 'disabled'}>30-DAY PRESSURE TEST</button>${onHandOver ? `<button class="bk-hand" ${site.jobs.length || !site.objects.size ? 'disabled' : ''}>HAND OVER</button>` : ''}</div></div>
       <div class="bk-notes">${s.notes.slice(0, 6).map((n) => `<div>${n}</div>`).join('')}</div>`;
@@ -631,6 +659,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       const ec = emblem.getContext('2d'); ec.imageSmoothingEnabled = false; ec.clearRect(0, 0, 64, 64); ec.drawImage(daysSealedCanvas(s.daysSealed, 30), 0, 0);
       sizeCanvas(emblem, 64, 64, Math.max(1, Math.round(dpr()))); emblem.dataset.snap = ''; // 1 art px = whole device px (#127)
     }
+    for (const b of side.querySelectorAll('[data-product]')) b.onclick = () => { const res = site.setProduct(b.dataset.product); toast(res.ok ? `${res.plot.name}: ${res.plot.width} m plot, ${res.plot.minFloors === 1 ? 'up to' : `${res.plot.minFloors} to`} ${res.plot.maxFloors} floors.` : res.reason); dirty = true; render(); };
     side.querySelector('.bk-test').onclick = () => { const res = site.startPressureTest(); toast(res.ok ? 'Pressure test running: 30 days sealed.' : res.reason); render(); };
     const hb = side.querySelector('.bk-hand');
     if (hb) hb.onclick = () => { const res = site.handOver(`Shelter #${site.handedOver + 1}`); if (res.ok) { onHandOver?.(res.shelter); toast('Handed over. A fresh plot is being surveyed.'); } else toast(res.reason); render(); };

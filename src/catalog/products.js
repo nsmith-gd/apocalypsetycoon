@@ -16,3 +16,24 @@ export const PRODUCT_LINES = Object.freeze([
 ].map((p) => Object.freeze(p)));
 
 export const PRODUCT_BY_ID = Object.freeze(Object.fromEntries(PRODUCT_LINES.map((p) => [p.id, p])));
+
+// ---------- plot templates (#141) ----------
+// A contract picks a product; the product is the plot: its width and the floors you may dig (4 m a floor).
+export const FLOOR_M = 4;
+export const PLOT_PRODUCTS = Object.freeze(['solo_pod', 'family_vault', 'condo_silo']);
+
+export const productUnlocked = (id, minutes = Infinity) => (PRODUCT_BY_ID[id]?.unlockAt ?? Infinity) <= minutes;
+
+/** The plot a product gives: width in tiles, deepest metre you may dig, and floor counts. */
+export function plotOf(id) {
+  const p = PRODUCT_BY_ID[id];
+  if (!p?.plot?.width || !p.plot.floors) return null;
+  const [minFloors, maxFloors] = p.plot.floors;
+  return { id, name: p.name, width: p.plot.width, minFloors, maxFloors, maxDepth: maxFloors * FLOOR_M, households: p.perUnit ? p.occupants : null };
+}
+
+/** The product a contract for this many occupants calls for: the smallest unlocked plot product that fits. */
+export function productFor(occupants, { minutes = Infinity } = {}) {
+  const fits = PLOT_PRODUCTS.map((id) => PRODUCT_BY_ID[id]).filter((p) => productUnlocked(p.id, minutes) && !p.perUnit && occupants <= p.occupants.max);
+  return (fits[0] ?? PRODUCT_BY_ID.solo_pod).id;
+}
