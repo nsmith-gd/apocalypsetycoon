@@ -35,15 +35,15 @@ test('every action has a default key and they are all different', () => {
 test('rebinding: the new key works, the old one stops, a clash swaps, reserved keys are refused', () => {
   const storage = memStorage();
   const s = new Settings({ storage, root: fakeRoot() });
-  assert.deepEqual(s.rebind('pause', 'P'), { ok: true, swapped: null });
-  assert.ok(s.matches(key('p'), 'pause'));
+  assert.deepEqual(s.rebind('pause', 'J'), { ok: true, swapped: null }); // P is the press desk
+  assert.ok(s.matches(key('j'), 'pause'));
   assert.ok(!s.matches(key(' '), 'pause'));
-  assert.equal(s.keyLabel('pause'), 'P');
+  assert.equal(s.keyLabel('pause'), 'J');
   const r = s.rebind('threats', 'r'); // research had R
   assert.equal(r.swapped, 'research');
   assert.equal(s.keyFor('research'), 't');
   assert.equal(s.rebind('pause', 'Escape').ok, false);
-  assert.equal(new Settings({ storage, root: fakeRoot() }).keyFor('pause'), 'p', 'bindings persist');
+  assert.equal(new Settings({ storage, root: fakeRoot() }).keyFor('pause'), 'j', 'bindings persist');
   s.reset();
   assert.equal(s.keyFor('pause'), ' ');
   assert.equal(keyOf('Spacebar'), ' ');

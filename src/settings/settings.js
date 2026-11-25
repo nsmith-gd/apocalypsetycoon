@@ -25,6 +25,7 @@ export const ACTIONS = Object.freeze([
   { id: 'research', label: 'Research', key: 'r' },
   { id: 'threats', label: 'Threat tracks', key: 't' },
   { id: 'events', label: 'Social events', key: 'e' },
+  { id: 'press', label: 'Press desk', key: 'p' },
   { id: 'mute', label: 'Mute sound', key: 'm' },
   { id: 'settings', label: 'Settings', key: 'o' },
 ]);

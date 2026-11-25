@@ -219,3 +219,89 @@ test('save and load keeps stories, trust, reputation and sites', () => {
   const copy = Press.fromJSON(JSON.parse(JSON.stringify(press)), { pushback: pb });
   assert.deepEqual(copy.snapshot(), press.snapshot());
 });
+
+// ---------- in the campaign (#149) ----------
+test('nobody digs before 1:00; at 1:00 Iris calls for comment and opens her first story whatever the heat', () => {
+  let minutes = 30;
+  const { press } = setup(40, { getMinutes: () => minutes });
+  const calls = [];
+  press.on('call', (c) => calls.push(c));
+  for (let i = 0; i < 5; i++) press.tickWeek();
+  assert.equal(press.journalists.iris.story, null);
+  assert.equal(press.journalists.gil.story, null, 'heat 40 would start Gil, but not before 1:00');
+  minutes = 61;
+  const { pb: cold } = setup(0);
+  const r = press.tickWeek();
+  assert.equal(r.call.journalist, 'iris');
+  assert.equal(calls.length, 1);
+  assert.equal(press.journalists.iris.story.angle, PRESS.story.firstStoryAngle);
+  press.tickWeek();
+  assert.equal(calls.length, 1, 'only one first call');
+  // a cold company still gets the call
+  let m2 = 59;
+  const quiet = setup(0, { getMinutes: () => m2 }).press;
+  quiet.tickWeek(); m2 = 60; quiet.tickWeek();
+  assert.ok(quiet.journalists.iris.story);
+  assert.ok(cold);
+});
+
+test('one reputation: the press reads and writes the store it is given', () => {
+  const store = { reputation: 40 };
+  const { press } = setup(0, { reputationStore: store });
+  press.addReputation(-15, 'story');
+  assert.equal(store.reputation, 25);
+  store.reputation = 70;
+  assert.equal(press.reputation, 70);
+  assert.equal(press.snapshot().reputation, 70);
+});
+
+test('a story that runs costs heat, reputation and client leverage; Gil shoves only an open track', () => {
+  const store = { reputation: 40 };
+  const pushed = [];
+  const crisis = { tracks: { atomic: { open: true, state: 'simmer' }, bloom: { open: false, state: 'locked' } }, addTension: (id, n) => pushed.push([id, n]) };
+  const { pb, press } = setup(20, { reputationStore: store, crisis, sieges: false });
+  pb.onSale({ client: 'Gerald', price: 1 });
+  const lev = pb.clients[0].leverage;
+  press.journalists.iris.restWeeks = 999;
+  press.tickWeek();
+  press.journalists.gil.story.progress = 99;
+  const heat = pb.heat;
+  const r = press.tickWeek();
+  assert.equal(r.aired.length, 1);
+  assert.equal(pb.heat, heat + 25);
+  assert.equal(store.reputation, 25);
+  assert.equal(pb.clients[0].leverage, lev + 10);
+  assert.deepEqual(pushed, [['atomic', 5]]);
+});
+
+test('counters are paid from the ledger', () => {
+  const { ledger, press } = setup(30);
+  press.tickWeek();
+  const r = press.counter('iris', 'bury');
+  assert.equal(r.ok, true);
+  assert.equal(ledger.entries.at(-1).amount, -PRESS.counters.bury.cost);
+});
+
+test('sieges off: tickWeek never opens The Pitchforks', () => {
+  const { pb, press } = setup(0, { sieges: false });
+  pb.tension = 99;
+  press.addSite({ name: 'HQ', security: 0, visible: 5 });
+  for (let i = 0; i < 10; i++) press.tickWeek();
+  assert.equal(press.pitchforksOpen, false);
+});
+
+test('save and load into the live instance keeps stories, trust and the first call', () => {
+  const store = { reputation: 33 };
+  let m = 70;
+  const { pb, press } = setup(30, { reputationStore: store, getMinutes: () => m });
+  press.tickWeek(); press.tickWeek();
+  press.journalists.iris.trust = 2;
+  const saved = JSON.parse(JSON.stringify(press.toJSON()));
+  const again = new Press({ pushback: pb, reputationStore: store, getMinutes: () => m });
+  again.load(saved);
+  assert.equal(again.journalists.iris.story.progress, press.journalists.iris.story.progress);
+  assert.equal(again.journalists.iris.trust, 2);
+  assert.equal(again.firstCallDone, true);
+  assert.equal(again.tickWeek().call, null);
+  assert.equal(store.reputation, 33, 'loading does not overwrite the shared reputation');
+});

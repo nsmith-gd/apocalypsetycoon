@@ -24,6 +24,10 @@ import { PRESS_REPUTATION } from '../config/tuning.js';
 // is readable from agent sessions; all of them live here.
 export const PRESS = Object.freeze({
   story: {
+    // GDD unlock row 12 (1:00): "Heat, Iris Kemp's first story". No journalist digs before this; at 1:00 Iris calls
+    // for comment and opens her first story whatever the heat. Minutes of play (27 a quarter).
+    firstStoryAt: 60,
+    firstStoryAngle: 'Who is buying all these bunkers, and why now?',
     basePerWeek: 2, // % a week (ticket)
     perTenHeat: 1, // +1% a week per 10 heat (ticket)
     airAt: 100, // (ticket)
@@ -128,12 +132,22 @@ const ANGLES = {
 };
 
 export class Press {
-  constructor({ pushback, crisis = null, seed = 7, sites = [] } = {}) {
+  /**
+   * reputationStore: an object whose `reputation` field is THE reputation (the campaign passes its CrisisSystem,
+   *   which feeds lead quality), so press hits and the rest of the game share one number. Omit for a standalone one.
+   * sieges: false keeps The Pitchforks out of tickWeek (the campaign wires sieges separately).
+   * getMinutes: minutes of play; when given, no story starts before PRESS.story.firstStoryAt and Iris calls at it.
+   */
+  constructor({ pushback, crisis = null, seed = 7, sites = [], reputationStore = null, sieges = true, getMinutes = null } = {}) {
     this.pb = pushback;
     this.crisis = crisis; // optional: { addTension(trackId, n) } + tracks
     this.rng = mulberry32(seed);
     this.week = 0;
-    this.reputation = PRESS.reputation.start;
+    this.reputationStore = reputationStore;
+    this.sieges = sieges;
+    this.getMinutes = getMinutes;
+    this.firstCallDone = false;
+    this.reputation = reputationStore ? reputationStore.reputation : PRESS.reputation.start;
     this.journalists = {};
     for (const [id, j] of Object.entries(PRESS.journalists)) {
       this.journalists[id] = { id, name: j.name, trust: 0, story: null, restWeeks: 0, aired: 0 };
@@ -167,6 +181,9 @@ export class Press {
     if (this.pb?._pay) this.pb._pay('fines', label, amount);
   }
 
+  get reputation() { return this.reputationStore ? this.reputationStore.reputation : this._reputation; }
+  set reputation(v) { if (this.reputationStore) this.reputationStore.reputation = v; else this._reputation = v; }
+
   addReputation(n, why = '') {
     const before = this.reputation;
     this.reputation = clamp(this.reputation + n, PRESS.reputation.min, PRESS.reputation.max);
@@ -194,7 +211,8 @@ export class Press {
   }
 
   _shoveRandomTrack(n, why) {
-    const tracks = this.crisis?.tracks ? Object.keys(this.crisis.tracks) : null;
+    // only tracks in play: open, not locked or collapsed
+    const tracks = this.crisis?.tracks ? Object.entries(this.crisis.tracks).filter(([, t]) => t.open !== false && !['locked', 'collapsed'].includes(t.state)).map(([k]) => k) : null;
     if (tracks?.length && this.crisis.addTension) {
       const id = tracks[Math.floor(this.rng() * tracks.length)];
       this.crisis.addTension(id, n);
@@ -229,8 +247,12 @@ export class Press {
   tickWeek() {
     this.week += 1;
     const heat = this.pb?.heat ?? 0;
-    const out = { aired: [], started: [], siege: null };
+    const out = { aired: [], started: [], siege: null, call: null };
+    const minutes = this.getMinutes?.();
+    const beforeFirst = minutes != null && minutes < PRESS.story.firstStoryAt;
+    if (minutes != null && !beforeFirst && !this.firstCallDone) out.call = this._firstCall();
     for (const [id, j] of Object.entries(this.journalists)) {
+      if (beforeFirst) break; // nobody digs before 1:00
       const cfg = PRESS.journalists[id];
       if (j.restWeeks > 0) { j.restWeeks -= 1; continue; }
       if (!j.story) {
@@ -246,11 +268,26 @@ export class Press {
       j.story.progress = Math.min(100, j.story.progress + journalistGrowth(heat, id, j.trust));
       if (j.story.progress >= PRESS.story.airAt) out.aired.push(this._air(id));
     }
-    if (!this.pitchforksOpen && (this.pb?.tension ?? 0) >= PRESS.pitchforks.openAtTension) this.openPitchforks();
-    if (this.pitchforksOpen) out.siege = this._weeklySiege();
+    if (this.sieges && !this.pitchforksOpen && (this.pb?.tension ?? 0) >= PRESS.pitchforks.openAtTension) this.openPitchforks();
+    if (this.sieges && this.pitchforksOpen) out.siege = this._weeklySiege();
     for (const s of this.sites) if (s.occupied) this.addReputation(PRESS.pitchforks.occupied.weeklyReputation);
     this._changed();
     return out;
+  }
+
+  /** 1:00: Iris Kemp calls for comment and opens her first story, whatever the heat (GDD unlock row 12). */
+  _firstCall() {
+    this.firstCallDone = true;
+    const j = this.journalists.iris;
+    if (!j.story) {
+      j.story = { id: ++this._ids, angle: PRESS.story.firstStoryAngle, progress: 0, buries: 0 };
+      j.restWeeks = 0;
+      this._emit('storyStarted', { journalist: 'iris', story: j.story });
+    }
+    const call = { journalist: 'iris', name: PRESS.journalists.iris.name, outlet: PRESS.journalists.iris.outlet, angle: j.story.angle };
+    this._note('story', `${call.name} (${call.outlet}) calls for comment: "${call.angle}"`, { journalist: 'iris' });
+    this._emit('call', call);
+    return call;
   }
 
   /** The story runs: heat +25, reputation -15, every client +10 leverage (ticket). */
@@ -492,7 +529,7 @@ export class Press {
     return {
       v: 1, week: this.week, reputation: this.reputation, intel: this.intel, pitchforksOpen: this.pitchforksOpen,
       journalists: JSON.parse(JSON.stringify(this.journalists)), sites: this.sites.map((s) => ({ ...s })),
-      ids: this._ids, interviewWeek: this._interviewWeek,
+      ids: this._ids, interviewWeek: this._interviewWeek, firstCallDone: this.firstCallDone,
     };
   }
 
@@ -501,8 +538,19 @@ export class Press {
     Object.assign(p, {
       week: d.week, reputation: d.reputation, intel: d.intel, pitchforksOpen: d.pitchforksOpen,
       journalists: JSON.parse(JSON.stringify(d.journalists)), sites: d.sites.map((s) => ({ ...s })),
-      _ids: d.ids, _interviewWeek: d.interviewWeek,
+      _ids: d.ids, _interviewWeek: d.interviewWeek, firstCallDone: !!d.firstCallDone,
     });
     return p;
+  }
+
+  /** Restore a save into this instance (keeps its hooks, reputation store and listeners). */
+  load(d) {
+    Object.assign(this, {
+      week: d.week, intel: d.intel, pitchforksOpen: d.pitchforksOpen,
+      journalists: JSON.parse(JSON.stringify(d.journalists)), sites: d.sites.map((s) => ({ ...s })),
+      _ids: d.ids, _interviewWeek: d.interviewWeek, firstCallDone: !!d.firstCallDone,
+    });
+    if (!this.reputationStore && d.reputation != null) this.reputation = d.reputation;
+    this._changed();
   }
 }
