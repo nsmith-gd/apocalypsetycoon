@@ -19,8 +19,10 @@ export const HEAT_LEVELS = Object.freeze(['uneasy', 'edge', 'tipping']);
 
 // wash = region fill; glow = alpha of each ring inward from the edge (ring 0 is the rim itself)
 export const HEAT_STYLE = Object.freeze({
-  uneasy: { wash: HEX.Y, tintA: 0.25, washA: 0.06, rimA: 0.75, rim: 1, glow: [0.22, 0.1] },
-  edge: { wash: HEX.O, tintA: 0.45, washA: 0.1, rimA: 0.95, rim: 1, glow: [0.32, 0.18, 0.08] },
+  // #129 (director on #124: "make them more distinct"): uneasy is light, with a thin DASHED rim; edge is a strong
+  // amber with a solid DOUBLE rim and a wider glow; tipping keeps the red, the double rim, the fast pulse and embers.
+  uneasy: { wash: HEX.Y, tintA: 0.25, washA: 0.06, rimA: 0.75, rim: 1, dash: true, glow: [0.18, 0.08] },
+  edge: { wash: HEX.O, tintA: 0.55, washA: 0.14, rimA: 1, rim: 2, glow: [0.4, 0.26, 0.12] },
   tipping: { wash: HEX.R, tintA: 0.6, washA: 0.12, rimA: 1, rim: 2, glow: [0.42, 0.26, 0.14, 0.06] },
 });
 
@@ -102,7 +104,7 @@ export function drawHeat(ctx, mask, id, level, { frame = 0, strong = false, stea
   }
   // 3. rim (2px at tipping: the edge and the first ring at full strength)
   ctx.globalAlpha = st.rimA;
-  for (const [x, y] of r[0]) ctx.fillRect(x, y, 1, 1);
+  for (const [x, y] of r[0]) if (!st.dash || ((x + y) >> 1) % 2 === 0) ctx.fillRect(x, y, 1, 1);
   if (st.rim > 1) { ctx.globalAlpha = st.rimA * 0.7 * breath; for (const [x, y] of r[1]) ctx.fillRect(x, y, 1, 1); }
   // accessibility: Crisis patterns adds a texture per level
   if (strong) {

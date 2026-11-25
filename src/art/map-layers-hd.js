@@ -82,8 +82,9 @@ export function regionArt(base, regionAt) {
       const src = [base.rgba[i * 4], base.rgba[i * 4 + 1], base.rgba[i * 4 + 2]];
       let c = mix(src, setLum(wash, lum(src)), st.tintA);
       c = mix(c, wash, st.washA * (strong ? 1.3 : 1));
+      c = mix(c, wash, Math.max(0, (lum(src) - 150) / 105) * 0.22); // pale ground (sand, ice-bright rock) takes a little more wash, or deserts barely heat up
       const r = ring.get(i);
-      if (r !== undefined && r < t * st.rim) c = mix(c, wash, r < t ? st.rimA : st.rimA * 0.7); // the rim (2 lines at tipping)
+      if (r !== undefined && r < t * st.rim && !(st.dash && ((x + y) >> (1 + (t >> 1))) % 2)) c = mix(c, wash, r < t ? st.rimA : st.rimA * 0.7); // the rim: dashed when uneasy, doubled at edge and tipping
       if (strong && PATTERN[level](Math.floor(x / t), Math.floor(y / t))) c = mix(c, wash, 0.6);
       const o = ((y - b.y0) * b.w + (x - b.x0)) * 4;
       rgba[o] = c[0]; rgba[o + 1] = c[1]; rgba[o + 2] = c[2]; rgba[o + 3] = 255;
@@ -119,6 +120,7 @@ export function createMapLayers({ base, regionAt, document: doc = globalThis.doc
     return out;
   }
 
+  const bursts = [];
   // -------- region states
   const dot = (g, pts, color, alpha) => { g.globalAlpha = alpha; g.fillStyle = color; for (const [x, y] of pts) g.fillRect(x - (t >> 1), y - (t >> 1), t, t); g.globalAlpha = 1; };
   let idle = null;
@@ -154,18 +156,116 @@ export function createMapLayers({ base, regionAt, document: doc = globalThis.doc
     return out;
   }
 
+  // ---------------------------------------------------------------- animation helpers (#129), all from caches
+  function st(level) { return HEAT_STYLE[level]; }
+  const tintCache = new Map();
+  function tinted(id, colour) { // the region's land in one flat colour (sheen and flash)
+    const key = `${id}:${colour}`;
+    if (tintCache.has(key)) return tintCache.get(key);
+    const b = box(id), K = k(id), cv = canvas(b.w, b.h), g = cv.getContext('2d'), img = g.createImageData(b.w, b.h), c = rgb(colour);
+    for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (mask.data[(b.y0 + y) * W + b.x0 + x] === K) img.data.set([c[0], c[1], c[2], 255], (y * b.w + x) * 4);
+    g.putImageData(img, 0, 0);
+    tintCache.set(key, cv);
+    return cv;
+  }
+  function sheen(ctx, id, b, ph, alpha) {
+    const bw = Math.max(18, Math.round(b.w * 0.12)), x = b.x0 - bw * 2 + (b.w + bw * 4) * ph;
+    ctx.save();
+    ctx.beginPath(); ctx.moveTo(x, b.y0); ctx.lineTo(x + bw, b.y0); ctx.lineTo(x + bw - b.h * 0.6, b.y0 + b.h); ctx.lineTo(x - b.h * 0.6, b.y0 + b.h); ctx.closePath(); ctx.clip();
+    ctx.globalAlpha = alpha; ctx.drawImage(tinted(id, '#fff1a8'), b.x0, b.y0);
+    ctx.restore();
+  }
+  const WAVE_N = 10;
+  const waveCache = new Map();
+  function waveRing(id, d, colour) { // the band of pixels d rings in from the edge, in one colour
+    const key = `${id}:${d}:${colour}`;
+    if (waveCache.has(key)) return waveCache.get(key);
+    const rr = rings(id, WAVE_N * t + t), b = box(id), cv = canvas(b.w, b.h), g = cv.getContext('2d'), img = g.createImageData(b.w, b.h), c = rgb(colour);
+    for (let r = d * t; r < d * t + t; r++) for (const i of rr[r] ?? []) { const x = (i % W) - b.x0, y = ((i / W) | 0) - b.y0; img.data.set([c[0], c[1], c[2], 255], (y * b.w + x) * 4); }
+    g.putImageData(img, 0, 0);
+    waveCache.set(key, cv);
+    return cv;
+  }
+  function wave(ctx, id, ph, colour, outward, alpha) {
+    const d = Math.floor(ph * WAVE_N), dd = outward ? WAVE_N - 1 - d : d, b = box(id);
+    ctx.globalAlpha = Math.max(0, alpha * (1 - ph * 0.7));
+    ctx.drawImage(waveRing(id, dd, colour), b.x0, b.y0);
+    if (dd + (outward ? 1 : -1) >= 0 && dd + (outward ? 1 : -1) < WAVE_N) { ctx.globalAlpha *= 0.45; ctx.drawImage(waveRing(id, dd + (outward ? 1 : -1), colour), b.x0, b.y0); }
+    ctx.globalAlpha = 1;
+  }
+  const inner = new Map();
+  function interior(id) { // sample points inside the region, away from the coast (for embers and sparks)
+    if (inner.has(id)) return inner.get(id);
+    const rr = rings(id, 3 * t), edge = new Set(rr.slice(0, 3 * t).flat()), K = k(id), b = box(id), pts = [];
+    for (let y = b.y0; y < b.y0 + b.h; y += 2) for (let x = b.x0; x < b.x0 + b.w; x += 2) { const i = y * W + x; if (mask.data[i] === K && !edge.has(i)) pts.push([x, y]); }
+    const cx = pts.reduce((s, p) => s + p[0], 0) / Math.max(1, pts.length), cy = pts.reduce((s, p) => s + p[1], 0) / Math.max(1, pts.length);
+    const out = { pts, cx, cy };
+    inner.set(id, out);
+    return out;
+  }
+  const EMBER = [HEX.R, HEX.O, HEX.Y, '#fff1a8'];
+  function embers(ctx, id, now, strength) {
+    const { pts } = interior(id);
+    if (!pts.length) return;
+    const n = Math.min(60, Math.round(Math.sqrt(pts.length) * 0.9 * strength));
+    for (let j = 0; j < n; j++) {
+      const life = 1400 + (j % 5) * 180, ph = ((now + j * 397) % life) / life, cyc = Math.floor((now + j * 397) / life);
+      const p = pts[Math.floor(rnd(id, j, cyc) * pts.length)];
+      const x = Math.round(p[0] + Math.sin(ph * 6 + j) * 2 * t), y = Math.round(p[1] - ph * 22 * t);
+      if (x < 0 || y < 0 || x + t > W || y + t > H || mask.data[y * W + x] !== k(id) || mask.data[(y + t - 1) * W + x + t - 1] !== k(id) || mask.data[y * W + x + t - 1] !== k(id) || mask.data[(y + t - 1) * W + x] !== k(id)) continue; // embers glint over the hot land, never the sea
+      ctx.globalAlpha = (1 - ph) * 0.9; ctx.fillStyle = EMBER[Math.min(3, Math.floor(ph * 4))];
+      ctx.fillRect(x, y, t, t);
+    }
+    ctx.globalAlpha = 1;
+  }
+  function sparks(ctx, id, q, colour) {
+    const { cx, cy } = interior(id);
+    ctx.fillStyle = colour;
+    for (let j = 0; j < 28; j++) {
+      const a = (j / 28) * Math.PI * 2 + rnd(id, j, 7) * 0.3, sp = (26 + rnd(id, j, 9) * 40) * t;
+      ctx.globalAlpha = Math.max(0, 1 - q * 1.1);
+      ctx.fillRect(Math.round(cx + Math.cos(a) * sp * q), Math.round(cy + Math.sin(a) * sp * q * 0.8), t + (q < 0.3 ? 1 : 0), t + (q < 0.3 ? 1 : 0));
+    }
+    ctx.globalAlpha = 1;
+  }
+
   return {
     w: W, h: H, mask, lineWidth: t,
     /** Draw every layer for this frame onto ctx (a canvas the terrain's size, cleared by the caller). */
-    draw(ctx, { levels = {}, hover = null, selected = null, frame = 0, breath: bf = frame, strong = false, steady = false } = {}) {
+    /** A scheme just fired in a region (#129): flash, a shockwave out to its coast, sparks from its middle. */
+    burst(id, { kind = 'stoke', time = performance.now() } = {}) { if (k(id)) bursts.push({ id, kind, t0: time }); },
+    get bursting() { return bursts.length; },
+    /**
+     * Draw every layer for this frame onto ctx (a canvas the terrain's size, cleared by the caller).
+     * time: ms clock for the animation (#129); crisis: { id: 0..100 } so regions nearer their tipping point move
+     * faster and harder; steady (Reduced flashing): the heat holds still.
+     */
+    draw(ctx, { levels = {}, crisis = {}, hover = null, selected = null, frame = 0, time = null, strong = false, steady = false } = {}) {
       ctx.imageSmoothingEnabled = false;
+      const now = time ?? frame * (1000 / 60) * 3;
       for (const id of mask.ids) {
         const level = levels[id];
         if (!HEAT_STYLE[level]) continue;
         const h = heat(id, level, strong);
         ctx.drawImage(h.cv, h.b.x0, h.b.y0);
-        const breath = level === 'tipping' && !steady ? 0.75 + 0.5 * Math.abs(((bf % 8) / 4) - 1) : 1;
-        ctx.globalAlpha = Math.min(1, breath); ctx.drawImage(h.gv, h.b.x0, h.b.y0); ctx.globalAlpha = 1;
+        const c = crisis[id] ?? ({ uneasy: 50, edge: 78, tipping: 94 })[level];
+        const i = Math.max(0, Math.min(1, (c - 40) / 55)); // 0 at uneasy's floor, 1 at the brink
+        const A = ANIM[level];
+        // 1. the glow breathes: slow and shallow when uneasy, fast and deep at tipping
+        const period = A.pulse[0] - (A.pulse[0] - A.pulse[1]) * i;
+        const amp = steady ? 0 : A.amp[0] + (A.amp[1] - A.amp[0]) * i;
+        const phase = ((now + hashId(id) * 997) % period) / period;
+        ctx.globalAlpha = Math.max(0, Math.min(1, 1 - amp + amp * (0.5 + 0.5 * Math.sin(phase * Math.PI * 2)) * 2 - amp * 0.5));
+        ctx.drawImage(h.gv, h.b.x0, h.b.y0);
+        ctx.globalAlpha = 1;
+        if (steady) continue;
+        // 2. a soft sheen sweeps across the land (the demand heat "shimmer")
+        const sp = A.sheen - 1500 * i, sph = ((now + hashId(id) * 431) % sp) / sp;
+        sheen(ctx, id, h.b, sph, (A.sheenA + 0.1 * i));
+        // 3. edge and tipping: a wave runs in from the coast, quicker as it nears the tipping point
+        if (A.wave) { const wp = A.wave - 900 * i, wph = ((now + hashId(id) * 173) % wp) / wp; wave(ctx, id, wph, st(level).wash, false, 0.55 + 0.35 * i); }
+        // 4. tipping: embers rise off the region
+        if (level === 'tipping') embers(ctx, id, now, 0.6 + 0.4 * i);
       }
       ctx.drawImage(idleCanvas(), 0, 0);
       if (hover && hover !== selected && k(hover)) ctx.drawImage(state(hover, 'hover').cv, 0, 0);
@@ -175,9 +275,28 @@ export function createMapLayers({ base, regionAt, document: doc = globalThis.doc
         ctx.fillStyle = HEX.L; // the marching glint walks the gold line
         for (const [x, y] of s.ring) if ((Math.floor(x / t) + Math.floor(y / t) + frame) % 6 === 0) ctx.fillRect(x - (t >> 1), y - (t >> 1), t, t);
       }
+      // scheme bursts on top of everything
+      for (let n = bursts.length - 1; n >= 0; n--) {
+        const b = bursts[n], age = now - b.t0;
+        if (age > 1100 || age < -50) { if (age > 1100) bursts.splice(n, 1); continue; }
+        const col = { stoke: HEX.O, calm: '#3f8fc8', breach: HEX.R }[b.kind] ?? HEX.O;
+        const q = Math.max(0, age) / 1100;
+        ctx.globalAlpha = Math.max(0, 0.55 * (1 - q * 2.2)); ctx.drawImage(tinted(b.id, '#fff3d0'), box(b.id).x0, box(b.id).y0); ctx.globalAlpha = 1;
+        wave(ctx, b.id, Math.min(0.999, q * 1.3), col, true, 1 - q);
+        sparks(ctx, b.id, q, col);
+      }
+      ctx.globalAlpha = 1;
     },
   };
+
 }
+const ANIM = {
+  uneasy: { pulse: [3400, 2400], amp: [0.18, 0.3], sheen: 5200, sheenA: 0.12, wave: 0 },
+  edge: { pulse: [2200, 1500], amp: [0.3, 0.45], sheen: 4200, sheenA: 0.14, wave: 2600 },
+  tipping: { pulse: [1200, 700], amp: [0.45, 0.6], sheen: 3200, sheenA: 0.16, wave: 1700 },
+};
+const hashId = (id) => [...id].reduce((s, c) => (s * 31 + c.charCodeAt(0)) % 1000, 7) / 1000;
+function rnd(id, j, s) { let h = (hashId(id) * 1e6 + j * 374761393 + s * 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
 
 // ------------------------------------------------------------------------------------------ region state images (#124)
 export const REGION_STATE_IDS = Object.freeze(['calm', 'uneasy', 'edge', 'tipping', 'selected']);
