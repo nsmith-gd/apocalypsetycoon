@@ -41,3 +41,20 @@
 - Campaign: clock strike -> Seal Order board -> ending screen. The end of Q12 still grades straight away.
 - Debug presets on a new campaign: `index.html?preset=countdown&qs=26` (two collapses, Midnight 4 weeks later) and
   `?preset=clockzero` (the floor falls to zero 3 seconds in).
+
+## Twelve endings, epilogue cards and The Ledger (#32)
+- `endings.js`: `ENDINGS` (all 12, GDD wording), `EndingWatch` (weekly `week(snapshot)` → an ending id when a trigger fires;
+  `atMidnight({ road })` → Lights Out / Off the Rails / A Seat at the Table; `note(key, value)` for systems that report
+  in; `force(id)` for the debug panel; saved on the slot as `endings`), `endingCard(id, { result })` (grade: as graded,
+  -2 for Somebody Else's Apocalypse, the Ark alone, or quarters survived for Overtime; closing line).
+  STAND-INS until their systems exist: Ruth/Theo loyalty, Mr. Gray's Favours and the Ark, Cut-in board seats, sites lost
+  to sieges, the leaked dossier, Collective Bargaining wins (`STAND_INS`; they never trigger on their own). Iris Kemp's
+  trust is read from the press system when the campaign has one.
+- `epilogues.js`: `epilogues({ result, sold, endingId })` (one line per client: the 16 hero clients' own lines by outcome,
+  generated clients by type and the supply that failed, late or lost Seal Order pickups; Gerald's wine always last) and
+  `buildLedger(...)` (clients saved, staff saved and left outside (stand-in: 4 per crew), revenue, RP, scars, final heat,
+  world population, closing line).
+- `endings-ui.js`: `showFinale({ epilogues, ledger })`: epilogues, then The Ledger, then the ending card.
+- Campaign: Midnight now runs grade, then epilogues, Ledger and ending card. Ousted and the mid-campaign triggers end the
+  campaign through the same screens. Debug: `demo/endings-demo.html` (force any trigger), or in a campaign
+  `__game.endings.end('indicted')`.

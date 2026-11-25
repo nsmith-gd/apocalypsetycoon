@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Endings Debug</title>
+<link rel="stylesheet" href="../src/ui/ui.css">
+<link rel="stylesheet" href="../src/midnight/midnight.css">
+<style>
+  html, body { margin: 0; min-height: 100%; background: #14110f; color: #f2e6c9; font-family: 'Courier New', monospace; }
+  main { max-width: 900px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 18px; letter-spacing: 3px; color: #f5c542; }
+  p { color: #a8977a; font-size: 12px; line-height: 1.5; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+  .grid button { text-align: left; font-family: inherit; font-weight: 700; font-size: 12px; padding: 8px; color: #f2e6c9; background: #2f2821; border: 2px solid #0a0807; box-shadow: inset 2px 2px 0 #4a3f33; cursor: pointer; }
+  .grid button small { display: block; font-weight: 400; color: #a8977a; margin-top: 4px; line-height: 1.35; }
+  .grid button.secret { border-color: #c070ff; }
+  #log { margin-top: 12px; font-size: 12px; color: #7ed957; min-height: 1.4em; }
+  label { font-size: 12px; color: #a8977a; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ENDINGS: DEBUG PANEL (#32)</h1>
+  <p>Each button makes that ending's trigger true in the ending watcher, checks which ending it picks, then plays the end of the campaign: epilogue cards, The Ledger, and the ending card. The sample campaign has 10 clients (6 hero clients and Gerald among them) in shelters of mixed quality, two breaches, one collapse and heat 62. In a running campaign, open the browser console and type <code>__game.endings.end('indicted')</code>.</p>
+  <label><input type="checkbox" id="withGerald" checked> Gerald is a client (untick: his wine still gets the last line)</label>
+  <div class="grid" id="grid"></div>
+  <div id="log"></div>
+</main>
+<script type="module">
+import { ENDINGS, ENDING_IDS, EndingWatch } from '../src/midnight/endings.js';
+import { epilogues, buildLedger } from '../src/midnight/epilogues.js';
+import { showFinale } from '../src/midnight/endings-ui.js';
+import { computeMidnight } from '../src/midnight/midnight.js';
+import { APOCALYPSES } from '../src/midnight/engineered.js';
+
+const S = (id, owner, rooms, occupants, clientType) => ({ id, name: `Shelter ${id}`, owner, occupants, rooms, sold: true, clientType });
+const GOOD = ['air_vent', 'air_vent', 'water_tank', 'water_recycler', 'pantry', 'hydroponics'];
+const OK = ['air_vent', 'water_tank', 'pantry', 'gold_taps'];
+const BAD = ['gold_taps', 'wine_cellar', 'cryo_pod', 'air_vent'];
+const sold = (withGerald) => [
+  ...(withGerald ? [S(1, 'Gerald Pemberton-Wick', OK, 4)] : []),
+  S(2, 'Lady Eleanor Ashcombe', GOOD, 4), S(3, 'Skyler Thorne', BAD, 2), S(4, 'Rex Calloway', OK, 5), S(5, 'Lexi Monroe', GOOD, 2),
+  S(6, 'Castor and Pollux Drummond', BAD, 4), S(7, 'Odette Lamarr', GOOD, 3), S(8, 'Vance Okafor', OK, 3, 'tech_founder'),
+  S(9, 'Mirela Stone', BAD, 4, 'celebrity'), S(10, 'Senator Hale', GOOD, 3, 'politician'),
+];
+const fakeCrisis = { tracks: { atomic: { id: 'atomic', name: 'Atomic Standoff', breaches: 2 }, bloom: { id: 'bloom', name: 'The Bloom', breaches: 1 } } };
+const fakeDoom = { collapses: [{ track: 'bloom', week: 120 }] };
+const fakeLedger = { entries: [{ amount: 310e6 }, { amount: 145e6 }, { amount: -90e6 }] };
+
+const grid = document.getElementById('grid');
+for (const id of ENDING_IDS) {
+  const e = ENDINGS[id];
+  const b = document.createElement('button');
+  if (e.secret) b.className = 'secret';
+  b.innerHTML = `${e.title}<small>${e.trigger}</small>`;
+  b.onclick = () => play(id);
+  grid.append(b);
+}
+async function play(id) {
+  const watch = new EndingWatch();
+  const got = watch.force(id);
+  document.getElementById('log').textContent = `Forced: ${ENDINGS[id].title}. Watcher picked: ${got ? ENDINGS[got].title : 'nothing'}${got === id ? ' ✓' : ' ✗'}`;
+  const shelters = sold(document.getElementById('withGerald').checked);
+  const midnightEndings = ['lights_out', 'off_the_rails', 'under_new_management', 'locked_out', 'somebody_else', 'seat_at_table'];
+  const apocalypse = { id: 'atomic', ...APOCALYPSES.atomic };
+  const result = midnightEndings.includes(got) ? computeMidnight({ shelters, world: { tension: 70, heat: 62, runaways: 1, collapses: 1 }, cash: 42e6, apocalypse,
+    forceType: ['off_the_rails', 'somebody_else'].includes(got) ? 'failed' : 'engineered' }) : null;
+  await showFinale({ epilogues: epilogues({ result, sold: shelters, endingId: got }),
+    ledger: buildLedger({ result, endingId: got, ledger: fakeLedger, tree: { totalEarned: 1840 }, pushback: { heat: 62 }, crisis: fakeCrisis, doom: fakeDoom, company: { crewCap: 10 }, quartersSurvived: 3 }) });
+}
+window.__play = play;
+</script>
+</body>
+</html>

@@ -38,6 +38,9 @@ import { showWorldSetup, createThreatsPanel } from '../world/world-ui.js';
 import { CampaignClock, SPEEDS, formatClock, QUARTER_SECONDS } from './clock.js';
 import { createSaveSlot, ledgerSaveable, pushbackSaveable, doomClockSaveable } from './save.js';
 import { finaleArgs } from '../midnight/finale.js';
+import { EndingWatch } from '../midnight/endings.js';
+import { epilogues, buildLedger } from '../midnight/epilogues.js';
+import { showFinale } from '../midnight/endings-ui.js';
 import { Company } from '../company/company.js';
 import { createCompanyPanel } from '../company/company-panel.js';
 import { StoryBeats } from '../story/beats.js';
@@ -307,6 +310,20 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   });
   const mapSales = new MapSales({ market, ledger, pushback: pb, getTensions: tensions, getBreachMultiplier: () => crisis.panicMultiplier,
     getEdgeBonus: (id) => schemes.edgeBonus(id), getQuarter: () => clock.quarter });
+  // The twelve endings (#32): mid-campaign triggers are checked every in-game week.
+  const endingWatch = new EndingWatch();
+  slot.register('endings', endingWatch);
+  const chapterOf = (q) => (q >= 11 ? 5 : q >= 8 ? 4 : q >= 5 ? 3 : q >= 3 ? 2 : 1);
+  crisis.on('week', () => {
+    if (midnightStarted) return;
+    const id = endingWatch.week({
+      chapter: chapterOf(clock.quarter), heat: pb.heat, boardConfidence: board.average, boardOusted: board.ousted,
+      quotaOnTrack: quarterRevenue(ledger, ledger.quarter) >= board.quota * clock.quarterProgress * 0.9,
+      tracks: Object.values(crisis.tracks), collapses: doom.collapses, irisTrust: pb.press?.journalists?.iris?.trust ?? 0,
+      roster: world.roster, midnightDateSet: false, // the engineered road isn't wired into the campaign yet (#29 demo only)
+    });
+    if (id) endCampaign(id);
+  });
   // Your leads: people met at events (director note D2). Redeemed on the world map for better sales (#58).
   const leads = new LeadInventory({ getQuarter: () => clock.quarter, getReputation: () => crisis.reputation });
   slot.register('leads', leads);
@@ -452,7 +469,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     await ui.showQuarterReport({ quarter, heat: pb.heat, tension: pb.tension, notes: [...consequences.drainNotes(), ...review.lines.slice(1), ...r.lines],
       board: { met: review.met, revenue: review.revenue, target: review.quota, state: review.stateLabel, average: review.average } });
     await pbui.drain();
-    if (board.ousted) { clock.hold('ousted'); slot.clear(); showOusted(quarter); return; }
+    if (board.ousted) { endCampaign('ousted'); return; } // #32: the Ousted ending card (was showOusted)
     if (!isFinal) toast(`Quarter ${quarter + 1} begins. Quota $${(board.quota / 1e6).toFixed(1)}M. ${board.directives.map((d) => d.text).join('. ')}.`);
   });
   // Campaign play time in minutes at x1 (27 per quarter), the scale the GDD's opening times use.
@@ -487,7 +504,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   let midnightStarted = false;
   // road: null = the end of Q12 (still graded straight away); an uncontrolledRoad = the Doom Clock struck zero or
   // the Final Countdown ran out, which runs the Midnight sequence: the strike, the Seal Order, the grade (#70).
-  async function midnight(road = null) {
+  async function midnight(road = null, endingOverride = null) {
     if (midnightStarted) return;
     midnightStarted = true;
     markCampaignFinished();
@@ -514,7 +531,29 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     }
     session && (session.midnightResult = result);
     telemetry.ending(result);
-    await showMidnight({ root: document.body, result, onRestart: () => { document.querySelectorAll('.mn-overlay').forEach((n) => n.remove()); session.destroy(); showMainMenu(); } });
+    await showMidnight({ root: document.body, result });
+    // #32: epilogues, The Ledger and the ending card
+    const endingId = endingOverride ?? endingWatch.atMidnight({ road: road || result.type === 'failed' ? 'uncontrolled' : 'engineered' });
+    await finale(endingId, result);
+  }
+  async function finale(endingId, result = null) {
+    const sold = mapSales.sold;
+    await showFinale({ root: document.body, epilogues: epilogues({ result, sold, endingId }),
+      ledger: buildLedger({ result, endingId, ledger, tree, pushback: pb, crisis, doom, company, quartersSurvived: Math.max(0, clock.quarter - 12) }),
+      onRestart: () => { document.querySelectorAll('.mn-overlay').forEach((n) => n.remove()); session.destroy(); showMainMenu(); } });
+  }
+  // An ending reached before Midnight (#32). Those that still end the world grade it as it stands.
+  async function endCampaign(endingId) {
+    if (midnightStarted) return;
+    if (['under_new_management', 'locked_out'].includes(endingId)) return midnight(null, endingId);
+    if (endingId === 'somebody_else') return midnight(uncontrolledRoad({ reason: 'countdown', crisis, doom }), endingId);
+    midnightStarted = true;
+    markCampaignFinished();
+    clock.hold('ending');
+    slot.clear();
+    renderBar();
+    telemetry.ending({ ending: { id: endingId }, type: 'ending' });
+    await finale(endingId, null);
   }
   clock.onMidnight(() => midnight());
   // The Doom Clock can strike before Q12 ends: that is the uncontrolled road.
@@ -625,17 +664,6 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   renderBar();
   raf = requestAnimationFrame(loop);
 
-  // Game over before Midnight: board confidence hit zero.
-  function showOusted(quarter) {
-    const o = el('div', 'mm');
-    o.style.background = 'rgba(20,17,15,.94)';
-    o.style.zIndex = '200';
-    const back = el('button', null, 'MAIN MENU');
-    back.onclick = () => { o.remove(); session.destroy(); showMainMenu(); };
-    o.append(el('div', 'mm-title', 'OUSTED'), el('div', 'mm-tag', `The board voted you out after quarter ${quarter}. Midnight will come without you.`), back);
-    document.body.append(o);
-  }
-
   function toast(msg) {
     const t = el('div', 'cb-toast', msg);
     document.body.append(t);
@@ -646,6 +674,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   session = {
     mood, setMood: (m) => { moodForce = m; }, // #130
     difficulty: diff, clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, board, consequences, market, schemes, mapSales, mapScreen, slot, leads, social, company, story, telemetry, firstBreach,
+    endings: { watch: endingWatch, end: (id) => endCampaign(id) }, // #32 debug: __game.endings.end('indicted')
     destroy() {
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);
