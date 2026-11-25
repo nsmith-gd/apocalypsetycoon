@@ -55,20 +55,27 @@ function fakeSales(levels) {
   };
 }
 
-/** Render the map with these region crisis levels; returns ImageData of the 320x192 canvas. */
+/** Render the map with these region crisis levels. #139: measures what the player sees, the terrain-resolution
+ *  composite (terrain + #123 layers + markers), not the old 320x192 overlay the game no longer draws. */
+let W = MAP_W, H = MAP_H, S = 1, MASK = null;
+const ART_SCALE = Number(new URLSearchParams(location.search).get('scale') || 3); // 3 = a 1440x900 screen (960x576 terrain)
 function render(levels, { selected = null, frames = 1 } = {}) {
   const root = document.getElementById('stage');
   root.replaceChildren();
   queue = []; // drop the previous screen's loop
   const screen = createWorldMapScreen({ root, sales: fakeSales(levels), initial: selected });
+  screen.paintAt(ART_SCALE);
   for (let i = 0; i < frames; i++) pending();
-  const canvas = screen.snapshot(); // terrain + everything on top (#109 split them into two canvases)
-  const img = canvas.getContext('2d').getImageData(0, 0, MAP_W, MAP_H);
+  const hd = screen.snapshotHD();
+  const canvas = hd.canvas;
+  W = canvas.width; H = canvas.height; S = hd.scale; MASK = hd.mask;
+  const img = canvas.getContext('2d').getImageData(0, 0, W, H);
   return { img, screen, canvas };
 }
+const regionAtHD = (x, y) => { if (x < 0 || y < 0 || x >= W || y >= H) return null; const k = MASK.data[y * W + x]; return k ? MASK.ids[k - 1] ?? null : null; };
 
 const allAt = (crisis) => Object.fromEntries(REGIONS.map((r) => [r.id, crisis]));
-const px = (img, x, y) => { const i = (y * MAP_W + x) * 4; return [img.data[i], img.data[i + 1], img.data[i + 2]]; };
+const px = (img, x, y) => { const i = (y * W + x) * 4; return [img.data[i], img.data[i + 1], img.data[i + 2]]; };
 const same = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
 
 function labelBox(id) {
@@ -76,7 +83,7 @@ function labelBox(id) {
   const x = p.at[0] * CELL, y = p.at[1] * CELL;
   // name + crisis number line above, buyer icon + count below (plus the 1px font outline)
   // #102's name plate (with its crisis box and the selected gold frame) starts 2px left and 11px up
-  return { x0: x - 5, y0: y - 14, x1: x + textWidth(p.short) + textWidth('100') + 16, y1: y + 12 };
+  return { x0: (x - 5) * S, y0: (y - 14) * S, x1: (x + textWidth(p.short) + textWidth('100') + 16) * S + S - 1, y1: (y + 12) * S + S - 1 };
 }
 const inBox = (b, x, y) => x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1;
 
@@ -87,9 +94,9 @@ function checkState(id, state, base) {
   let bleed = 0, inside = 0, changed = 0, shift = 0;
   const cells = new Set();
   const cellsHit = new Set();
-  for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
-    const c = Math.floor(x / CELL), r = Math.floor(y / CELL);
-    const mine = regionAtPx(x, y) === id;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const c = Math.floor(x / S / CELL), r = Math.floor(y / S / CELL);
+    const mine = regionAtHD(x, y) === id;
     if (mine) { inside++; if (!inBox(box, x, y)) cells.add(`${c},${r}`); } // cells hidden under the label/marker can't show it
     const a = px(img, x, y), o = px(base, x, y);
     if (same(a, o)) continue;
@@ -99,7 +106,7 @@ function checkState(id, state, base) {
   // label legibility: the crisis number sits over whatever is under the label line; sample that background
   const ly = box.y0 + 3;
   const bg = [];
-  for (let x = box.x0; x <= box.x1; x++) bg.push(px(base, Math.max(0, Math.min(MAP_W - 1, x)), Math.max(0, ly)));
+  for (let x = box.x0; x <= box.x1; x++) bg.push(px(base, Math.max(0, Math.min(W - 1, x)), Math.max(0, ly)));
   const avg = [0, 1, 2].map((k) => Math.round(bg.reduce((s, p) => s + p[k], 0) / bg.length));
   // strength = mean colour shift (RGB distance) over the region's pixels: whole-region veils (#103) change
   // nearly every pixel at every level, so 'share of pixels changed' alone can't rank the levels
@@ -129,15 +136,23 @@ for (const r of REGIONS) {
   const sel = render(allAt(10), { selected: r.id }).img;
   let bleed = 0;
   const box = labelBox(r.id);
-  for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     if (same(px(sel, x, y), px(base, x, y))) continue;
-    if (regionAtPx(x, y) === r.id || inBox(box, x, y)) continue;
-    // the selected outline has a dark outer edge by design (#101): allow 2px around the region
+    if (regionAtHD(x, y) === r.id || inBox(box, x, y)) continue;
+    // the selected outline has a dark outer edge by design (#101): allow 2 art px around the region
     let near = false;
-    for (let dy = -2; dy <= 2 && !near; dy++) for (let dx = -2; dx <= 2 && !near; dx++) near = regionAtPx(x + dx, y + dy) === r.id;
+    for (let dy = -2; dy <= 2 && !near; dy++) for (let dx = -2; dx <= 2 && !near; dx++) near = regionAtHD(x + dx, y + dy) === r.id;
     if (!near) bleed++;
   }
   results.push({ region: r.id, name: r.name, state: 'selected', pass: bleed === 0, fails: bleed ? [`${bleed}px outside the region`] : [], bleedPx: bleed });
+}
+// #139: a state has to read as strongly in every region. Hue-only tints vanish on terrain that already has that hue
+// (the new map's deserts are sand and amber), so each region must reach 65% of the median strength for the level.
+for (const s of STATES.slice(1)) {
+  const rows = results.filter((x) => x.state === s.id);
+  const sorted = rows.map((x) => x.strength).sort((a, b) => a - b);
+  const median = (sorted[(sorted.length - 1) >> 1] + sorted[sorted.length >> 1]) / 2;
+  for (const x of rows) if (x.strength < median * 0.65) { x.pass = false; x.fails.push(`reads weaker than other regions at ${s.id} (colour shift ${x.strength} vs median ${median.toFixed(1)})`); }
 }
 render(allAt(10)); // leave the screen on calm
 const passed = results.filter((x) => x.pass).length;

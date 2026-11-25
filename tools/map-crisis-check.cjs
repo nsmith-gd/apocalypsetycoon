@@ -15,11 +15,11 @@ const base = process.argv[3] ?? 'http://localhost:8123';
   await p.goto(`${base}/demo/map-crisis-check.html`);
   await p.waitForFunction(() => window.__check, null, { timeout: 60000 });
   const check = await p.evaluate(() => window.__check);
-  // contact sheets: the whole map with every region in one state, scaled x4 nearest-neighbour
+  // contact sheets: the whole map with every region in one state (the terrain-resolution composite at 1x since #139)
   for (const [id, url] of Object.entries(check.sheets)) {
     const png = await p.evaluate(async (src) => {
       const img = new Image(); img.src = src; await img.decode();
-      const c = document.createElement('canvas'); c.width = img.width * 4; c.height = img.height * 4;
+      const c = document.createElement('canvas'); const k = img.width >= 640 ? 1 : 4; c.width = img.width * k; c.height = img.height * k;
       const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(img, 0, 0, c.width, c.height);
       return c.toDataURL('image/png');
     }, url);
