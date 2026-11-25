@@ -50,3 +50,13 @@
 - Provisional (GDD body not readable here): speeds, start-heat thresholds, cooldowns, every counter's price and effect,
   the Inspector pass rule, the Pitchforks trigger, siege chance, occupation, retake and decoy numbers. All in `PRESS`.
 - Demo: `demo/pushback-demo.html` (+1 WEEK / PLAY WEEKS, PRESS DESK).
+
+## GDD heat bands, decay and Notoriety (#148)
+- `TUNING.heatBands` (tuning.js): Unnoticed 0, Whispers 30 (schemes +10%, a story starts), Investigation 55 (one audit a
+  quarter = a week of lost construction, Sabotage locked, leverage growth x1.5), Hearings 75 (one hearing a quarter:
+  reputation -10, board confidence -10; new leads -25%), Exposed 95 (4-week indictment).
+- `pb.heatBand()`, `schemeCostMultiplier`, `sabotageLocked`, `leverageGrowthMultiplier`, `leadMultiplier`, `notoriety`,
+  `heatDecayPerWeek`. `weekTick()` decays heat (difficulty base + 1 per Communications level, `getCommsLevel`) down to
+  the Notoriety floor 0/5/10/20/30 (`getTierIndex`), then emits `heatBand`, `whispers`, `audit`, `hearing`, `indictment`.
+- The old regulator fine (65) and raid (100) are retired (not in the GDD). The campaign's EndingWatch ends the game as
+  Indicted after 4 weeks at 95+.

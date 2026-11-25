@@ -79,7 +79,9 @@ export function panicPremium(region, tensions, { breachMultiplier = 1 } = {}, cf
 }
 
 export class LeadMarket {
-  constructor({ seed = 1, regions = REGIONS, config = {}, reputation = () => TUNING.reputation.start } = {}) {
+  // leadMultiplier: heat Hearings cut new leads by 25% (#148).
+  constructor({ seed = 1, regions = REGIONS, config = {}, reputation = () => TUNING.reputation.start, leadMultiplier = () => 1 } = {}) {
+    this.leadMultiplier = leadMultiplier;
     this.cfg = { ...DEMAND, ...config };
     this.regions = regions;
     this.rng = rngFrom(seed);
@@ -154,7 +156,7 @@ export class LeadMarket {
     const fresh = [];
     const perRegion = {};
     for (const r of this.regions) {
-      const n = regionLeads(r, this.fear, { siteOwned: !!this.sites[r.id], referrals: this.referrals[r.id] ?? 0 }, this.cfg);
+      const n = regionLeads(r, this.fear, { siteOwned: !!this.sites[r.id], referrals: this.referrals[r.id] ?? 0 }, this.cfg) * this.leadMultiplier();
       this.carry[r.id] += n;
       perRegion[r.id] = n;
       fresh.push(...this._spawn(r));

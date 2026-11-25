@@ -45,24 +45,17 @@ test('crossing the investigation line queues a choice; settling lowers heat and 
   assert.equal(pb.pending.filter((e) => e.type === 'investigation').length, 0);
 });
 
-test('maxing heat triggers a raid with a big fine', () => {
+test('GDD heat: no raid at 100 and no regulator fine (#148: Hearings and Exposed replace them)', () => {
   const ledger = fakeLedger();
   const pb = new Pushback({ ledger });
   const fired = pb.onScheme({ label: 'Everything at once', heat: 100 });
-  assert.ok(fired.some((e) => e.type === 'raid'));
-  assert.equal(pb.heat, pb.cfg.heat.raidHeatAfter);
-  assert.ok(ledger.entries.some((e) => e.label === 'Federal raid' && e.amount <= -PUSHBACK_DEFAULTS.heat.raidFine));
-});
-
-test('ending a quarter hot draws a regulator fine', () => {
-  const ledger = fakeLedger();
-  const pb = new Pushback({ ledger });
+  assert.ok(!fired.some((e) => e.type === 'raid'));
+  assert.equal(pb.heat, 100);
+  assert.equal(pb.heatBand().id, 'exposed');
   pb.heat = 80;
-  ledger.record('sales', 'Bunker', 500_000 * PB); // meet the board so only the fine shows
-  const r = pb.endQuarter({ quarter: 1 });
-  assert.ok(ledger.entries.some((e) => e.label === 'Regulator fine' && e.amount < 0));
-  assert.ok(r.lines.some((l) => l.startsWith('Regulator fine')));
-  assert.equal(pb.heat, 80 - pb.cfg.heat.decayPerQuarter);
+  ledger.record('sales', 'Bunker', 500_000 * PB);
+  pb.endQuarter({ quarter: 1 });
+  assert.ok(!ledger.entries.some((e) => e.label === 'Regulator fine'));
 });
 
 test('tension at 100 is a runaway: damages, reset, doomsday shift', () => {
@@ -173,7 +166,7 @@ test('pressures() exposes all four sources with value, zone and next consequence
   pb.onScheme({ label: 'x', heat: 30, tension: 40 });
   const p = pb.pressures({ quarterProfit: 10_000 * PB });
   assert.equal(p.heat.value, pb.heat);
-  assert.deepEqual(p.heat.next, { at: 50, what: 'Federal investigation opens' });
+  assert.deepEqual(p.heat.next, { at: 55, what: 'Investigation: a site audit each quarter, Sabotage locked' });
   assert.equal(p.tension.value, pb.tension);
   assert.equal(p.tension.next.at, 75);
   assert.equal(p.leverage.highest.name, 'Vance');

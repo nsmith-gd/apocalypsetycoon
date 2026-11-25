@@ -294,9 +294,22 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   // One tension model (#90): pushback's world meter is retired; its tension is the hottest crisis track, its
   // runaways are collapsed tracks, and the HUD, audio, quarter report and Midnight all read that.
   pb.useCrisis(crisis);
+  // Heat (#148): decays 1 a week (difficulty base) + 1 per Communications level, never below Notoriety (0/5/10/20/30
+  // by company tier); the GDD heat levels run their effects in weekTick.
+  pb.getCommsLevel = () => company.level('comms');
+  pb.getTierIndex = () => company.tierIndex;
   crisis.on('week', () => pb.weekTick()); // heat cools weekly by difficulty (#92)
+  let auditSecondsLeft = 0; // Investigation: one site audited a quarter, construction stops for a week
+  pb.on('audit', (e) => { auditSecondsLeft = e.weeks * WEEK_SECONDS; toast('INVESTIGATION: regulators audit the site. Construction stops for a week.'); });
+  pb.on('hearing', (e) => {
+    crisis.reputation = Math.max(0, Math.min(100, crisis.reputation + e.reputation));
+    for (const id of Object.keys(board.confidence ?? {})) board.react(id, e.boardConfidence, 'Public hearing');
+    toast(`PUBLIC HEARING: reputation ${e.reputation}, board confidence ${e.boardConfidence}, new leads ${Math.round(e.newLeads * 100)}%.`);
+  });
+  pb.on('whispers', () => toast('WHISPERS: a journalist has started asking questions. Schemes cost 10% more.'));
+  pb.on('indictment', (e) => { if (e.weeksLeft > 0) toast(`EXPOSED: indictment proceedings. ${e.weeksLeft} week${e.weeksLeft === 1 ? '' : 's'} to get heat below 95.`); });
   const tensions = () => Object.fromEntries(Object.values(crisis.tracks).map((t) => [t.id, t.tension]));
-  const market = new LeadMarket({ seed: worldSeed + 1, reputation: () => crisis.reputation });
+  const market = new LeadMarket({ seed: worldSeed + 1, reputation: () => crisis.reputation, leadMultiplier: () => pb.leadMultiplier });
   market.ownSite('nam'); // HQ
   market.week({ tensions: tensions() });
   attachCrisis(market, crisis); // a market week runs after every crisis week
@@ -657,7 +670,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     if (clock.running) {
       const g = dt * clock.speed;
       openDueTracks();
-      grid.tick(g);
+      if (auditSecondsLeft > 0) auditSecondsLeft -= g; else grid.tick(g); // an audit week stops construction
       megas.tick(g);
       weekAcc += g;
       while (weekAcc >= WEEK_SECONDS) { weekAcc -= WEEK_SECONDS; crisis.advanceWeek(); megas.week(); }

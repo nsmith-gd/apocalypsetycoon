@@ -20,6 +20,14 @@ export const TUNING = {
   collapseShove: { strong: 15, medium: 8, weak: 4 }, // tension
   doomClock: { startMinutes: 15, tensionDivisor: 40 },
   heatDecay: { perWeek: 1, perCommunicationsLevel: 1, notorietyFloorByTier: [0, 5, 10, 20, 30] },
+  // GDD Pushback systems > Heat: the five heat levels and their effects (#148).
+  heatBands: [
+    { id: 'unnoticed', name: 'Unnoticed', from: 0 },
+    { id: 'whispers', name: 'Whispers', from: 30, schemeCost: 0.10, story: true },
+    { id: 'investigation', name: 'Investigation', from: 55, auditsPerQuarter: 1, auditWeeks: 1, sabotageLocked: true, leverageGrowth: 1.5 },
+    { id: 'hearings', name: 'Hearings', from: 75, hearingsPerQuarter: 1, hearing: { reputation: -10, boardConfidence: -10 }, newLeads: -0.25 },
+    { id: 'exposed', name: 'Exposed', from: 95, indictmentWeeks: 4 },
+  ],
   whistleblowerChance: 0.25, // per quarter when eligible
   condoGossip: 0.1, // per week toward the highest resident
   retainer: 0.04, // of build price per quarter
@@ -172,10 +180,10 @@ export const PUSHBACK_DEFAULTS = {
     start: 5,
     decayPerQuarter: 8, // heat cools off on its own when you lay low
     decayPerWeek: 0, // the campaign uses weekly decay from the difficulty table instead (#92): weekTick()
-    investigationAt: 50, // crossing this mid-quarter opens an investigation (once per quarter)
-    fineAt: 65, // ending a quarter at or above this draws a regulator fine
+    investigationAt: 55, // GDD Investigation band: crossing it mid-quarter opens an investigation (once per quarter)
+    fineAt: Infinity, // (retired by #148: the GDD has no regulator fine; Hearings and Exposed are the high-heat costs)
     finePerPoint: 1_500 * PB, // fine = (heat - fineAt + 10) * finePerPoint
-    raidAt: 100, // maxing heat triggers a federal raid
+    raidAt: Infinity, // (retired by #148: at 95+ the GDD runs a 4-week indictment instead of a raid)
     raidFine: 150_000 * PB,
     raidHeatAfter: 55,
   },
