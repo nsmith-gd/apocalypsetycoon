@@ -22,6 +22,7 @@
 import { ResidentSim } from './residents.js';
 import { QUARTER_SECONDS } from '../campaign/clock.js';
 import { identifyRoom } from '../catalog/identify.js';
+import { plotOf, productUnlocked, FLOOR_M } from '../catalog/products.js';
 import { STRATA, stratumAt, STRUCTURES, CONDUITS, OBJECTS, NEEDS, ROOM_DEPTH_M, WATER_TABLE_M, fitDays, LAYERS, layerOf, FINISHES, variantsFor, familyOf, STYLE_KITS } from './bunker-catalog.js';
 
 export const BUNKER = Object.freeze({
@@ -62,6 +63,7 @@ export class BunkerSite {
   }
 
   reset(surveyed = false) {
+    this.product = null; // #141: each new plot gets its product from its contract
     const n = this.W * (this.H + this.S);
     this.dug = new Uint8Array(n); // 1 = excavated
     this.structure = new Array(n).fill(null); // 'wall' | 'spine'
@@ -129,6 +131,8 @@ export class BunkerSite {
   dig(x, y) {
     if (!this.inside(x, y) || y < 0) return { ok: false, reason: 'Nothing to dig there' };
     if (this._willBeDug(x, y)) return { ok: false, reason: 'Already dug or ordered' };
+    const plot = this.plotLock(x, y);
+    if (plot) return { ok: false, reason: plot };
     const s = this.stratum(y);
     if (this.research && !this.research.canDig(s.id)) return { ok: false, reason: this.research.lockedReason?.('stratum', s.id) ?? `Research ${s.name} digging first` };
     const paid = this._charge(`Dig ${s.name} at ${y} m`, s.digCost);
@@ -145,6 +149,7 @@ export class BunkerSite {
   build(kind, x, y) {
     const def = STRUCTURES[kind];
     if (!def || !this.inside(x, y) || y < 0) return { ok: false, reason: 'Cannot build there' };
+    { const pl = this.plotLock(x, y); if (pl) return { ok: false, reason: pl }; }
     if (this.research && !this.research.canBuildStructure(kind)) return { ok: false, reason: this.research.lockedReason?.('structure', kind) ?? `Research ${def.name} first` };
     if (!this._willBeDug(x, y)) return { ok: false, reason: 'Dig the tile first' };
     if (this.structure[this.idx(x, y)] || this.jobs.some((j) => j.type === 'build' && j.x === x && j.y === y)) return { ok: false, reason: 'Already built' };
@@ -188,6 +193,41 @@ export class BunkerSite {
     return this.jobs.some((j) => j.type === 'object' && (!layer || layerOf(OBJECTS[j.kind]) === layer) && x >= j.x && x < j.x + OBJECTS[j.kind].w && y <= j.y && y > j.y - OBJECTS[j.kind].h);
   }
 
+  // ---------- product lines as plot templates (#141) ----------
+  /**
+   * Choose the product for this plot (only before any digging): Solo Pod 16 wide, up to 3 floors; Family Vault
+   * 24 wide, up to 5; Condo Silo 16 wide, 8-12 floors split into household units. Unlocks on the GDD schedule.
+   */
+  setProduct(id) {
+    const plot = plotOf(id);
+    if (!plot) return { ok: false, reason: 'Not a plot product' };
+    if (this.catalog && !productUnlocked(id, this.catalog.minutes?.() ?? Infinity)) return { ok: false, reason: `${plot.name} isn't unlocked yet` };
+    if (this.dug.some((v, i) => v && i >= this.S * this.W) || this.jobs.length) return { ok: false, reason: 'Pick the product before you break ground' };
+    if (plot.width > this.W) return { ok: false, reason: 'This site is too narrow' };
+    this.product = id;
+    this._changed({ type: 'product', id });
+    return { ok: true, plot };
+  }
+  get plot() { return this.product ? plotOf(this.product) : null; }
+
+  /** Why (x, y) is outside this product's plot (null = inside, or no product chosen). */
+  plotLock(x, y) {
+    const p = this.plot;
+    if (!p) return null;
+    if (x >= p.width) return `Past the ${p.name}'s plot edge (${p.width} m wide)`;
+    if (y >= p.maxDepth) return `Below the ${p.name}'s ${p.maxFloors}-floor limit`;
+    return null;
+  }
+
+  /** Floors this shelter uses (a floor is 4 m; any dug tile counts), and household units (floors with beds). */
+  floorsUsed() {
+    const floors = new Set();
+    for (let y = 0; y < this.H; y++) for (let x = 0; x < this.W; x++) if (this.dug[this.idx(x, y)] && this.structure[this.idx(x, y)] !== 'spine') floors.add(Math.floor(y / FLOOR_M));
+    const units = new Set();
+    for (const o of this.objects.values()) if (OBJECTS[o.kind].beds) units.add(Math.floor(o.y / FLOOR_M));
+    return { floors: floors.size, deepest: floors.size ? Math.max(...floors) + 1 : 0, units: units.size };
+  }
+
   /** Why a catalog-room object can't be built in this world yet (null = it can). */
   catalogLock(kind) {
     const o = OBJECTS[kind];
@@ -209,6 +249,7 @@ export class BunkerSite {
     if (gate) return { ok: false, reason: gate };
     const top = y - o.h + 1;
     if (!this.inside(x, top) || !this.inside(x + o.w - 1, y)) return { ok: false, reason: 'Off the plot' };
+    { const pl = this.plotLock(x + o.w - 1, Math.max(y, 0)); if (pl) return { ok: false, reason: pl }; }
     if (o.surface) { if (y !== -1) return { ok: false, reason: `${o.name} goes on the surface` }; }
     else if (top < 0) return { ok: false, reason: `${o.name} goes underground` };
     if (o.minDepth && y < o.minDepth) return { ok: false, reason: `${o.name} needs ${o.minDepth} m or deeper` };
@@ -807,8 +848,12 @@ export class BunkerSite {
   handOver(name = 'Shelter') {
     if (this.jobs.length) return { ok: false, reason: 'The crew is still working' };
     if (!this.objects.size) return { ok: false, reason: 'Build something first' };
+    const p = this.plot;
+    const used = this.floorsUsed();
+    if (p && used.deepest < p.minFloors) return { ok: false, reason: `A ${p.name} needs at least ${p.minFloors} floors (it has ${used.deepest})` };
+    if (p?.households && (used.units < p.households.min || used.units > p.households.max)) return { ok: false, reason: `A ${p.name} is ${p.households.min}-${p.households.max} household units: floors with beds (it has ${used.units})` };
     const sh = this.toShelter();
-    const shelter = { name, rooms: sh.rooms, occupants: sh.occupants, sealed: sh.sealed, buildCost: this.spent ?? 0 };
+    const shelter = { name, rooms: sh.rooms, occupants: sh.occupants, sealed: sh.sealed, buildCost: this.spent ?? 0, product: this.product ?? null, floors: used.deepest, ...(p?.households ? { units: used.units } : {}) };
     this.spent = 0;
     this.handedOver += 1;
     this.reset(false);
@@ -821,7 +866,7 @@ export class BunkerSite {
       v: 2, W: this.W, H: this.H, S: this.S,
       dug: Array.from(this.dug), structure: this.structure, conduit: Array.from(this.conduits),
       objects: [...this.objects.values()], jobs: this.jobs, id: this._id, finish: this.finish,
-      surveyed: this.surveyed, surveyLeft: this.surveyLeft, pressureTest: this.pressureTest, day: this.day, handedOver: this.handedOver, stallDays: this.stallDays ?? 0, spent: this.spent ?? 0,
+      product: this.product ?? null, surveyed: this.surveyed, surveyLeft: this.surveyLeft, pressureTest: this.pressureTest, day: this.day, handedOver: this.handedOver, stallDays: this.stallDays ?? 0, spent: this.spent ?? 0,
     };
   }
 
@@ -838,6 +883,7 @@ export class BunkerSite {
     this.jobs = d.jobs.map((j) => ({ ...j }));
     this._id = d.id;
     this.surveyed = d.surveyed;
+    this.product = d.product ?? null;
     this.surveyLeft = d.surveyLeft;
     this.pressureTest = d.pressureTest;
     this.stallDays = d.stallDays ?? 0;
