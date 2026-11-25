@@ -21,7 +21,7 @@
 
 import { ResidentSim } from './residents.js';
 import { identifyRoom } from '../catalog/identify.js';
-import { STRATA, stratumAt, STRUCTURES, CONDUITS, OBJECTS, NEEDS, ROOM_DEPTH_M, WATER_TABLE_M, fitDays, LAYERS, layerOf, FINISHES, variantsFor } from './bunker-catalog.js';
+import { STRATA, stratumAt, STRUCTURES, CONDUITS, OBJECTS, NEEDS, ROOM_DEPTH_M, WATER_TABLE_M, fitDays, LAYERS, layerOf, FINISHES, variantsFor, familyOf, STYLE_KITS } from './bunker-catalog.js';
 
 export const BUNKER = Object.freeze({
   width: 24, // Family Vault plot
@@ -240,6 +240,47 @@ export class BunkerSite {
     return objOrJob.variant;
   }
   flip(objOrJob) { objOrJob.flip = !objOrJob.flip; this._changed({ type: 'flip' }); return objOrJob.flip; }
+
+  /**
+   * Dress a whole room in a style kit (design layer): its wall pattern, floor and lighting (charged per m² like
+   * painting), and every piece of furniture recoloured to the kit's colour for its family (free). Each piece can
+   * still be changed on its own afterwards.
+   */
+  applyStyle(styleId, x, y) {
+    const kit = STYLE_KITS[styleId];
+    if (!kit) return { ok: false, reason: 'Unknown style' };
+    const { rooms, roomOf } = this.rooms();
+    const r = rooms[roomOf[this.idx(x, y)]];
+    if (!r || r.touchesSky) return { ok: false, reason: 'Click inside a room' };
+    let cost = 0;
+    for (const kind of ['wall', 'floor', 'light']) {
+      const res = this.paint(kind, kit[kind], x, y);
+      if (res.ok) cost += res.cost ?? 0;
+    }
+    let recoloured = 0;
+    for (const obj of r.objects ?? []) {
+      const want = kit.variants[familyOf(obj.kind)];
+      if (want && variantsFor(obj.kind).some((v) => v.id === want) && obj.variant !== want) { obj.variant = want; recoloured++; }
+    }
+    this._changed({ type: 'style', style: styleId });
+    return { ok: true, style: styleId, cost, recoloured, room: r.id };
+  }
+
+  /** Which style a room is made of: one vote each for its walls, floor and lighting (by majority of tiles) and
+   *  one per piece of furniture in a kit colour. Two or more votes and a clear lead -> that style, else null. */
+  roomStyle(r) {
+    const votes = Object.fromEntries(Object.keys(STYLE_KITS).map((k) => [k, 0]));
+    for (const kind of ['wall', 'floor', 'light']) {
+      const count = {};
+      for (const [x, y] of r.tiles) { const st = FINISHES[kind][this.finish[kind][this.idx(x, y)]]?.style; if (st) count[st] = (count[st] ?? 0) + 1; }
+      const best = Object.entries(count).sort((a, b) => b[1] - a[1])[0];
+      if (best && best[1] * 2 > r.tiles.length) votes[best[0]] += 1;
+    }
+    for (const obj of r.objects ?? []) for (const [id, kit] of Object.entries(STYLE_KITS)) if (kit.variants[familyOf(obj.kind)] === obj.variant) votes[id] += 0.5;
+    const ranked = Object.entries(votes).sort((a, b) => b[1] - a[1]);
+    const style = ranked[0][1] >= 2 && ranked[0][1] > (ranked[1]?.[1] ?? 0) ? ranked[0][0] : null;
+    return { style, votes };
+  }
 
   /**
    * Finish a room like The Sims: `kind` wall | floor | light, applied to every tile of the room that
@@ -653,6 +694,9 @@ export class BunkerSite {
       let fin = 0;
       for (const [x, y] of r.tiles) { const i = this.idx(x, y); for (const k of ['wall', 'floor', 'light']) fin += FINISHES[k][this.finish[k][i]]?.beauty ?? 0; }
       r.finishBeauty = Math.round((fin / Math.max(1, r.tiles.length)) * 3);
+      const rs = this.roomStyle(r);
+      r.style = rs.style;
+      r.styleVotes = rs.votes;
       r.beauty += r.finishBeauty;
       r.prestige = Math.max(0, r.prestige - (r.type.tier === 'status' ? r.noise : 0));
       r.impressiveness = Math.round(r.beauty + Math.min(10, r.size / 4) - (r.beds ? r.noise : 0) - (r.rough ? 3 : 0) - (r.cramped ? 5 : 0) - (r.seeps ? 4 : 0));
