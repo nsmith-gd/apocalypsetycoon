@@ -17,7 +17,7 @@ import { OBJECTS, USES, NEED_IDS, layerOf } from './bunker-catalog.js';
 
 export const RESIDENTS = Object.freeze({
   // Residents live on their own, slower clock so you can watch them (a resident day is 2 minutes at 1x).
-  // The calendar (a week = 120 s) still drives supplies and Days Sealed; this clock only drives needs.
+  // The calendar (a week = a 13th of the 27-minute quarter, about 125 s) still drives supplies and Days Sealed; this clock only drives needs.
   hourSeconds: 5,
   walkTilesPerSecond: 6,
   climbTilesPerSecond: 4,

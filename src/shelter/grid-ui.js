@@ -212,7 +212,7 @@ export function createGridUI({ mount, grid, getFrame = () => 0, onToast = null, 
     const q = grid.quote(hover.col, hover.row, selected);
     const name = grid.palette().find((p) => p.id === selected).name;
     if (!q.ok) { info.textContent = `${name}: ${q.reason}${q.cost ? ` (${k(q.cost)})` : ''}`; info.dataset.kind = 'bad'; return; }
-    info.textContent = `${name} · ${k(q.cost)}${q.dig ? ` (dig ${k(q.dig)} through ${q.stratum.name.toLowerCase()}, ${depthOfRow(hover.row)} m)` : ' (already dug)'} · ${mmss(q.seconds)} for one crew`;
+    info.textContent = `${name} · ${k(q.cost)}${q.dig ? ` (dig ${k(q.dig)} through ${q.stratum.name.toLowerCase()}, ${depthOfRow(hover.row)} m)` : ' (already dug)'} · ${mmss(q.seconds)} per crew`;
   }
 
   // ---------- stat sheet ----------

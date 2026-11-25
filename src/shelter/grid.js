@@ -16,7 +16,7 @@
 // time it is excavated, times the board's build-cost multiplier. Demolishing returns half the room
 // price; the hole stays dug. Cancelling a job that hasn't finished refunds everything.
 // Build time: dig seconds by stratum + fit-out seconds, in game seconds (a 27-minute quarter is
-// 1620 s), so one shovel crew finishes roughly 8 to 12 rooms a quarter.
+// 1620 s), so a single shovel crew finishes roughly 8 to 12 rooms a quarter.
 
 import { STYLES, DEFAULT_STYLE } from './styles.js';
 import { ROOM_CATALOG, availableRooms } from '../clients/rooms.js';
