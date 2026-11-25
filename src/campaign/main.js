@@ -301,7 +301,14 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   pb.getCommsLevel = () => company.level('comms');
   pb.getTierIndex = () => company.tierIndex;
   crisis.on('week', () => pb.weekTick()); // heat cools weekly by difficulty (#92)
-<<<<<<< HEAD
+  let auditSecondsLeft = 0; // Investigation: one site audited a quarter, construction stops for a week
+  pb.on('audit', (e) => { auditSecondsLeft = e.weeks * WEEK_SECONDS; toast('INVESTIGATION: regulators audit the site. Construction stops for a week.'); });
+  pb.on('hearing', (e) => {
+    crisis.reputation = Math.max(0, Math.min(100, crisis.reputation + e.reputation));
+    for (const id of Object.keys(board.confidence ?? {})) board.react(id, e.boardConfidence, 'Public hearing');
+    toast(`PUBLIC HEARING: reputation ${e.reputation}, board confidence ${e.boardConfidence}, new leads ${Math.round(e.newLeads * 100)}%.`);
+  });
+  pb.on('indictment', (e) => { if (e.weeksLeft > 0) toast(`EXPOSED: indictment proceedings. ${e.weeksLeft} week${e.weeksLeft === 1 ? '' : 's'} to get heat below 95.`); });
 
   // ---------- journalists (#149) ----------
   // Iris Kemp and Gil Marsh build stories every week: 2% + 1% per 10 heat (Gil 2.5x as fast). At 100% the story
@@ -312,7 +319,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     getMinutes: () => (clock.total / clock.quarterSeconds) * 27 });
   pb.press = press; // endings read Iris's trust from here
   crisis.on('week', () => press.tickWeek());
-  pb.on('whispers', () => { const who = press.startStory(); if (who) toast(`Whispers: ${who === 'iris' ? 'Iris Kemp' : 'Gil Marsh'} has started a story about you.`); });
+  pb.on('whispers', () => { const who = press.startStory(); toast(`WHISPERS: ${who ? `${who === 'iris' ? 'Iris Kemp' : 'Gil Marsh'} has started a story about you` : 'the press is asking questions'}. Schemes cost 10% more.`); });
   const pressOverlay = el('div', 'report-overlay press-overlay');
   pressOverlay.hidden = true;
   const pressClose = el('button', 'report-continue', 'CLOSE [P]');
@@ -352,17 +359,6 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     document.body.append(overlay);
     talk.focus();
   }
-=======
-  let auditSecondsLeft = 0; // Investigation: one site audited a quarter, construction stops for a week
-  pb.on('audit', (e) => { auditSecondsLeft = e.weeks * WEEK_SECONDS; toast('INVESTIGATION: regulators audit the site. Construction stops for a week.'); });
-  pb.on('hearing', (e) => {
-    crisis.reputation = Math.max(0, Math.min(100, crisis.reputation + e.reputation));
-    for (const id of Object.keys(board.confidence ?? {})) board.react(id, e.boardConfidence, 'Public hearing');
-    toast(`PUBLIC HEARING: reputation ${e.reputation}, board confidence ${e.boardConfidence}, new leads ${Math.round(e.newLeads * 100)}%.`);
-  });
-  pb.on('whispers', () => toast('WHISPERS: a journalist has started asking questions. Schemes cost 10% more.'));
-  pb.on('indictment', (e) => { if (e.weeksLeft > 0) toast(`EXPOSED: indictment proceedings. ${e.weeksLeft} week${e.weeksLeft === 1 ? '' : 's'} to get heat below 95.`); });
->>>>>>> origin/main
   const tensions = () => Object.fromEntries(Object.values(crisis.tracks).map((t) => [t.id, t.tension]));
   const market = new LeadMarket({ seed: worldSeed + 1, reputation: () => crisis.reputation, leadMultiplier: () => pb.leadMultiplier });
   market.ownSite('nam'); // HQ
