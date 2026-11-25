@@ -47,21 +47,30 @@ export function spriteCanvas(sprite, frame = 0) {
   return frames[frame % frames.length];
 }
 
-/** Draw a sprite at (x, y) in the context's own pixel space. Integer positions only. */
-export function drawSprite(ctx, sprite, x, y, { frame = 0, flip = false } = {}) {
+/** The size a sprite occupies in its slot: a remastered sprite (#116) keeps its master's footprint. */
+export const footprint = (sprite, native = false) => (!native && sprite.base ? sprite.base : { w: sprite.w, h: sprite.h });
+
+/**
+ * Draw a sprite at (x, y) in the context's own pixel space. Integer positions only.
+ * Remastered sprites (#116) draw into their master's footprint, so every existing slot still lines up;
+ * pass { native: true } to draw them at full resolution (e.g. a 4x zoomed view), or { size: [w, h] }.
+ */
+export function drawSprite(ctx, sprite, x, y, { frame = 0, flip = false, native = false, size = null } = {}) {
   ctx.imageSmoothingEnabled = false;
   const cv = spriteCanvas(sprite, frame);
-  if (!flip) return ctx.drawImage(cv, Math.round(x), Math.round(y));
+  const { w, h } = size ? { w: size[0], h: size[1] } : footprint(sprite, native);
+  if (!flip) return ctx.drawImage(cv, Math.round(x), Math.round(y), w, h);
   ctx.save();
-  ctx.translate(Math.round(x) + sprite.w, Math.round(y));
+  ctx.translate(Math.round(x) + w, Math.round(y));
   ctx.scale(-1, 1);
-  ctx.drawImage(cv, 0, 0);
+  ctx.drawImage(cv, 0, 0, w, h);
   ctx.restore();
 }
 
 /** Tile a sprite over a rectangle (e.g. earth fill). */
 export function tileSprite(ctx, sprite, x, y, w, h) {
-  for (let ty = y; ty < y + h; ty += sprite.h) for (let tx = x; tx < x + w; tx += sprite.w) drawSprite(ctx, sprite, tx, ty);
+  const f = footprint(sprite);
+  for (let ty = y; ty < y + h; ty += f.h) for (let tx = x; tx < x + w; tx += f.w) drawSprite(ctx, sprite, tx, ty);
 }
 
 /**
@@ -69,6 +78,16 @@ export function tileSprite(ctx, sprite, x, y, w, h) {
  * Draws a frame of any size w x h (in sprite pixels).
  */
 export function drawNineSlice(ctx, sprite, x, y, w, h, border) {
+  if (sprite.base && typeof document !== 'undefined') {
+    // remastered frame (#116): slice at full resolution, then fit into the w x h footprint
+    const k = sprite.scale;
+    const off = document.createElement('canvas');
+    off.width = w * k; off.height = h * k;
+    drawNineSlice(off.getContext('2d'), { ...sprite, base: null }, 0, 0, w * k, h * k, border * k);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(off, Math.round(x), Math.round(y), w, h);
+    return;
+  }
   const cv = spriteCanvas(sprite);
   const b = border;
   const mw = sprite.w - 2 * b;

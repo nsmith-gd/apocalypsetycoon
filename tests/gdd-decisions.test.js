@@ -9,6 +9,7 @@ import { LeadMarket } from '../src/demand/demand.js';
 import { WEEK_MINUTES } from '../src/debug/breach-sim.js';
 import { WEEKLY_CARDS } from '../src/events/weekly.js';
 import { TRACKS } from '../src/world/tracks.js';
+import { BunkerSite } from '../src/shelter/bunker.js';
 
 // #106: pins the four settled contradictions in docs/gdd-decisions.md (#96). If one of these fails, either the code
 // drifted from a decision, or the decision changed: then update docs/gdd-decisions.md and this test together.
@@ -29,6 +30,8 @@ test('decision 2: a quarter is 27 minutes of game clock (1620 s), a week a thirt
   // the campaign derives its crisis week from the clock, so it follows the quarter length
   const main = readFileSync(new URL('../src/campaign/main.js', import.meta.url), 'utf8');
   assert.match(main, /WEEK_SECONDS = clock\.quarterSeconds \/ 13/);
+  // the shelter grid's days are a seventh of that week (#108: it used to assume a 120 s week)
+  assert.ok(Math.abs(new BunkerSite().cfg.daySeconds * 7 - week) < 1e-9);
 });
 
 test('decision 4: reputation starts at 40 in the tuning table and in the lead market default', () => {

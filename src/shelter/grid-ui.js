@@ -50,11 +50,11 @@ export function createGridUI({ mount, grid, getFrame = () => 0, onToast = null, 
     const b = el('button', 'sg-room');
     b.type = 'button';
     b.dataset.id = item.id;
-    const icon = spriteCanvas(AMENITIES[item.id]);
+    // #116: the icon canvas holds the 64 px remaster at full resolution; CSS shows it at the old size
     const ic = el('canvas', 'sg-icon');
-    ic.width = 16; ic.height = 16;
-    ic.getContext('2d').drawImage(spriteCanvas(TILES.roomEmpty), 0, 0);
-    ic.getContext('2d').drawImage(icon, 0, 0);
+    ic.width = 64; ic.height = 64;
+    drawSprite(ic.getContext('2d'), TILES.roomEmpty, 0, 0, { size: [64, 64] });
+    drawSprite(ic.getContext('2d'), AMENITIES[item.id], 0, 0, { size: [64, 64] });
     const tag = roomTag(item.id, item);
     const t = el('span', `sg-tag sg-${tag.cls}`, tag.text);
     b.append(ic, el('span', 'sg-name', SHORT[item.id] ?? item.name), t, el('span', 'sg-cost', k(item.cost)));
@@ -212,7 +212,7 @@ export function createGridUI({ mount, grid, getFrame = () => 0, onToast = null, 
     const q = grid.quote(hover.col, hover.row, selected);
     const name = grid.palette().find((p) => p.id === selected).name;
     if (!q.ok) { info.textContent = `${name}: ${q.reason}${q.cost ? ` (${k(q.cost)})` : ''}`; info.dataset.kind = 'bad'; return; }
-    info.textContent = `${name} · ${k(q.cost)}${q.dig ? ` (dig ${k(q.dig)} through ${q.stratum.name.toLowerCase()}, ${depthOfRow(hover.row)} m)` : ' (already dug)'} · ${mmss(q.seconds)} for one crew`;
+    info.textContent = `${name} · ${k(q.cost)}${q.dig ? ` (dig ${k(q.dig)} through ${q.stratum.name.toLowerCase()}, ${depthOfRow(hover.row)} m)` : ' (already dug)'} · ${mmss(q.seconds)} per crew`;
   }
 
   // ---------- stat sheet ----------

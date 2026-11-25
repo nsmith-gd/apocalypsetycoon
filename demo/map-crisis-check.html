@@ -62,8 +62,9 @@ function render(levels, { selected = null, frames = 1 } = {}) {
   queue = []; // drop the previous screen's loop
   const screen = createWorldMapScreen({ root, sales: fakeSales(levels), initial: selected });
   for (let i = 0; i < frames; i++) pending();
-  const img = screen.canvas.getContext('2d').getImageData(0, 0, MAP_W, MAP_H);
-  return { img, screen, canvas: screen.canvas };
+  const canvas = screen.snapshot(); // terrain + everything on top (#109 split them into two canvases)
+  const img = canvas.getContext('2d').getImageData(0, 0, MAP_W, MAP_H);
+  return { img, screen, canvas };
 }
 
 const allAt = (crisis) => Object.fromEntries(REGIONS.map((r) => [r.id, crisis]));

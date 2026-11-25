@@ -149,7 +149,8 @@ export const FINISHES = Object.freeze({
     walnut: { name: 'Walnut panelling', a: '#5a3a22', b: '#4a2e1a', beauty: 2, cost: 900, pattern: 'panel' },
     tech: { name: 'Tech-white panels', a: '#e8eef2', b: '#c8d4dc', beauty: 2, cost: 900, pattern: 'grid' },
     marble: { name: 'Calacatta marble', a: '#ece8e0', b: '#b8b0a4', beauty: 3, cost: 2_000, pattern: 'vein' },
-    damask: { name: 'Gold damask', a: '#6a1e2a', b: '#c8a040', beauty: 3, cost: 2_000, pattern: 'damask' },
+    damask: { name: 'Gold damask', a: '#6a1e2a', b: '#c8a040', beauty: 3, cost: 2_000, pattern: 'damask', style: 'gilded' },
+    board_concrete: { name: 'Board-formed concrete', a: '#524d4b', b: '#3a3738', beauty: 1, cost: 400, pattern: 'board', style: 'brutalist' },
     velvet: { name: 'Emerald velvet', a: '#1e5a3e', b: '#164a32', beauty: 3, cost: 2_000, pattern: 'stripe' },
     neon: { name: 'Neon pink', a: '#c02a8a', b: '#ff5ac8', beauty: 2, cost: 1_200, pattern: 'stripe' },
     pastel: { name: 'Atomic pastel', a: '#8ad0c0', b: '#f0c8a0', beauty: 2, cost: 900, pattern: 'stripe' },
@@ -157,7 +158,8 @@ export const FINISHES = Object.freeze({
   floor: {
     concrete: { name: 'Bare slab', a: '#6a6660', b: '#5a5650', beauty: 0, cost: 0 },
     oak: { name: 'Oak parquet', a: '#b07a40', b: '#8a5a2a', beauty: 2, cost: 700 },
-    checker: { name: 'Marble checker', a: '#f0ece4', b: '#2a2a2a', beauty: 3, cost: 1_500 },
+    checker: { name: 'Marble checker', a: '#f0ece4', b: '#2a2a2a', beauty: 3, cost: 1_500, style: 'gilded' },
+    polished_slab: { name: 'Polished slab', a: '#6c655f', b: '#3a3738', beauty: 1, cost: 300, style: 'brutalist' },
     carpet: { name: 'Red carpet', a: '#8a1e2a', b: '#6e1620', beauty: 2, cost: 600 },
     terrazzo: { name: 'Terrazzo', a: '#d8ccbc', b: '#8a7a6a', beauty: 2, cost: 900 },
     lacquer: { name: 'Black lacquer', a: '#1a1a1e', b: '#3a3a44', beauty: 2, cost: 1_000 },
@@ -165,6 +167,8 @@ export const FINISHES = Object.freeze({
   light: {
     plain: { name: 'Work lights', tint: null, beauty: 0, cost: 0 },
     warm: { name: 'Warm glow', tint: 'rgba(255,170,80,.14)', beauty: 1, cost: 200 },
+    sodium: { name: 'Sodium lamps', tint: 'rgba(240,150,50,.16)', beauty: 1, cost: 150, style: 'brutalist' },
+    candle: { name: 'Chandelier glow', tint: 'rgba(255,215,140,.15)', beauty: 2, cost: 400, style: 'gilded' },
     cool: { name: 'Cool daylight', tint: 'rgba(160,200,255,.12)', beauty: 1, cost: 200 },
     sunset: { name: 'Sunset', tint: 'rgba(255,110,90,.16)', beauty: 1, cost: 300 },
     club: { name: 'Club neon', tint: 'rgba(200,70,255,.18)', beauty: 1, cost: 300 },
@@ -181,7 +185,25 @@ export const VARIANTS = Object.freeze({
 });
 const FAMILY = { sleep: 'bedding', comfort: 'upholstery', decor: 'wood', kitchen: 'wood', bath: 'metal', status: 'wood', medical: 'metal', security: 'metal', air: 'metal', water: 'metal', food: 'metal', power: 'metal', door: 'wood' };
 const FAMILY_BY_KIND = { plant: 'plant', plant_tall: 'plant', armchair: 'upholstery', sofa: 'upholstery', cinema_seats: 'upholstery', rug: 'upholstery', rug_persian: 'upholstery', dining_chair: 'wood', wardrobe: 'wood', bookshelf: 'wood', gold_taps: 'metal', chandelier: 'metal', mirror: 'metal', sconce: 'metal', pendant: 'metal' };
-export const variantsFor = (kind) => VARIANTS[FAMILY_BY_KIND[kind] ?? FAMILY[OBJECTS[kind]?.cat] ?? 'wood'];
+export const familyOf = (kind) => FAMILY_BY_KIND[kind] ?? FAMILY[OBJECTS[kind]?.cat] ?? 'wood';
+export const variantsFor = (kind) => VARIANTS[familyOf(kind)];
+
+// Style kits (design layer, #97): a style is a set of pieces, not a baked room. Applying a kit to a room
+// lays its wall pattern, floor and lighting and recolours the furniture to the kit's colour per family.
+// Every piece can still be changed on its own afterwards (paint, recolour), like The Sims.
+// The room's style (for the client's x1.25 / x0.8) is read back from the pieces it is made of.
+export const STYLE_KITS = Object.freeze({
+  brutalist: {
+    name: 'Brutalist', blurb: 'Raw concrete, stencils, sodium light',
+    wall: 'board_concrete', floor: 'polished_slab', light: 'sodium',
+    variants: { metal: 'black', wood: 'ebony', upholstery: 'leather', bedding: 'white', plant: 'olive' },
+  },
+  gilded: {
+    name: 'Gilded', blurb: 'Marble, gold leaf, velvet',
+    wall: 'damask', floor: 'checker', light: 'candle',
+    variants: { metal: 'gold', wood: 'ebony', upholstery: 'burgundy', bedding: 'silk', plant: 'bloom' },
+  },
+});
 
 // What each object offers a resident (Sims-style "advertisements"). needs gained per in-game hour of
 // use; hours = how long one use takes; seats = how many residents at once; pose drives the animation.

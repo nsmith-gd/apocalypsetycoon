@@ -21,7 +21,38 @@ Defined once in `src/art/palette.js`. Sprites refer to colours by a one-characte
 
 Meaning is fixed: **gold = money/luxury, amber = edge, red = tipping/danger, mint = air, blue = water, green = food.** The HUD meters, map overlays and amenity accents all use the same colours for the same meanings.
 
+## Minimum asset size: the "64" rule (#113, PROPOSED: awaiting director confirmation)
+Director's note (art D4): *"all assets need to be 64bit now minimum."* Read here as the common shorthand for
+sprite size ("16-bit" art = 16-pixel sprites, "64-bit" = 64-pixel sprites), not as colour depth (every PNG is
+already 32-bit RGBA) and not as the 64-bit console era (that was 3D, which the pixel-art brief rules out).
+
+**Rule (measurable):**
+1. Every **sprite, tile and icon frame** is authored at native resolution on a canvas of at least **64 x 64 px**
+   (both sides >= 64). The art may leave a transparent margin, but its frame is never smaller.
+2. The **shelter grid unit** (1 m x 1 m) is **64 x 64 px**. A 4 m-wide room is 256 px wide.
+3. **In-world text** (labels drawn into a canvas) uses glyphs at least **8 px tall**; the 3x5 font is retired.
+4. **Exempt** by class, because size isn't their unit of detail: whole-canvas paintings and their full-size
+   overlays (the world map base, region and heat layers), the palette swatch sheet, the region click grid,
+   and 1 px UI rules/lines.
+5. Display stays at **whole-number scales** (below). 64 px art shows at 1x on a 1080p screen; small screens
+   scale the whole view down by integer steps, never individual sprites.
+
+Minimum asset size: 64 px
+
+**Test:** `node tools/check-asset-minimum.mjs` (#115) reads the number on the line above and fails on any asset
+below it at native size, naming each one; `--baseline` fails only on new offenders while the redraw is under way.
+The inventory and the full audit are #114's (`tools/asset-inventory.mjs`, `docs/art/asset-audit-64.md`). At the
+time of writing every sprite, tile and icon is below it (8-16 px); only the exempt whole-map layers pass. That list
+is the redraw backlog if the rule is confirmed. Rule 3 (glyphs) isn't machine-checked yet: the font is one asset.
+
+**Fidelity, measured on the director's references:** characters are about 35-55 art px tall and doors and
+machines 70-100 px, with lit, worn surfaces. Match that density of detail, not just the canvas size.
+
+**Open:** the GDD's "16 x 16 px = 1 m x 1 m" (Shelter canvas) conflicts with rule 2. Until the director
+confirms, the current 16 px art stays in the game; new art is drawn to this rule.
+
 ## Grid and scale
+Current sizes below are **legacy** (below the proposed 64 rule above):
 - Shelter cells are **16×16**. A room is the `roomEmpty` tile with an amenity sprite drawn on top. Amenities rest on row 13, and rows 14–15 are floor.
 - World-map terrain is painted per pixel on a 320×192 native canvas; the 40×24 grid of **8×8** cells is the region click grid (see "World map" below).
 - UI icons are **12×12**, crisis icons **10×10**, and in-canvas text uses the **3×5** pixel font (`src/art/font.js`).
@@ -39,9 +70,12 @@ Meaning is fixed: **gold = money/luxury, amber = edge, red = tipping/danger, min
 | Region crisis | Overlay | Label colour |
 |---|---|---|
 | < 40 | none | bone |
-| 40–69 | `uneasy`: sparse gold dither | gold |
-| 70–89 | `edge`: orange dither (the profit zone) | amber |
-| 90+ | `tipping`: red, 2-frame shimmer | red |
+| 40–69 | `uneasy`: light gold tint, thin rim, soft inner glow | gold |
+| 70–89 | `edge`: orange tint, rim and deeper glow (the profit zone) | amber |
+| 90+ | `tipping`: red tint, 2px rim, glow that slowly breathes | red |
+
+No textures or dark veils by default (#111: "too busy, too old looking"). The Crisis patterns setting adds a
+pattern per level for players who can't rely on colour.
 
 ## UI frames
 Nine-slice frames in `src/art/sprites-ui.js` (`UI_FRAMES`) are drawn with `drawNineSlice()`, which tiles edges and centres instead of stretching them:
@@ -74,7 +108,7 @@ The world map is the one place where these rules replace the general ones above:
 **3. Light direction.** Light comes from the top-left, as everywhere else, but on the map it only touches **mountain ridges**: a 1px lit pixel on the left slope, a 1px shadow on the right. Plains, forests and deserts get no light shading; their depth comes from biome ramps (rule 6).
 ![light](world-map-rules/03-light.png)
 
-**4. Texture: clusters, no dithering, no repeats.** Terrain texture is clusters of 3+ pixels of one colour. No checkerboard dithering in the base layer (dithering is reserved for the crisis overlays, so they always read as "something happening here"). No repeating 8px pattern: two neighbouring cells must never look identical. Lakes and rivers are 1px lines of `ocean[2]` in green regions only.
+**4. Texture: clusters, no dithering, no repeats.** Terrain texture is clusters of 3+ pixels of one colour. No checkerboard dithering in the base layer (or in the crisis overlays since #111; the Crisis patterns accessibility setting is the only exception). No repeating 8px pattern: two neighbouring cells must never look identical. Lakes and rivers are 1px lines of `ocean[2]` in green regions only.
 ![texture](world-map-rules/04-texture.png)
 
 **5. Ocean.** Deep ocean is flat `ocean[1]`, no wave texture. A shelf of `ocean[2]` hugs every coast, 2-4px wide, widening to 6-10px off large landmasses and between close islands. `ocean[0]` only for trenches far from land, in a few large calm shapes.
@@ -83,7 +117,7 @@ The world map is the one place where these rules replace the general ones above:
 **6. Biomes and detail density.** Each biome is nested blobs, 3+ tones from its ramp, darkest inland (forest cores, rust desert ridges); snow caps are bright with a `snow[0]` shadow edge and a ragged rim. Put detail on coasts, mountain spines and the polar rims; keep big deserts and the open ocean calm.
 ![biomes](world-map-rules/06-biomes.png)
 
-**7. Readable beside the shelter grid.** The map is the world above: cooler and calmer than the warm, lit bunker. Its brightest land tone stays below the bunker's gold and lamp colours, so a glance tells the two canvases apart. The crisis overlays (gold, amber, red dither) must read on every biome at 1×; check any new biome against all three.
+**7. Readable beside the shelter grid.** The map is the world above: cooler and calmer than the warm, lit bunker. Its brightest land tone stays below the bunker's gold and lamp colours, so a glance tells the two canvases apart. The crisis overlays (gold, amber, red tints and rims) must read on every biome at 1×; check any new biome against all three.
 ![readability](world-map-rules/07-readability.png)
 
 ## The 64 px minimum (art note D4; room tiles #117)

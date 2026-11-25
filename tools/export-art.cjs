@@ -58,7 +58,7 @@ server.listen(0, async () => {
         for (let f = 0; f < n; f++) {
           const x = f * (cw + 1);
           const y = row * (ch + 1);
-          drawSprite(ctx, s, x, y, { frame: f });
+          drawSprite(ctx, s, x, y, { frame: f, native: true });
           atlas[key].push({ x, y, w: s.w, h: s.h });
         }
       });
