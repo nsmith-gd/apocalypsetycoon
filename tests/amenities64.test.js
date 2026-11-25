@@ -5,7 +5,8 @@ import { AMENITY_KINDS, amenityRaster, reduceRaster, AMENITY_PX } from '../src/a
 import { OBJECTS, variantsFor } from '../src/shelter/bunker-catalog.js';
 import { hasSprite } from '../src/shelter/bunker-sprites.js';
 
-const LUXURY = Object.values(OBJECTS).filter((o) => o.luxury || o.prestige).map((o) => o.id).filter((id) => !['med_bed', 'shower'].includes(id));
+// generated catalog-room objects (#140) await their art (R45)
+const LUXURY = Object.values(OBJECTS).filter((o) => !o.generated && (o.luxury || o.prestige)).map((o) => o.id).filter((id) => !['med_bed', 'shower'].includes(id));
 
 test('amenities: every luxury / prestige piece (gold taps, cryo pods...) is drawn at 64 px', () => {
   for (const id of ['gold_taps', 'cryo_pod', 'king_bed', 'chandelier', 'piano', 'wine_rack', ...LUXURY]) assert.ok(AMENITY_KINDS.includes(id), `${id} has no 64 px art`);

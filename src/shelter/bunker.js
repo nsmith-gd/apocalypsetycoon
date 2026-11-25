@@ -26,13 +26,13 @@ import { STRATA, stratumAt, STRUCTURES, CONDUITS, OBJECTS, NEEDS, ROOM_DEPTH_M, 
 
 export const BUNKER = Object.freeze({
   width: 24, // Family Vault plot
-  depth: 40,
+  depth: 96, // #140: deep enough for every catalog room (Aquifer Well 80 m+, Micro-reactor 60 m+, Geothermal 50 m+)
   sky: 5,
   daySeconds: QUARTER_SECONDS / 13 / 7, // a week is a 13th of the 27-minute quarter, about 125 s at 1x (#96, #108)
   surveyDays: 7,
   pressureTestDays: 30,
   noiseRadius: 6,
-  priority: { air: 0, water: 1, food: 2, power: 3, medical: 4, security: 5, kitchen: 6, bath: 6, comfort: 8, decor: 9, status: 10, sleep: 7 },
+  priority: { air: 0, water: 1, food: 2, power: 3, medical: 4, security: 5, kitchen: 6, bath: 6, comfort: 8, decor: 9, status: 10, delusion: 11, sleep: 7 },
 });
 
 const NET_TYPES = ['air', 'water', 'power'];
@@ -42,8 +42,11 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 export class BunkerSite {
   // research (#16): canBuild(objectId), canBuildStructure(id), canDig(stratumId), lockedReason(type, id).
   // All default to open, so demos and tests without a research tree are unaffected.
-  constructor({ ledger = null, crews = () => 1, crewSpeed = () => 1, costMultiplier = () => 1, cfg = {}, surveyed = false, name = 'Last Resort HQ', research = null } = {}) {
+  constructor({ ledger = null, crews = () => 1, crewSpeed = () => 1, costMultiplier = () => 1, cfg = {}, surveyed = false, name = 'Last Resort HQ', research = null, catalog = null } = {}) {
     this.research = research;
+    // #140: catalog rooms unlock on the GDD schedule and alternate rooms exist only in their track's world:
+    // catalog = { minutes: () => play minutes, roster: () => track ids }. Absent = everything open (demos, tests).
+    this.catalog = catalog;
     this.cfg = { ...BUNKER, ...cfg };
     this.W = this.cfg.width;
     this.H = this.cfg.depth;
@@ -185,6 +188,15 @@ export class BunkerSite {
     return this.jobs.some((j) => j.type === 'object' && (!layer || layerOf(OBJECTS[j.kind]) === layer) && x >= j.x && x < j.x + OBJECTS[j.kind].w && y <= j.y && y > j.y - OBJECTS[j.kind].h);
   }
 
+  /** Why a catalog-room object can't be built in this world yet (null = it can). */
+  catalogLock(kind) {
+    const o = OBJECTS[kind];
+    if (!o || !this.catalog) return null;
+    if (o.track && !(this.catalog.roster?.() ?? []).includes(o.track)) return `${o.name} only exists in worlds where its threat runs`;
+    if (o.unlockAt != null && (this.catalog.minutes?.() ?? Infinity) < o.unlockAt) return `${o.name} unlocks at ${Math.floor(o.unlockAt / 60)}:${String(o.unlockAt % 60).padStart(2, '0')} of play`;
+    return null;
+  }
+
   /**
    * Can object `kind` sit with its bottom-left tile at (x, y)? (y is the bottom row; it occupies rows
    * y-h+1 .. y.) Checks bounds, surface/depth rules, support underneath and overlaps.
@@ -193,6 +205,8 @@ export class BunkerSite {
     const o = OBJECTS[kind];
     if (!o) return { ok: false, reason: 'Unknown object' };
     if (this.research && !this.research.canBuild(kind)) return { ok: false, reason: this.research.lockedReason?.('object', kind) ?? `Research ${o.name} first` };
+    const gate = this.catalogLock(kind);
+    if (gate) return { ok: false, reason: gate };
     const top = y - o.h + 1;
     if (!this.inside(x, top) || !this.inside(x + o.w - 1, y)) return { ok: false, reason: 'Off the plot' };
     if (o.surface) { if (y !== -1) return { ok: false, reason: `${o.name} goes on the surface` }; }
@@ -532,7 +546,7 @@ export class BunkerSite {
       r.height = r.maxY - r.minY + 1;
       r.size = r.tiles.length;
       // One identity per enclosed space, from the objects inside it (GDD room catalog requirements).
-      const id = r.touchesSky ? null : identifyRoom(counts, { roster: this.roster ?? null });
+      const id = r.touchesSky ? null : identifyRoom(counts, { roster: this.roster ?? this.catalog?.roster?.() ?? null });
       r.type = id ? id.type : { id: 'open_pit', name: 'Open pit', tier: 'survive', minW: 1 };
       r.hint = id?.hint ?? null;
       r.beds = r.objects.reduce((s, o) => s + (OBJECTS[o.kind].beds ?? 0), 0);

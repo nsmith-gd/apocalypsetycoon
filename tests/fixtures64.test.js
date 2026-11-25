@@ -5,7 +5,8 @@ import { OBJECTS } from '../src/shelter/bunker-catalog.js';
 import { inventory } from '../tools/asset-inventory.mjs';
 import { check } from '../tools/check-asset-minimum.mjs';
 
-const SURVIVAL = Object.entries(OBJECTS).filter(([, o]) => ['air', 'water', 'food'].includes(o.cat)).map(([id]) => id);
+// generated catalog-room objects (#140) await their art (R45)
+const SURVIVAL = Object.entries(OBJECTS).filter(([, o]) => !o.generated && ['air', 'water', 'food'].includes(o.cat)).map(([id]) => id);
 
 test('every air, water and food fixture in the catalog has 64 px-per-metre art', () => {
   assert.equal(FIXTURE_PX, 64);

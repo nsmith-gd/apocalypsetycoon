@@ -14,7 +14,8 @@ import { drawStrata64, drawDig64, drawShell64, drawFitout64 } from '../art/hd/gr
 import { drawObjectSprite, drawResident, drawThought, hasSprite } from './bunker-sprites.js';
 import { daysSealedCanvas } from '../art/hd/shelter-life64.js';
 import { deviceScale, sizeCanvas, snapToDevice, onPixelRatioChange, dpr } from '../ui/pixel-perfect.js';
-import { NEED_IDS } from './bunker-catalog.js';
+import { NEED_IDS, CATALOG_OBJECT_IDS } from './bunker-catalog.js';
+import { GDD_ROOM_BY_ID } from '../catalog/rooms.js';
 import { createBuildFx, drawCrew, drawSnap } from './build-fx.js'; // #128
 import { moodOf, drawGrade, drawShelterLight, LIGHT_SOURCES } from '../art/atmosphere.js'; // #130
 import { settings } from '../settings/settings.js';
@@ -25,7 +26,7 @@ const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls)
 const k = (n) => (Math.abs(n) >= 1e6 ? `$${(n / 1e6).toFixed(2)}M` : `$${Math.round(n / 1e3)}K`);
 const fmtDays = (d) => (d === Infinity ? '∞' : d >= 100 ? Math.round(d) : d);
 
-const CAT_COLORS = { door: '#9a8a70', sleep: '#8a6a4a', air: '#bfe3ff', water: '#3a8ad8', food: '#c8743a', power: '#f5c542', kitchen: '#e0a060', bath: '#7ac8d8', medical: '#f2f2f2', security: '#8a2a2a', comfort: '#a0703a', decor: '#7a9a5a', status: '#3aa070' };
+const CAT_COLORS = { delusion: '#c070ff',  door: '#9a8a70', sleep: '#8a6a4a', air: '#bfe3ff', water: '#3a8ad8', food: '#c8743a', power: '#f5c542', kitchen: '#e0a060', bath: '#7ac8d8', medical: '#f2f2f2', security: '#8a2a2a', comfort: '#a0703a', decor: '#7a9a5a', status: '#3aa070' };
 const CATS = [
   ['ESSENTIALS', ['door', 'airlock', 'bunk', 'bed', 'shelf', 'fridge', 'tank', 'toilet', 'shower', 'stove']],
   ['LIFE SUPPORT', ['crank_scrubber', 'hepa', 'o2_rack', 'recycler', 'sump', 'hydro', 'grow_light', 'vat', 'aquifer']],
@@ -38,6 +39,8 @@ const CATS = [
   ['RUGS', ['rug', 'rug_persian']],
   ['ON THE WALL', ['painting', 'mirror', 'faux_window', 'led_sky', 'sconce', 'wall_shelf', 'neon_sign', 'trophy']],
   ['CEILING', ['chandelier', 'pendant']],
+  // #140: the rest of the GDD room catalog, by needs tier (each piece makes its room)
+  ...['survive', 'comfort', 'status', 'delusion'].map((tier) => [`${tier.toUpperCase()} ROOMS`, CATALOG_OBJECT_IDS.filter((id) => OBJECTS[id].tier === tier)]),
 ];
 const TOOLS = [['look', 'INSPECT', 'Q'], ['dig', 'DIG', 'D'], ['wall', 'WALL', 'W'], ['spine', 'SPINE', 'S'], ['air', 'AIR DUCT', '1'], ['water', 'WATER PIPE', '2'], ['power', 'POWER CABLE', '3'], ['style', 'STYLE', 'Y'], ['paint', 'PAINT', 'P'], ['recolor', 'RECOLOUR', 'C'], ['flip', 'FLIP', 'F'], ['remove', 'REMOVE', 'X']];
 const OVERLAYS = [['rooms', 'ROOMS'], ['decor', 'INTERIOR'], ['air', 'AIR'], ['water', 'WATER'], ['power', 'POWER'], ['noise', 'NOISE'], ['gaze', 'CLIENT GAZE'], ['none', 'PLAIN']];
@@ -105,7 +108,10 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
   // ---------- palette ----------
   const pal = el('div', 'bk-pal');
   const palBtns = {};
-  for (const [group, ids] of CATS) {
+  const inWorld = (id) => !OBJECTS[id].track || !site.catalog || (site.catalog.roster?.() ?? []).includes(OBJECTS[id].track);
+  for (const [group, all] of CATS) {
+    const ids = all.filter(inWorld); // alternate-world rooms only in worlds running their threat
+    if (!ids.length) continue;
     pal.append(el('div', 'bk-grp', group));
     for (const id of ids) {
       const o = OBJECTS[id];
@@ -119,6 +125,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
   }
   function describe(o) {
     const bits = [];
+    if (o.room) bits.push(`makes a ${GDD_ROOM_BY_ID[o.room]?.name ?? o.room}`);
     if (o.beds) bits.push(`sleeps ${o.beds}`);
     if (o.air) bits.push(`air ${o.air} m³/h`);
     if (o.airStock) bits.push(`${o.airStock} m³ reserve`);
