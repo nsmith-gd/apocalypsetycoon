@@ -38,6 +38,24 @@ const IDX = {};
 for (const [name, ramp] of Object.entries(HD_RAMPS)) {
   IDX[name] = ramp.map((hex, s) => { HD_COLOURS.push(hex); STEP.push([name, s]); return HD_COLOURS.length - 1; });
 }
+/**
+ * A 7-step ramp built from one colour (a furniture variant: the player's recolour choice). Step 4 is the colour
+ * itself; shadows drift cool and highlights warm, the way the hand-made ramps do. Returns the ramp's name.
+ */
+export function rampFromHex(hex) {
+  const name = `v${hex.toLowerCase()}`;
+  if (IDX[name]) return name;
+  const n = parseInt(hex.slice(1), 16);
+  const [r, g, bl] = [n >> 16, (n >> 8) & 255, n & 255];
+  const F = [0.28, 0.45, 0.62, 0.8, 1, 1.18, 1.36];
+  const H = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+  IDX[name] = F.map((f, s) => {
+    const cool = s < 4 ? (4 - s) * 6 : 0, warm = s > 4 ? (s - 4) * 10 : 0;
+    const c = `#${H(r * f + warm)}${H(g * f + warm * 0.7)}${H(bl * f + cool)}`;
+    HD_COLOURS.push(c); STEP.push([name, s]); return HD_COLOURS.length - 1;
+  });
+  return name;
+}
 /** Colour index for a ramp step (clamped to the ramp). */
 export function col(ramp, step) {
   const r = IDX[ramp];

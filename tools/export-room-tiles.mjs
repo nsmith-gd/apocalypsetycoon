@@ -34,7 +34,7 @@ export function sheet(items, maxW = 1600, gap = 4) {
   return { w: W, h: H, rgba: out, atlas };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === `file://${process.argv[1]}`) { // run as a script
   const args = process.argv.slice(2);
   const items = ROOM_TILE_IDS.map((id) => ({ id, r: renderRoomTile(id, { frame: 0 }) }));
   const s = sheet(items);

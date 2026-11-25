@@ -70,7 +70,9 @@ export async function inventory() {
   proc('bunker-tiles/stage-fitout', 'rooms and grid tiles', 'src/art/bunker-tiles.js', 16, 16, 'scaffold drawn at the object size (16 px per metre)');
   const { OBJECTS } = await import(new URL('../src/shelter/bunker-catalog.js', import.meta.url));
   const fx = await art('fixtures64.js');
+  const am = await art('hd/amenities64.js');
   for (const [id, o] of Object.entries(OBJECTS)) {
+    if (am.hasAmenity(id)) { proc(`bunker-objects/${id}`, 'amenities and fixtures', 'src/art/hd/amenities64.js', o.w * am.AMENITY_PX, o.h * am.AMENITY_PX, `${o.w}x${o.h} m at ${am.AMENITY_PX} px per metre (native, #118); drawn reduced while the editor is 16 px per metre`); continue; }
     if (fx.hasFixture(id)) { proc(`bunker-objects/${id}`, 'amenities and fixtures', 'src/art/fixtures64.js', o.w * fx.FIXTURE_PX, o.h * fx.FIXTURE_PX, `${o.w}x${o.h} m at ${fx.FIXTURE_PX} px per metre (native); drawn reduced while the editor is 16 px per metre`); continue; }
     proc(`bunker-objects/${id}`, 'amenities and fixtures', 'src/shelter/bunker-sprites.js', o.w * 16, o.h * 16, `${o.w}x${o.h} m at 16 px per metre`);
   }

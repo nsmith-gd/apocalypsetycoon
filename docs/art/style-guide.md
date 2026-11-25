@@ -132,3 +132,9 @@ At this size flat fills look like vector art, so 64 px art follows these rules (
 6. **Two frames** at 500 ms, as before: LEDs, fans, screens, flames and pod glow.
 
 Tiles: `renderRoomTile(id)` headless or `drawRoomTile(ctx, id, x, y)` in the browser; `node tools/export-room-tiles.mjs` writes `assets/art/room-tiles.png` and its atlas. `tests/room-tiles.test.js` checks that every room has a tile at 64 px per metre, uses palette colours only, is fully painted and is distinct from every other tile. Each tile is also listed in the asset inventory, so `node tools/check-asset-minimum.mjs` measures it.
+
+## Luxury amenities at 64 px (#118)
+The client-facing furniture in the bunker builder: 44 pieces across beds, bath, kitchen and dining, comfort, decor and the status pieces (gold taps, cryo pod, four-poster, chandelier, grand piano, wine rack, cinema, bar, neon...). They live in `src/art/hd/amenities64.js` and are drawn at 64 px per metre of the piece's footprint. They use the same kit as the room tiles: a 1 px outline, top-left light, ramps, 2 frames.
+- **Recolour stays.** The piece's colour variant (`a` main, `b` trim) becomes a 7-step ramp (`rampFromHex`). Shadows drift cool and highlights warm, so a velvet, gold or ebony version shades as well as the default. Fixed materials stay fixed: marble basins, glass, flame, water, books.
+- **In the 16 px grid** (until the director confirms the 64 grid), each piece draws a level-of-detail copy: blocks are averaged and snapped back to a colour the piece already uses, with outlines kept, the same way #119's fixtures do.
+- Sheet: `node tools/export-amenities.mjs` writes `assets/art/amenities-64.png`. Tests: `tests/amenities64.test.js`.
