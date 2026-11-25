@@ -25,9 +25,54 @@ import { drawMarker, drawLabelPlate, drawCountTag } from '../art/map-markers.js'
 import { drawHeatLayer } from '../art/map-heat.js';
 
 let MASK = null;
-/** Per-pixel region mask from the clickable hit areas (built once). */
-// Borders hug the painted coastline of the base layer (#100), inside the same clickable cells.
-export const regionMask = () => (MASK ??= buildRegionMask({ w: MAP_W, h: MAP_H, cell: CELL, regionAtCell, isLandPx: mapBase().isLandPx }));
+let PX = null;
+export const REGION_REACH_PX = 12; // painted land this close to a region (1.5 cells) belongs to it: coastal islands, not mid-ocean ones
+
+/**
+ * Which region each painted land pixel belongs to (#134). The redone base layer (#109, #136) paints coasts,
+ * capes and island chains that spill past the old 8px click cells; following the cells left straight-edged tint
+ * boxes and regionless islands. Land pixels inside a region's cells keep that region; every other land pixel
+ * within REGION_REACH_PX joins the nearest region (a breadth-first walk out from the cells). Ice and open sea
+ * belong to nobody.
+ */
+function regionPixels() {
+  if (PX) return PX;
+  const base = mapBase();
+  const ids = Object.keys(MAP_PLACES);
+  const lab = new Uint8Array(MAP_W * MAP_H); // 0 = none, else index+1 into ids
+  const dist = new Uint16Array(MAP_W * MAP_H).fill(65535);
+  let frontier = [];
+  for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
+    const id = regionAtCell(Math.floor(x / CELL), Math.floor(y / CELL));
+    if (!id || !base.isLandPx(x, y)) continue;
+    const i = y * MAP_W + x;
+    lab[i] = ids.indexOf(id) + 1; dist[i] = 0; frontier.push(i);
+  }
+  for (let d = 1; d <= REGION_REACH_PX && frontier.length; d++) {
+    const next = [];
+    for (const i of frontier) {
+      const x = i % MAP_W, y = (i - x) / MAP_W;
+      for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+        if (nx < 0 || ny < 0 || nx >= MAP_W || ny >= MAP_H) continue;
+        const j = ny * MAP_W + nx;
+        if (dist[j] <= d) continue;
+        dist[j] = d; lab[j] = lab[i]; next.push(j);
+      }
+    }
+    frontier = next;
+  }
+  for (let i = 0; i < lab.length; i++) if (lab[i] && !base.isLandPx(i % MAP_W, Math.floor(i / MAP_W))) lab[i] = 0;
+  return (PX = { ids, lab });
+}
+/** The region a map pixel's painted land belongs to, or null (sea, ice, far islands). */
+export function regionAtPx(x, y) {
+  if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) return null;
+  const { ids, lab } = regionPixels();
+  const k = lab[Math.floor(y) * MAP_W + Math.floor(x)];
+  return k ? ids[k - 1] : null;
+}
+/** Per-pixel region mask (built once): tints, borders and selection follow the painted coast. */
+export const regionMask = () => (MASK ??= buildRegionMask({ w: MAP_W, h: MAP_H, cell: 1, regionAtCell: regionAtPx }));
 
 // Short map labels (the 3x5 font is 4px a letter) and marker anchors, in cells.
 export const MAP_PLACES = Object.freeze({
@@ -150,7 +195,17 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     const y = ((e.clientY - r.top) / r.height) * MAP_H;
     return [Math.floor(x / CELL), Math.floor(y / CELL)];
   }
+  function pxFromEvent(e) {
+    const r = canvas.getBoundingClientRect();
+    return [((e.clientX - r.left) / r.width) * MAP_W, ((e.clientY - r.top) / r.height) * MAP_H];
+  }
   function regionFromEvent(e) {
+    // the painted land you clicked (or within 2px of it: coasts are thin), then the old cell, then a label
+    const [px, py] = pxFromEvent(e);
+    for (let rad = 0; rad <= 2; rad++) for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) {
+      const id = regionAtPx(px + dx, py + dy);
+      if (id) return id;
+    }
     const [c, r] = cellFromEvent(e);
     const direct = regionAtCell(c, r);
     if (direct) return direct;
