@@ -26,4 +26,17 @@ The GDD contradicted itself in a few places, so tickets quoted different numbers
 ## Not settled here
 
 - The live GDD page (the Claude Doc) still carries the old numbers. #95 exports the page body into the repo; whoever finishes it should apply these four edits to the page as well, or hand them to the director.
-- `gdd/current/page-ca_e8a1a5c85b.txt` (the short design brief) still says "one shovel crew". #95 replaces that file, so it's left alone here.
+- `gdd/current/page-ca_e8a1a5c85b.txt` (the short design brief) now says "two shovel crews" (#107). Agents and the repo's docs read it as the repo copy of the page, and #95 (exporting the live page over it) is still waiting on a person, so it was corrected in place.
+
+## Page edits to apply (for the director, on the live Claude Doc)
+
+The repo copies follow the decisions above; the live page "Apocalypse Tycoon — Game Design Document" still needs these edits:
+
+- [ ] **Overview / Player fantasy:** "one shovel crew" → "two shovel crews" (Startup has 2 crews).
+- [ ] **Core loop, time table:** Week "about 2 minutes" (about 125 s at 1×); Quarter "27 minutes".
+- [ ] **Economy and tuning, Time table:** In-game week "about 125 seconds at 1× (27 minutes ÷ 13)"; Quarter "13 weeks: 27 minutes at 1×".
+- [ ] **Pacing:** the quarter clock is 27 minutes; real time per quarter, with paused screens, is about 29 to 32 minutes.
+- [ ] **World canvas, event deck:** 220 cards per campaign (6 tracks × 30 + 40 general); 340 in the full game with the four alternate tracks (+120).
+- [ ] **Production plan, content counts:** event cards 340 = 220 Classic + 120 alternate.
+- [ ] **Production plan, cut list:** "Event cards drop from 220 to 150" → "The Classic event deck drops from 220 to 150; the 120 alternate cards ship with the alternates."
+- [ ] **Pushback / Economy tuning table:** reputation starts at 40 (the 50 that remains is the government-partnership threshold, which is intended).

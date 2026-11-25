@@ -15,8 +15,8 @@ the core of the section is not.
 | GDD section | What the GDD asks for | What exists | State |
 |---|---|---|---|
 | Overview | 12 quarters in 5 chapters, 6 of 10 tracks, Overtime, 73 rooms / 37 schemes / 48 unlocks / 340 cards / 12 endings | Campaign shell, main menu and save slot (`src/campaign/main.js`, `save.js`) | partial |
-| Core loop | 2-minute weeks, 26-minute quarters, bands with drift and RP grants, the Fear meter, momentum, hold/push/cash out | 27-min quarter clock with 13 weeks (`src/campaign/clock.js`); Fear in `src/demand/demand.js`. No bands, drift, grants or momentum | partial |
-| Shelter canvas | 1 m tiles, 4-tile floors, 16-64-tile plots, 5 strata, 73 rooms, 8 life systems, Days Sealed, build rules, construction flow, 6 styles, Blueprints, overlays | 10x6 cell grid, 11 rooms, one crew (`src/shelter/grid.js`, `src/clients/rooms.js`). Life systems, strata, build rules, construction flow (`src/shelter/life.js`) | partial (life systems demo only) |
+| Core loop | ~125-second weeks, 27-minute quarters (settled in #96), bands with drift and RP grants, the Fear meter, momentum, hold/push/cash out | 27-min quarter clock with 13 weeks (`src/campaign/clock.js`); Fear in `src/demand/demand.js`. No bands, drift, grants or momentum | partial |
+| Shelter canvas | 1 m tiles, 4-tile floors, 16-64-tile plots, 5 strata, 73 rooms, 8 life systems, Days Sealed, build rules, construction flow, 6 styles, Blueprints, overlays | 10x6 cell grid, 11 rooms (`src/shelter/grid.js`, `src/clients/rooms.js`); crews now come from the company tier, 2 at Startup. Life systems, strata, build rules, construction flow (`src/shelter/life.js`) | partial (life systems demo only) |
 | World canvas | 8 fictional regions, 6 named tracks opening on a schedule, 29+8 schemes, weekly event deck, 2 rivals | 8 real-world regions and the lead market (`src/demand`), map sales (`src/worldmap`), 6 schemes (`src/schemes`). No event deck or rivals | partial |
 | Crises and tipping points | Hidden tipping points, breach windows, containment, recovery, collapse, domino map, Doom Clock with fragility | `src/crisis/breach.js` (5 tracks, 10 links), `src/doomclock/doomclock.js` | in game |
 | Clients and needs ladder | 4 tiers, Satisfaction vs Survivability, 5 wealth classes, 16 traits, lifecycle, contracts, walkthroughs, change orders, retainers | `src/clients/clients.js` (5 client types, orders, wants vs Midnight forecast) | demo only |
@@ -66,8 +66,8 @@ GDD numbers are from Production plan > Content counts. Repo counts are from the 
 4. **Research income.** GDD: chapter 1 runs on cash, then "Grants (RP per week)" of 2/6/15 per track by
    band. Code: `researchRate(crisis)` pays 0.5-4.5 RP per second from one crisis value
    (`src/research/research.js`).
-5. **Time.** GDD: "In-game week: 120 seconds at 1x. Quarter: 13 weeks: 26 minutes". Code: 27-minute
-   quarters (`PACING.quarterMinutes` in `src/debug/pacing.js`), so a week is about 125 s.
+5. **Time.** Settled in #96 for the code: a quarter is 27 minutes of game clock (13 weeks of about 125 s),
+   as `PACING.quarterMinutes` in `src/debug/pacing.js` already ran; the GDD now says the same.
 6. **Chapters.** GDD: chapters 2-5 start at Q3, Q5, Q8 and Q11. Code: `doom.chapterStart` fires on
    `(quarter - 1) % 3 === 0`, so at Q4, Q7 and Q10 (`src/campaign/main.js`, `onQuarterStart`).
 7. **Board and money scale.** GDD: "$6M in Q1" revenue quota rising 30% a quarter, five members with their
@@ -105,7 +105,7 @@ GDD numbers are from Production plan > Content counts. Repo counts are from the 
 16. **Save.** `CrisisSystem`, `LeadMarket` and `SchemeBoard` have no `toJSON`, and `main.js` does not register
     them, so CONTINUE re-rolls tipping points and resets track tensions.
 
-GDD inconsistencies to settle: the Overview says "one shovel crew" but Company tiers give Startup 2 crews;
+GDD inconsistencies found at the time (all settled since): the Overview said "one shovel crew" but Company tiers give Startup 2 crews;
 quarters are 26 minutes in Economy and tuning but "rise from about 26 to about 32" in Pacing; the event deck
 is 220 cards in World canvas and 340 in Content counts (340 includes the 120 alternate-track cards).
 **Settled in #96:** see `docs/gdd-decisions.md` (2 crews, 27-minute quarters, 220 per campaign / 340 total, reputation starts at 40).
@@ -137,7 +137,7 @@ meetings, the Condo Silo and 60 event cards.
    current 13-node tree.
 9. **Fictional regions.** Rename `REGIONS` to the GDD's eight with their exposure tables; the slice needs
    The Heartland plus a second site region.
-10. **Pacing pass to 1:50.** Fix chapter boundaries (Q3/Q5/Q8/Q11), set the week to 120 s, and point the
+10. **Pacing pass to 1:50.** Fix chapter boundaries (Q3/Q5/Q8/Q11), keep the 27-minute quarter and ~125 s week (#96), and point the
     pacing harness at the GDD's moment-to-moment targets (first contract under 3 min, first handover under 12).
 
 Later (content build, chapters 3-5): the other four Classic tracks, rivals, departments and executives,
