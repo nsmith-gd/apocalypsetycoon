@@ -1,0 +1,2 @@
+(166 known offenders from the audit, listed in docs/art/asset-audit-64.md, are waiting on their redo tickets)
+PASS: 53 asset(s) checked at 64px minimum, 166 known.
