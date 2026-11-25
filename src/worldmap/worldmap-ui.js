@@ -101,7 +101,8 @@ function layersAt(s) {
   return LAYERS.get(s);
 }
 
-export function createWorldMapScreen({ root, sales, schemes = null, leads = null, onSold, onScheme, initial = null, getMood = () => moodOf() }) {
+// onTableLead(lead) -> { ok, reason }: The Table's (C5) leads can commission the Ark (#143).
+export function createWorldMapScreen({ root, sales, schemes = null, leads = null, onSold, onScheme, initial = null, getMood = () => moodOf(), onTableLead = null }) {
   root.classList.add('wm');
   const mapWrap = el('div', 'wm-map');
   // #109: two stacked canvases. Underneath, the terrain painted at a higher resolution (each terrain pixel is 2
@@ -490,6 +491,14 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
         btn.title = [...qt.bonus.lines.map((x) => `${x.label} +${Math.round(x.bonus * 100)}%`), qt.tierUp ? `${qt.tierUp} wealth tier${qt.tierUp > 1 ? 's' : ''} above walk-ins` : null, qt.referrals ? `brings ${qt.referrals === 1 ? 'a referral' : 'half a referral'}` : null].filter(Boolean).join(' · ') || 'normal price';
         btn.onclick = () => redeem(l.id, s.id);
         card.append(btn);
+      }
+      if (onTableLead && l.wealthClass === 'C5') {
+        const ark = el('button', 'wm-sell wm-sell-ark');
+        ark.type = 'button';
+        ark.dataset.arkLead = l.id;
+        ark.innerHTML = 'BEGIN THE ARK <small>The Table commissions a 64-wide build to the Abyss</small>';
+        ark.onclick = () => { const r = onTableLead(l); flash = { kind: r.ok ? 'ok' : 'bad', msg: r.ok ? (r.joined ? `${l.guest.name} joins the Ark consortium.` : `The Ark is commissioned by ${l.guest.name}. Open PROJECTS to build it.`) : r.reason }; refresh(); };
+        card.append(ark);
       }
       if (!sales.stock.length) card.append(el('div', 'wm-dim', 'Finish a shelter to sell to them.'));
       wrap.append(card);

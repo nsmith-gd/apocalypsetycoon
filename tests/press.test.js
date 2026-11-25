@@ -305,3 +305,13 @@ test('save and load into the live instance keeps stories, trust and the first ca
   assert.equal(again.tickWeek().call, null);
   assert.equal(store.reputation, 33, 'loading does not overwrite the shared reputation');
 });
+
+test('Whispers starts a story with the first free journalist, never before 1:00', () => {
+  let m = 50;
+  const { press } = setup(0, { getMinutes: () => m });
+  assert.equal(press.startStory(), null);
+  m = 90;
+  assert.equal(press.startStory(), 'iris');
+  assert.equal(press.startStory(), 'gil');
+  assert.equal(press.startStory(), null, 'both busy');
+});

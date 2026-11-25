@@ -27,6 +27,9 @@ import { uncontrolledRoad, sealOrderClients, resolveUncontrolled } from '../midn
 import { REGIONS as SALES_REGIONS } from '../demand/demand.js';
 import { BunkerSite } from '../shelter/bunker.js';
 import { createBunkerUI } from '../shelter/bunker-ui.js';
+import { MegaprojectBoard } from '../shelter/megaprojects.js';
+import { createMegaprojectScreen } from '../shelter/megaprojects-ui.js';
+import { MEGAPROJECTS } from '../config/tuning.js';
 import { moodOf } from '../art/atmosphere.js';
 import { CrisisSystem } from '../crisis/breach.js';
 import { CrisisConsequences } from '../crisis/consequences.js';
@@ -35,7 +38,7 @@ import { LeadMarket, attachCrisis } from '../demand/demand.js';
 import { SchemeBoard, researchCrisis } from '../schemes/schemes.js';
 import { MapSales } from '../worldmap/sales.js';
 import { createWorldMapScreen } from '../worldmap/worldmap-ui.js';
-import { TRACK_BY_ID, CLASSIC_ROSTER, rosterLinks, rosterPicksFromParams, slotOf, resolveTrack } from '../world/tracks.js';
+import { TRACK_BY_ID, CLASSIC_ROSTER, rosterLinks, rosterPicksFromParams, slotOf, resolveTrack, hm } from '../world/tracks.js';
 import { showWorldSetup, createThreatsPanel } from '../world/world-ui.js';
 import { CampaignClock, SPEEDS, formatClock, QUARTER_SECONDS } from './clock.js';
 import { createSaveSlot, ledgerSaveable, pushbackSaveable, doomClockSaveable } from './save.js';
@@ -268,7 +271,8 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   const workingCrews = () => company.crews(1 + tree.crewCount); // the tier's crews, research adds more, the tier caps them
   const companyPanel = createCompanyPanel({ root, company, getWorkingCrews: workingCrews });
   root.querySelector('.hud')?.insertBefore(companyPanel.chip, root.querySelector('.view-toggle'));
-  const grid = new BunkerSite({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: workingCrews, crewSpeed: () => company.crewSpeed, research: tree });
+  const grid = new BunkerSite({ ledger, costMultiplier: () => pb.board.buildCostMultiplier, crews: workingCrews, crewSpeed: () => company.crewSpeed, research: tree,
+    catalog: { minutes: () => (clock.total / clock.quarterSeconds) * 27, roster: () => roster } }); // #140 catalog rooms on schedule
   const gridUI = createBunkerUI({ mount: gridView, grid, getFrame: () => frame, getMood: () => mood(), onHandOver: (sh) => { qStats.handovers += 1; mapSales.addFinished(sh); mapScreen.refresh(); } });
   slot.register('grid', grid);
 
@@ -292,7 +296,12 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   // One tension model (#90): pushback's world meter is retired; its tension is the hottest crisis track, its
   // runaways are collapsed tracks, and the HUD, audio, quarter report and Midnight all read that.
   pb.useCrisis(crisis);
+  // Heat (#148): decays 1 a week (difficulty base) + 1 per Communications level, never below Notoriety (0/5/10/20/30
+  // by company tier); the GDD heat levels run their effects in weekTick.
+  pb.getCommsLevel = () => company.level('comms');
+  pb.getTierIndex = () => company.tierIndex;
   crisis.on('week', () => pb.weekTick()); // heat cools weekly by difficulty (#92)
+<<<<<<< HEAD
 
   // ---------- journalists (#149) ----------
   // Iris Kemp and Gil Marsh build stories every week: 2% + 1% per 10 heat (Gil 2.5x as fast). At 100% the story
@@ -303,6 +312,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     getMinutes: () => (clock.total / clock.quarterSeconds) * 27 });
   pb.press = press; // endings read Iris's trust from here
   crisis.on('week', () => press.tickWeek());
+  pb.on('whispers', () => { const who = press.startStory(); if (who) toast(`Whispers: ${who === 'iris' ? 'Iris Kemp' : 'Gil Marsh'} has started a story about you.`); });
   const pressOverlay = el('div', 'report-overlay press-overlay');
   pressOverlay.hidden = true;
   const pressClose = el('button', 'report-continue', 'CLOSE [P]');
@@ -342,8 +352,19 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     document.body.append(overlay);
     talk.focus();
   }
+=======
+  let auditSecondsLeft = 0; // Investigation: one site audited a quarter, construction stops for a week
+  pb.on('audit', (e) => { auditSecondsLeft = e.weeks * WEEK_SECONDS; toast('INVESTIGATION: regulators audit the site. Construction stops for a week.'); });
+  pb.on('hearing', (e) => {
+    crisis.reputation = Math.max(0, Math.min(100, crisis.reputation + e.reputation));
+    for (const id of Object.keys(board.confidence ?? {})) board.react(id, e.boardConfidence, 'Public hearing');
+    toast(`PUBLIC HEARING: reputation ${e.reputation}, board confidence ${e.boardConfidence}, new leads ${Math.round(e.newLeads * 100)}%.`);
+  });
+  pb.on('whispers', () => toast('WHISPERS: a journalist has started asking questions. Schemes cost 10% more.'));
+  pb.on('indictment', (e) => { if (e.weeksLeft > 0) toast(`EXPOSED: indictment proceedings. ${e.weeksLeft} week${e.weeksLeft === 1 ? '' : 's'} to get heat below 95.`); });
+>>>>>>> origin/main
   const tensions = () => Object.fromEntries(Object.values(crisis.tracks).map((t) => [t.id, t.tension]));
-  const market = new LeadMarket({ seed: worldSeed + 1, reputation: () => crisis.reputation });
+  const market = new LeadMarket({ seed: worldSeed + 1, reputation: () => crisis.reputation, leadMultiplier: () => pb.leadMultiplier });
   market.ownSite('nam'); // HQ
   market.week({ tensions: tensions() });
   attachCrisis(market, crisis); // a market week runs after every crisis week
@@ -400,7 +421,18 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     social.session.onChange(() => ui.update(hudState()));
     eventsBtn.disabled = false;
   }).catch((err) => { eventsBtn.title = `Events unavailable: ${err.message}`; });
-  const mapScreen = createWorldMapScreen({ root: mapView, sales: mapSales, schemes, leads, initial: 'nam', getMood: () => mood(), onScheme: () => ui.update(hudState()), onSold: () => ui.update(hudState()) });
+  // Megaprojects (#143): the Compound (4:20) and the Ark (5:00, commissioned from a Table lead).
+  const megaUnlocked = (id) => params.has('megaprojects') || (clock.total / clock.quarterSeconds) * 27 >= hm(MEGAPROJECTS[id].unlockAt);
+  const megas = new MegaprojectBoard({ ledger, isUnlocked: megaUnlocked, seed: worldSeed + 13, crews: workingCrews, siteOpts: { crewSpeed: () => company.crewSpeed, research: tree } });
+  slot.register('megaprojects', megas);
+  const megaScreen = createMegaprojectScreen({ root: document.body, board: megas, getFrame: () => frame, onToast: (m) => toast(m) });
+  const projectsBtn = el('button', 'view-btn', 'PROJECTS');
+  projectsBtn.type = 'button';
+  projectsBtn.title = `Compound (unlocks ${MEGAPROJECTS.compound.unlockAt}) and the Ark (${MEGAPROJECTS.ark.unlockAt}, from a Table lead)`;
+  projectsBtn.onclick = () => megaScreen.toggle();
+  root.querySelector('.view-toggle')?.prepend(projectsBtn);
+  const mapScreen = createWorldMapScreen({ root: mapView, sales: mapSales, schemes, leads, initial: 'nam', getMood: () => mood(), onScheme: () => ui.update(hudState()), onSold: () => ui.update(hudState()),
+    onTableLead: (lead) => { const r = megas.startArk(lead); if (r.ok) toast(r.joined ? `${lead.guest.name} joins the Ark consortium.` : 'THE ARK IS COMMISSIONED. Open PROJECTS to build it.'); return r; } });
   createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => crisis.advanceWeek() });
   crisis.on('week', () => mapScreen.refresh());
   crisis.on('breach', () => { qStats.breaches += 1; });
@@ -695,9 +727,10 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     if (clock.running) {
       const g = dt * clock.speed;
       openDueTracks();
-      grid.tick(g);
+      if (auditSecondsLeft > 0) auditSecondsLeft -= g; else grid.tick(g); // an audit week stops construction
+      megas.tick(g);
       weekAcc += g;
-      while (weekAcc >= WEEK_SECONDS) { weekAcc -= WEEK_SECONDS; crisis.advanceWeek(); }
+      while (weekAcc >= WEEK_SECONDS) { weekAcc -= WEEK_SECONDS; crisis.advanceWeek(); megas.week(); }
       syncDoomWeeks();
       beatQueue.push(...story.due({ minutes: campaignMinutes(), quarter: clock.quarter, crisis, pushback: pb }));
       drawWeeklyCard();
@@ -726,7 +759,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
 
   session = {
     mood, setMood: (m) => { moodForce = m; }, // #130
-    difficulty: diff, clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, shelters, world, threats, campaignMinutes, crisis, board, consequences, market, schemes, mapSales, mapScreen, slot, leads, social, company, story, telemetry, firstBreach,
+    difficulty: diff, clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, megas, megaScreen, shelters, world, threats, campaignMinutes, crisis, board, consequences, market, schemes, mapSales, mapScreen, slot, leads, social, company, story, telemetry, firstBreach,
     endings: { watch: endingWatch, end: (id) => endCampaign(id) }, // #32 debug: __game.endings.end('indicted')
     destroy() {
       cancelAnimationFrame(raf);

@@ -14,7 +14,9 @@ import { drawStrata64, drawDig64, drawShell64, drawFitout64 } from '../art/hd/gr
 import { drawObjectSprite, drawResident, drawThought, hasSprite } from './bunker-sprites.js';
 import { daysSealedCanvas } from '../art/hd/shelter-life64.js';
 import { deviceScale, sizeCanvas, snapToDevice, onPixelRatioChange, dpr } from '../ui/pixel-perfect.js';
-import { NEED_IDS } from './bunker-catalog.js';
+import { NEED_IDS, CATALOG_OBJECT_IDS } from './bunker-catalog.js';
+import { GDD_ROOM_BY_ID } from '../catalog/rooms.js';
+import { PLOT_PRODUCTS, plotOf, productUnlocked, PRODUCT_BY_ID } from '../catalog/products.js';
 import { createBuildFx, drawCrew, drawSnap } from './build-fx.js'; // #128
 import { moodOf, drawGrade, drawShelterLight, LIGHT_SOURCES } from '../art/atmosphere.js'; // #130
 import { settings } from '../settings/settings.js';
@@ -25,7 +27,7 @@ const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls)
 const k = (n) => (Math.abs(n) >= 1e6 ? `$${(n / 1e6).toFixed(2)}M` : `$${Math.round(n / 1e3)}K`);
 const fmtDays = (d) => (d === Infinity ? '∞' : d >= 100 ? Math.round(d) : d);
 
-const CAT_COLORS = { door: '#9a8a70', sleep: '#8a6a4a', air: '#bfe3ff', water: '#3a8ad8', food: '#c8743a', power: '#f5c542', kitchen: '#e0a060', bath: '#7ac8d8', medical: '#f2f2f2', security: '#8a2a2a', comfort: '#a0703a', decor: '#7a9a5a', status: '#3aa070' };
+const CAT_COLORS = { delusion: '#c070ff',  door: '#9a8a70', sleep: '#8a6a4a', air: '#bfe3ff', water: '#3a8ad8', food: '#c8743a', power: '#f5c542', kitchen: '#e0a060', bath: '#7ac8d8', medical: '#f2f2f2', security: '#8a2a2a', comfort: '#a0703a', decor: '#7a9a5a', status: '#3aa070' };
 const CATS = [
   ['ESSENTIALS', ['door', 'airlock', 'bunk', 'bed', 'shelf', 'fridge', 'tank', 'toilet', 'shower', 'stove']],
   ['LIFE SUPPORT', ['crank_scrubber', 'hepa', 'o2_rack', 'recycler', 'sump', 'hydro', 'grow_light', 'vat', 'aquifer']],
@@ -38,6 +40,8 @@ const CATS = [
   ['RUGS', ['rug', 'rug_persian']],
   ['ON THE WALL', ['painting', 'mirror', 'faux_window', 'led_sky', 'sconce', 'wall_shelf', 'neon_sign', 'trophy']],
   ['CEILING', ['chandelier', 'pendant']],
+  // #140: the rest of the GDD room catalog, by needs tier (each piece makes its room)
+  ...['survive', 'comfort', 'status', 'delusion'].map((tier) => [`${tier.toUpperCase()} ROOMS`, CATALOG_OBJECT_IDS.filter((id) => OBJECTS[id].tier === tier)]),
 ];
 const TOOLS = [['look', 'INSPECT', 'Q'], ['dig', 'DIG', 'D'], ['wall', 'WALL', 'W'], ['spine', 'SPINE', 'S'], ['air', 'AIR DUCT', '1'], ['water', 'WATER PIPE', '2'], ['power', 'POWER CABLE', '3'], ['style', 'STYLE', 'Y'], ['paint', 'PAINT', 'P'], ['recolor', 'RECOLOUR', 'C'], ['flip', 'FLIP', 'F'], ['remove', 'REMOVE', 'X']];
 const OVERLAYS = [['rooms', 'ROOMS'], ['decor', 'INTERIOR'], ['air', 'AIR'], ['water', 'WATER'], ['power', 'POWER'], ['noise', 'NOISE'], ['gaze', 'CLIENT GAZE'], ['none', 'PLAIN']];
@@ -105,7 +109,10 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
   // ---------- palette ----------
   const pal = el('div', 'bk-pal');
   const palBtns = {};
-  for (const [group, ids] of CATS) {
+  const inWorld = (id) => !OBJECTS[id].track || !site.catalog || (site.catalog.roster?.() ?? []).includes(OBJECTS[id].track);
+  for (const [group, all] of CATS) {
+    const ids = all.filter(inWorld); // alternate-world rooms only in worlds running their threat
+    if (!ids.length) continue;
     pal.append(el('div', 'bk-grp', group));
     for (const id of ids) {
       const o = OBJECTS[id];
@@ -119,6 +126,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
   }
   function describe(o) {
     const bits = [];
+    if (o.room) bits.push(`makes a ${GDD_ROOM_BY_ID[o.room]?.name ?? o.room}`);
     if (o.beds) bits.push(`sleeps ${o.beds}`);
     if (o.air) bits.push(`air ${o.air} m³/h`);
     if (o.airStock) bits.push(`${o.airStock} m³ reserve`);
@@ -379,6 +387,17 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       else ctx.fillRect(PX(x), PY(y + 1) + 3, T, 1);
       ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(PX(x), PY(y + 1), T, 1);
     }
+    // #141: outside the product's plot, the rock is fenced off
+    const plot = site.plot;
+    if (plot) {
+      ctx.fillStyle = 'rgba(10,8,7,.62)';
+      if (plot.width < W) ctx.fillRect(PX(plot.width), PY(0), (W - plot.width) * T, H * T);
+      if (plot.maxDepth < H) ctx.fillRect(PX(0), PY(plot.maxDepth), plot.width * T, (H - plot.maxDepth) * T);
+      ctx.fillStyle = '#ff9f1c';
+      for (let y = 0; y < Math.min(H, plot.maxDepth); y += 2) ctx.fillRect(PX(plot.width) - 1, PY(y), 2, T);
+      for (let x = 0; x < plot.width; x += 2) ctx.fillRect(PX(x), PY(plot.maxDepth) - 1, T, 2);
+      for (let f = 1; f < plot.maxFloors; f++) drawText(ctx, `F${f + 1}`, PX(plot.width) + 3, PY(f * 4) + 2, '#ff9f1c');
+    }
     // water table
     ctx.fillStyle = 'rgba(90,170,255,.45)';
     for (let x = 0; x < W; x += 2) ctx.fillRect(PX(x), PY(WATER_TABLE_M), T, 1);
@@ -593,6 +612,21 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       ${list.map((p) => `<div class="who" data-res="${p.id}"><span>${p.name}</span><b style="color:${needColor(p.mood)}">${p.mood}</b><small>${sim.doing(p)}</small></div>`).join('')}
       ${sim.complaints.slice(0, 3).map((c) => `<div class="th bad">${c}</div>`).join('')}`;
   }
+  // #141: the plot's product line. Picked before breaking ground; then it shows the plot and floors used.
+  function productBlock() {
+    const p = site.plot;
+    if (p) {
+      const u = site.floorsUsed();
+      return `<div class="bk-product"><b>${p.name.toUpperCase()}</b> · ${p.width} m plot · floors <b>${u.deepest}</b> of ${p.minFloors > 1 ? `${p.minFloors}-` : 'up to '}${p.maxFloors}${p.households ? ` · household units <b>${u.units}</b> (${p.households.min}-${p.households.max})` : ''}</div>`;
+    }
+    const fresh = !site.jobs.length && !site.objects.size;
+    if (!fresh) return '';
+    const minutes = site.catalog?.minutes?.() ?? Infinity;
+    return `<div class="bk-product"><b>CHOOSE THE PRODUCT</b><br><small>The plot's width and floor limit come from it.</small><div class="bk-actions">${PLOT_PRODUCTS.map((id) => {
+      const pl = plotOf(id); const open = productUnlocked(id, minutes);
+      return `<button data-product="${id}" ${open ? '' : 'disabled'} title="${open ? `${pl.width} m wide, ${pl.minFloors > 1 ? `${pl.minFloors}-` : 'up to '}${pl.maxFloors} floors` : `Unlocks at ${Math.floor(PRODUCT_BY_ID[id].unlockAt / 60)}:${String(PRODUCT_BY_ID[id].unlockAt % 60).padStart(2, '0')}`}">${pl.name.toUpperCase()}</button>`;
+    }).join('')}</div></div>`;
+  }
   function renderSide() {
     const s = site.simulate();
     const ph = site.phase();
@@ -608,9 +642,10 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       <div class="bk-rat">${['seal', 'blast', 'security'].map((key) => `<span>${key.toUpperCase()} <b>${s.ratings[key]}</b>/5</span>`).join('')}<span>MORALE <b>${s.ratings.morale}</b></span><span>PRESTIGE <b>${s.prestige}</b></span></div>
       ${r ? `<div class="bk-room"><div class="bk-room-tile"><canvas data-room="${r.type.id}" data-style="${r.style ?? ''}" title="${r.type.name}${r.style ? ` · ${STYLE_KITS[r.style].name}` : ''}"></canvas></div><b style="color:${TIER_COLORS[r.type.tier]}">${r.type.name.toUpperCase()}</b> ${r.width}x${r.height} m · ${r.size} tiles<br>
         Style <b>${r.style ? STYLE_KITS[r.style].name : 'none'}</b>${r.styleVotes ? ` <small>(${Object.entries(r.styleVotes).filter(([, v]) => v).map(([sid, v]) => `${STYLE_KITS[sid].name} ${v}`).join(' · ') || 'no style pieces'})</small>` : ''}<br>
-        Impressiveness <b>${r.impressiveness}</b> · beauty ${r.beauty}${r.finishBeauty ? ` (finishes +${r.finishBeauty})` : ''} · prestige ${Math.round(r.prestige)}${r.beds ? ` · beds ${r.beds}` : ''}<br>
+        Impressiveness <b>${r.impressiveness}</b> · beauty ${r.beauty}${r.finishBeauty ? ` (finishes +${r.finishBeauty})` : ''} · prestige ${Math.round(r.prestige)}${r.beds ? ` · beds ${r.beds}` : ''}<br>        ${r.rule ? `<b class="bk-rule">${r.rule}</b><br>` : ''}${r.styleBonus ? `<small>Same-style neighbours: +${Math.round(r.styleBonus * 100)}% prestige</small><br>` : ''}
         ${[r.noise ? `noise -${r.noise}` : '', r.rough ? 'raw rock walls -3' : '', r.cramped ? `cramped (needs ${r.type.minW} wide)` : '', r.seeps ? 'SEEPING' : ''].filter(Boolean).join(' · ') || 'No complaints.'}<br>
         <small>${Object.entries(r.counts).map(([kk, n]) => `${n}x ${OBJECTS[kk].name}`).join(', ') || 'Empty'}</small>${r.hint ? `<br><small class="bk-hint">Add ${r.hint.missing.map((m) => m.orAny ? m.orAny.filter((o) => OBJECTS[o]).map((o) => OBJECTS[o].name).join(' or ') : `${m.count}x ${OBJECTS[m.object]?.name ?? m.object}`).join(' and ')} to make it ${/^[AEIOU]/.test(r.hint.name) ? 'an' : 'a'} ${r.hint.name}.</small>` : ''}</div>` : '<div class="bk-room"><small>Click inside a room to inspect it.</small></div>'}
+      ${productBlock()}
       <div class="bk-phase"><b>${ph.name.toUpperCase()}</b> · ${ph.detail}<br><small>${site.crews()} crew${site.crews() === 1 ? '' : 's'} · ${site.jobs.length} job${site.jobs.length === 1 ? '' : 's'} queued${site.jobs.some((j) => !site._workable(j, site.reachable())) ? ' · some unreachable: dig a way in' : ''}</small>
         <div class="bk-actions"><button class="bk-test" ${ph.id === 'ready' || ph.id === 'walkthrough' ? '' : 'disabled'}>30-DAY PRESSURE TEST</button>${onHandOver ? `<button class="bk-hand" ${site.jobs.length || !site.objects.size ? 'disabled' : ''}>HAND OVER</button>` : ''}</div></div>
       <div class="bk-notes">${s.notes.slice(0, 6).map((n) => `<div>${n}</div>`).join('')}</div>`;
@@ -624,6 +659,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       const ec = emblem.getContext('2d'); ec.imageSmoothingEnabled = false; ec.clearRect(0, 0, 64, 64); ec.drawImage(daysSealedCanvas(s.daysSealed, 30), 0, 0);
       sizeCanvas(emblem, 64, 64, Math.max(1, Math.round(dpr()))); emblem.dataset.snap = ''; // 1 art px = whole device px (#127)
     }
+    for (const b of side.querySelectorAll('[data-product]')) b.onclick = () => { const res = site.setProduct(b.dataset.product); toast(res.ok ? `${res.plot.name}: ${res.plot.width} m plot, ${res.plot.minFloors === 1 ? 'up to' : `${res.plot.minFloors} to`} ${res.plot.maxFloors} floors.` : res.reason); dirty = true; render(); };
     side.querySelector('.bk-test').onclick = () => { const res = site.startPressureTest(); toast(res.ok ? 'Pressure test running: 30 days sealed.' : res.reason); render(); };
     const hb = side.querySelector('.bk-hand');
     if (hb) hb.onclick = () => { const res = site.handOver(`Shelter #${site.handedOver + 1}`); if (res.ok) { onHandOver?.(res.shelter); toast('Handed over. A fresh plot is being surveyed.'); } else toast(res.reason); render(); };

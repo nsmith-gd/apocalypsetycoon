@@ -20,6 +20,7 @@ test('the tree data is valid and every effect points at something real', () => {
   const t = new ResearchTree();
   for (const [id, o] of Object.entries(OBJECTS)) {
     if (STARTER.objects.includes(id)) continue;
+    if (o.generated) { assert.ok(o.unlockAt != null, `${id} unlocks on the catalog schedule`); continue; } // #140: gated by the GDD unlock time
     if (o.luxury || o.prestige || ['air', 'water', 'food', 'power', 'security', 'status'].includes(o.cat)) assert.ok(t.gates('object', id), `${id} (${o.cat}) should need research`);
   }
 });

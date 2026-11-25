@@ -25,7 +25,7 @@
 //   pb.pending / pb.resolve(eventId, optionId) — choice events for the UI
 //   pb.on('event' | 'change' | 'resolved' | 'ousted' | 'runaway', fn)
 
-import { PUSHBACK_DEFAULTS, MONEY } from '../config/tuning.js';
+import { PUSHBACK_DEFAULTS, MONEY, TUNING } from '../config/tuning.js';
 import { seededRng } from '../campaign/rng.js';
 export { PUSHBACK_DEFAULTS }; // lives in the single tuning table (#77)
 
@@ -179,12 +179,70 @@ export class Pushback {
     return c;
   }
 
-  /** One in-game week: heat cools by heat.decayPerWeek (GDD Difficulty: 2 / 1 / 0.5). */
+  // ---------- heat bands (#148, GDD Pushback systems > Heat) ----------
+  /** The heat level now: unnoticed | whispers | investigation | hearings | exposed (with its effects). */
+  heatBand(heat = this.heat) {
+    const bands = TUNING.heatBands;
+    let band = bands[0];
+    for (const b of bands) if (heat >= b.from) band = b;
+    return band;
+  }
+  _bandAtLeast(id) { const bands = TUNING.heatBands; return bands.indexOf(this.heatBand()) >= bands.findIndex((b) => b.id === id); }
+  /** Whispers and above: schemes cost 10% more. */
+  get schemeCostMultiplier() { return this._bandAtLeast('whispers') ? 1 + TUNING.heatBands.find((b) => b.id === 'whispers').schemeCost : 1; }
+  /** Investigation and above: Sabotage is locked. */
+  get sabotageLocked() { return this._bandAtLeast('investigation'); }
+  /** Investigation and above: client leverage grows 1.5x. */
+  get leverageGrowthMultiplier() { return this._bandAtLeast('investigation') ? TUNING.heatBands.find((b) => b.id === 'investigation').leverageGrowth : 1; }
+  /** Hearings and above: 25% fewer new leads. */
+  get leadMultiplier() { return this._bandAtLeast('hearings') ? 1 + TUNING.heatBands.find((b) => b.id === 'hearings').newLeads : 1; }
+  /** The heat floor weekly decay never goes below: 0 / 5 / 10 / 20 / 30 by company tier (GDD Notoriety). */
+  get notoriety() { const f = TUNING.heatDecay.notorietyFloorByTier; return f[Math.max(0, Math.min(f.length - 1, this.getTierIndex?.() ?? 0))]; }
+  /** Weekly decay: 1 (difficulty sets the base: 2 / 1 / 0.5) plus 1 per Communications level. */
+  get heatDecayPerWeek() { const base = this.cfg.heat.decayPerWeek || TUNING.heatDecay.perWeek; return base + TUNING.heatDecay.perCommunicationsLevel * (this.getCommsLevel?.() ?? 0); }
+
+  /**
+   * One in-game week: heat decays toward the Notoriety floor, then the band's weekly effects run. Emits
+   * 'heatBand' when the level changes, 'audit' (Investigation, once a quarter: a week of lost construction),
+   * 'hearing' (Hearings, once a quarter: reputation -10, board confidence -10) and 'indictment' (Exposed: weeks
+   * left; the campaign's ending watcher ends the game as Indicted after 4 weeks at 95+).
+   */
   weekTick() {
-    const d = this.cfg.heat.decayPerWeek ?? 0;
-    if (!d || this.heat <= 0) return;
-    this.heat = clamp(this.heat - d);
-    this._changed?.();
+    const floor = this.notoriety;
+    const before = this.heat;
+    if (this.heat > floor) this.heat = Math.max(floor, clamp(this.heat - this.heatDecayPerWeek));
+    const band = this.heatBand();
+    if (band.id !== this._lastBand) {
+      const prev = this._lastBand;
+      this._lastBand = band.id;
+      if (prev != null) {
+        this._note('heatBand', `Heat level: ${band.name.toUpperCase()} (${Math.round(this.heat)})`, { band: band.id, prev });
+        this._emit('heatBand', { band, prev, heat: this.heat });
+        if (band.story && TUNING.heatBands.indexOf(band) > TUNING.heatBands.findIndex((b) => b.id === prev)) this._emit('whispers', { heat: this.heat });
+      }
+    }
+    const used = (this._bandUses ??= { quarter: this.quarter, audits: 0, hearings: 0 });
+    if (used.quarter !== this.quarter) Object.assign(used, { quarter: this.quarter, audits: 0, hearings: 0 });
+    const inv = TUNING.heatBands.find((b) => b.id === 'investigation');
+    if (this._bandAtLeast('investigation') && used.audits < inv.auditsPerQuarter) {
+      used.audits += 1;
+      this._note('audit', 'Investigation: one site audited this quarter. A week of construction lost.', { weeks: inv.auditWeeks });
+      this._emit('audit', { weeks: inv.auditWeeks });
+    }
+    const hb = TUNING.heatBands.find((b) => b.id === 'hearings');
+    if (this._bandAtLeast('hearings') && used.hearings < hb.hearingsPerQuarter) {
+      used.hearings += 1;
+      this._note('hearing', `PUBLIC HEARING: reputation ${hb.hearing.reputation}, board confidence ${hb.hearing.boardConfidence}, new leads ${Math.round(hb.newLeads * 100)}%.`, { ...hb.hearing });
+      this._emit('hearing', { ...hb.hearing, newLeads: hb.newLeads });
+    }
+    const ex = TUNING.heatBands.find((b) => b.id === 'exposed');
+    this.exposedWeeks = band.id === 'exposed' ? (this.exposedWeeks ?? 0) + 1 : 0;
+    if (this.exposedWeeks) {
+      const left = ex.indictmentWeeks - this.exposedWeeks;
+      this._note('indictment', left > 0 ? `INDICTMENT PROCEEDINGS: ${left} week${left === 1 ? '' : 's'} to get heat below ${ex.from}.` : 'INDICTED.', { weeksLeft: left });
+      this._emit('indictment', { weeksLeft: left, heat: this.heat });
+    }
+    if (this.heat !== before || this.exposedWeeks) this._changed?.();
   }
 
   addHeat(amount, source = '', fired = []) {
@@ -389,7 +447,7 @@ export class Pushback {
     }
 
     // 4. Client leverage grows with heat, then clients may act on it.
-    for (const c of this.clients) c.leverage += Math.round(this.heat * L.heatFactor);
+    for (const c of this.clients) c.leverage += Math.round(this.heat * L.heatFactor * this.leverageGrowthMultiplier);
     events.push(...this._leverageEvents());
 
     this.quarter = quarter + 1;
@@ -519,10 +577,10 @@ export class Pushback {
     const T = this.cfg.tension;
     const L = this.cfg.leverage;
     const B = this.cfg.board;
-    const heatNext = this.heat < H.investigationAt && !this._investigatedThisQuarter
-      ? { at: H.investigationAt, what: 'Federal investigation opens' }
-      : this.heat < H.fineAt ? { at: H.fineAt, what: 'Regulator fine at quarter end' }
-      : this.heat < H.raidAt ? { at: H.raidAt, what: 'Federal raid' } : null;
+    // The next heat level up and what it brings (GDD heat bands, #148).
+    const NEXT_WHAT = { whispers: 'Whispers: a journalist starts a story, schemes cost 10% more', investigation: 'Investigation: a site audit each quarter, Sabotage locked', hearings: 'Hearings: reputation and board confidence -10 a quarter', exposed: 'Exposed: 4 weeks to get below 95 or you are indicted' };
+    const nextBand = TUNING.heatBands.find((b) => b.from > this.heat);
+    const heatNext = nextBand ? { at: nextBand.from, what: NEXT_WHAT[nextBand.id] } : { at: 100, what: `Indictment in ${Math.max(0, TUNING.heatBands.at(-1).indictmentWeeks - (this.exposedWeeks ?? 0))} weeks` };
     const tensionNext = this.tension < T.momentumAt
       ? { at: T.momentumAt, what: 'Tension starts feeding itself' }
       : { at: T.runawayAt, what: 'Runaway crisis' };
@@ -572,6 +630,7 @@ export class Pushback {
       runaways: this.runaways, doomsdayShift: this.doomsdayShift, ids: this._ids,
       flags: { investigated: this._investigatedThisQuarter, runaway: !!this._runawayThisQuarter, reliefUses: { ...(this._reliefUses ?? {}) } },
       internalCash: this._internalCash, quarterProfit: this._quarterProfit,
+      heatBands: { last: this._lastBand ?? null, exposedWeeks: this.exposedWeeks ?? 0, uses: this._bandUses ? { ...this._bandUses } : null },
     };
   }
 
@@ -587,15 +646,15 @@ export class Pushback {
       _investigatedThisQuarter: data.flags.investigated, _runawayThisQuarter: data.flags.runaway,
       _reliefUses: { ...data.flags.reliefUses },
       _internalCash: data.internalCash, _quarterProfit: data.quarterProfit,
+      _lastBand: data.heatBands?.last ?? undefined, exposedWeeks: data.heatBands?.exposedWeeks ?? 0, _bandUses: data.heatBands?.uses ?? undefined,
     });
     return pb;
   }
 
+  /** Gauge zone from the GDD heat level: low (Unnoticed), watched (Whispers, Investigation), hot (Hearings, Exposed). */
   heatZone() {
-    const h = this.cfg.heat;
-    if (this.heat >= h.fineAt) return 'hot';
-    if (this.heat >= h.investigationAt - 15) return 'watched';
-    return 'low';
+    const id = this.heatBand().id;
+    return id === 'unnoticed' ? 'low' : id === 'whispers' || id === 'investigation' ? 'watched' : 'hot';
   }
   tensionZone() {
     if (this.tension >= this.cfg.tension.momentumAt) return 'momentum';

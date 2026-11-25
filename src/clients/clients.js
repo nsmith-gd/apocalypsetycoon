@@ -20,6 +20,7 @@
 
 import { gradeShelter } from '../midnight/midnight.js';
 import { ROOM_CATALOG } from './rooms.js';
+import { productFor } from '../catalog/products.js';
 
 // Data-driven client archetypes. `wants` = luxury room ids with what each fitted copy pays.
 // `wantCount` = how many wants an order picks from that list. Survival never pays, except
@@ -117,7 +118,7 @@ export class ClientBook {
   }
 
   /** Make a new order. `isUnlocked(roomId)` limits wants to rooms the player can build. */
-  generateOrder({ quarter = 1, region = '', crisis = 0, isUnlocked = () => true, type } = {}) {
+  generateOrder({ quarter = 1, region = '', crisis = 0, isUnlocked = () => true, type, minutes = Infinity } = {}) {
     const typeId = type ?? weightedPick(this.rng, this.cfg.typeWeights(crisis));
     const t = this.types[typeId];
     const buildable = (id) => !ROOM_CATALOG[id]?.research || isUnlocked(id);
@@ -142,12 +143,14 @@ export class ClientBook {
       blurb: t.blurb,
       region,
       occupants: between(this.rng, t.occupants),
+      product: null, // set below (#141): the product line this contract calls for
       slots: t.slots,
       baseFee: t.baseFee,
       wants,
       placedQuarter: quarter,
       expiresQuarter: quarter + this.cfg.orderLifetimeQuarters,
     };
+    order.product = productFor(order.occupants, { minutes }); // #141: Solo Pod, Family Vault... by size and unlock
     this.orders.push(order);
     this.emit();
     return order;

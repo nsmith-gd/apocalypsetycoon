@@ -416,5 +416,16 @@
   "start_here": "src/art/font.js, docs/art/style-guide.md",
   "replaces": null,
   "after": null
+ },
+ {
+  "id": "R45",
+  "section": "Shelter grid, digging and construction flow",
+  "kind": "art",
+  "level": "L0",
+  "title": "Art: the 36 catalog-room objects added in #140",
+  "done": "Every generated catalog-room object (throne, pool basin, mansion facade, boiler, ... see CATALOG_OBJECT_IDS in src/shelter/bunker-catalog.js) gets 64 px-per-metre art in the bunker and leaves the asset-minimum baseline; captures.",
+  "start_here": "src/shelter/bunker-sprites.js, src/art/hd/",
+  "replaces": null,
+  "after": null
  }
 ]

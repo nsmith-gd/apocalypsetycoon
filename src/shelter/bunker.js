@@ -22,17 +22,21 @@
 import { ResidentSim } from './residents.js';
 import { QUARTER_SECONDS } from '../campaign/clock.js';
 import { identifyRoom } from '../catalog/identify.js';
+import { plotOf, productUnlocked, FLOOR_M } from '../catalog/products.js';
 import { STRATA, stratumAt, STRUCTURES, CONDUITS, OBJECTS, NEEDS, ROOM_DEPTH_M, WATER_TABLE_M, fitDays, LAYERS, layerOf, FINISHES, variantsFor, familyOf, STYLE_KITS } from './bunker-catalog.js';
+
+// Room special rules (#142, GDD room catalog).
+export const ROOM_RULES = Object.freeze({ artDecayPerWeek: 0.02, stylePerNeighbour: 0.1, styleCap: 0.3 });
 
 export const BUNKER = Object.freeze({
   width: 24, // Family Vault plot
-  depth: 40,
+  depth: 96, // #140: deep enough for every catalog room (Aquifer Well 80 m+, Micro-reactor 60 m+, Geothermal 50 m+)
   sky: 5,
   daySeconds: QUARTER_SECONDS / 13 / 7, // a week is a 13th of the 27-minute quarter, about 125 s at 1x (#96, #108)
   surveyDays: 7,
   pressureTestDays: 30,
   noiseRadius: 6,
-  priority: { air: 0, water: 1, food: 2, power: 3, medical: 4, security: 5, kitchen: 6, bath: 6, comfort: 8, decor: 9, status: 10, sleep: 7 },
+  priority: { air: 0, water: 1, food: 2, power: 3, medical: 4, security: 5, kitchen: 6, bath: 6, comfort: 8, decor: 9, status: 10, delusion: 11, sleep: 7 },
 });
 
 const NET_TYPES = ['air', 'water', 'power'];
@@ -42,8 +46,11 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 export class BunkerSite {
   // research (#16): canBuild(objectId), canBuildStructure(id), canDig(stratumId), lockedReason(type, id).
   // All default to open, so demos and tests without a research tree are unaffected.
-  constructor({ ledger = null, crews = () => 1, crewSpeed = () => 1, costMultiplier = () => 1, cfg = {}, surveyed = false, name = 'Last Resort HQ', research = null } = {}) {
+  constructor({ ledger = null, crews = () => 1, crewSpeed = () => 1, costMultiplier = () => 1, cfg = {}, surveyed = false, name = 'Last Resort HQ', research = null, catalog = null } = {}) {
     this.research = research;
+    // #140: catalog rooms unlock on the GDD schedule and alternate rooms exist only in their track's world:
+    // catalog = { minutes: () => play minutes, roster: () => track ids }. Absent = everything open (demos, tests).
+    this.catalog = catalog;
     this.cfg = { ...BUNKER, ...cfg };
     this.W = this.cfg.width;
     this.H = this.cfg.depth;
@@ -59,6 +66,8 @@ export class BunkerSite {
   }
 
   reset(surveyed = false) {
+    this.product = null; // #141: each new plot gets its product from its contract
+    this.artDecay = {}; // #142: weeks each Art Vault has gone without climate power
     const n = this.W * (this.H + this.S);
     this.dug = new Uint8Array(n); // 1 = excavated
     this.structure = new Array(n).fill(null); // 'wall' | 'spine'
@@ -126,6 +135,8 @@ export class BunkerSite {
   dig(x, y) {
     if (!this.inside(x, y) || y < 0) return { ok: false, reason: 'Nothing to dig there' };
     if (this._willBeDug(x, y)) return { ok: false, reason: 'Already dug or ordered' };
+    const plot = this.plotLock(x, y);
+    if (plot) return { ok: false, reason: plot };
     const s = this.stratum(y);
     if (this.research && !this.research.canDig(s.id)) return { ok: false, reason: this.research.lockedReason?.('stratum', s.id) ?? `Research ${s.name} digging first` };
     const paid = this._charge(`Dig ${s.name} at ${y} m`, s.digCost);
@@ -142,6 +153,7 @@ export class BunkerSite {
   build(kind, x, y) {
     const def = STRUCTURES[kind];
     if (!def || !this.inside(x, y) || y < 0) return { ok: false, reason: 'Cannot build there' };
+    { const pl = this.plotLock(x, y); if (pl) return { ok: false, reason: pl }; }
     if (this.research && !this.research.canBuildStructure(kind)) return { ok: false, reason: this.research.lockedReason?.('structure', kind) ?? `Research ${def.name} first` };
     if (!this._willBeDug(x, y)) return { ok: false, reason: 'Dig the tile first' };
     if (this.structure[this.idx(x, y)] || this.jobs.some((j) => j.type === 'build' && j.x === x && j.y === y)) return { ok: false, reason: 'Already built' };
@@ -185,6 +197,50 @@ export class BunkerSite {
     return this.jobs.some((j) => j.type === 'object' && (!layer || layerOf(OBJECTS[j.kind]) === layer) && x >= j.x && x < j.x + OBJECTS[j.kind].w && y <= j.y && y > j.y - OBJECTS[j.kind].h);
   }
 
+  // ---------- product lines as plot templates (#141) ----------
+  /**
+   * Choose the product for this plot (only before any digging): Solo Pod 16 wide, up to 3 floors; Family Vault
+   * 24 wide, up to 5; Condo Silo 16 wide, 8-12 floors split into household units. Unlocks on the GDD schedule.
+   */
+  setProduct(id) {
+    const plot = plotOf(id);
+    if (!plot) return { ok: false, reason: 'Not a plot product' };
+    if (this.catalog && !productUnlocked(id, this.catalog.minutes?.() ?? Infinity)) return { ok: false, reason: `${plot.name} isn't unlocked yet` };
+    if (this.dug.some((v, i) => v && i >= this.S * this.W) || this.jobs.length) return { ok: false, reason: 'Pick the product before you break ground' };
+    if (plot.width > this.W) return { ok: false, reason: 'This site is too narrow' };
+    this.product = id;
+    this._changed({ type: 'product', id });
+    return { ok: true, plot };
+  }
+  get plot() { return this.product ? plotOf(this.product) : null; }
+
+  /** Why (x, y) is outside this product's plot (null = inside, or no product chosen). */
+  plotLock(x, y) {
+    const p = this.plot;
+    if (!p) return null;
+    if (x >= p.width) return `Past the ${p.name}'s plot edge (${p.width} m wide)`;
+    if (y >= p.maxDepth) return `Below the ${p.name}'s ${p.maxFloors}-floor limit`;
+    return null;
+  }
+
+  /** Floors this shelter uses (a floor is 4 m; any dug tile counts), and household units (floors with beds). */
+  floorsUsed() {
+    const floors = new Set();
+    for (let y = 0; y < this.H; y++) for (let x = 0; x < this.W; x++) if (this.dug[this.idx(x, y)] && this.structure[this.idx(x, y)] !== 'spine') floors.add(Math.floor(y / FLOOR_M));
+    const units = new Set();
+    for (const o of this.objects.values()) if (OBJECTS[o.kind].beds) units.add(Math.floor(o.y / FLOOR_M));
+    return { floors: floors.size, deepest: floors.size ? Math.max(...floors) + 1 : 0, units: units.size };
+  }
+
+  /** Why a catalog-room object can't be built in this world yet (null = it can). */
+  catalogLock(kind) {
+    const o = OBJECTS[kind];
+    if (!o || !this.catalog) return null;
+    if (o.track && !(this.catalog.roster?.() ?? []).includes(o.track)) return `${o.name} only exists in worlds where its threat runs`;
+    if (o.unlockAt != null && (this.catalog.minutes?.() ?? Infinity) < o.unlockAt) return `${o.name} unlocks at ${Math.floor(o.unlockAt / 60)}:${String(o.unlockAt % 60).padStart(2, '0')} of play`;
+    return null;
+  }
+
   /**
    * Can object `kind` sit with its bottom-left tile at (x, y)? (y is the bottom row; it occupies rows
    * y-h+1 .. y.) Checks bounds, surface/depth rules, support underneath and overlaps.
@@ -193,8 +249,11 @@ export class BunkerSite {
     const o = OBJECTS[kind];
     if (!o) return { ok: false, reason: 'Unknown object' };
     if (this.research && !this.research.canBuild(kind)) return { ok: false, reason: this.research.lockedReason?.('object', kind) ?? `Research ${o.name} first` };
+    const gate = this.catalogLock(kind);
+    if (gate) return { ok: false, reason: gate };
     const top = y - o.h + 1;
     if (!this.inside(x, top) || !this.inside(x + o.w - 1, y)) return { ok: false, reason: 'Off the plot' };
+    { const pl = this.plotLock(x + o.w - 1, Math.max(y, 0)); if (pl) return { ok: false, reason: pl }; }
     if (o.surface) { if (y !== -1) return { ok: false, reason: `${o.name} goes on the surface` }; }
     else if (top < 0) return { ok: false, reason: `${o.name} goes underground` };
     if (o.minDepth && y < o.minDepth) return { ok: false, reason: `${o.name} needs ${o.minDepth} m or deeper` };
@@ -388,7 +447,9 @@ export class BunkerSite {
   tick(seconds) {
     this.people.tick(seconds);
     let days = seconds / this.cfg.daySeconds;
+    const week0 = Math.floor(this.day / 7);
     this.day += days;
+    for (let w = week0; w < Math.floor(this.day / 7); w++) this._ruleWeek(); // #142: weekly room rules
     if (this.pressureTest && this.pressureTest.daysLeft > 0) {
       this.pressureTest.daysLeft -= days;
       if (this.pressureTest.daysLeft <= 0) { this.pressureTest.result = this.simulate(); this._changed({ type: 'pressureTest' }); }
@@ -532,7 +593,7 @@ export class BunkerSite {
       r.height = r.maxY - r.minY + 1;
       r.size = r.tiles.length;
       // One identity per enclosed space, from the objects inside it (GDD room catalog requirements).
-      const id = r.touchesSky ? null : identifyRoom(counts, { roster: this.roster ?? null });
+      const id = r.touchesSky ? null : identifyRoom(counts, { roster: this.roster ?? this.catalog?.roster?.() ?? null });
       r.type = id ? id.type : { id: 'open_pit', name: 'Open pit', tier: 'survive', minW: 1 };
       r.hint = id?.hint ?? null;
       r.beds = r.objects.reduce((s, o) => s + (OBJECTS[o.kind].beds ?? 0), 0);
@@ -701,8 +762,10 @@ export class BunkerSite {
       r.beauty += r.finishBeauty;
       r.prestige = Math.max(0, r.prestige - (r.type.tier === 'status' ? r.noise : 0));
       r.impressiveness = Math.round(r.beauty + Math.min(10, r.size / 4) - (r.beds ? r.noise : 0) - (r.rough ? 3 : 0) - (r.cramped ? 5 : 0) - (r.seeps ? 4 : 0));
-      prestige += r.prestige;
     }
+    // Room special rules (#142, GDD room catalog)
+    this._roomRules(rooms, roomOf, { objs, isOn, powerReport, notes });
+    for (const r of rooms) prestige += r.prestige;
 
     // Ratings
     const sump = objs.some((o) => OBJECTS[o.kind].sump && isOn(o));
@@ -740,6 +803,75 @@ export class BunkerSite {
       sealParts, prestige: Math.round(prestige), visibility, notes,
     };
     return this._cache;
+  }
+
+  /** Rooms that share a wall, slab or door with room r (two tiles apart, the tile between not part of a room). */
+  neighbours(r, roomOf, rooms) {
+    const out = new Set();
+    for (const [x, y] of r.tiles) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const mx = x + dx, my = y + dy, nx = x + 2 * dx, ny = y + 2 * dy;
+      if (ny < 0 || my < 0 || !this.inside(nx, ny)) continue;
+      if (roomOf[this.idx(mx, my)] >= 0) continue; // still inside the room
+      const k = roomOf[this.idx(nx, ny)];
+      if (k >= 0 && k !== r.id) out.add(rooms[k]);
+    }
+    return [...out];
+  }
+
+  /**
+   * The GDD's room special rules (#142):
+   *   Panic Room        must touch the Master Suite, or it is worth nothing
+   *   Wine Cellar       +50% prestige at 10 m or deeper (applied per rack above)
+   *   Art Vault         loses 2% prestige a week without climate power (a powered network through the room)
+   *   Fuel Depot        can never sit beside a bedroom: fire risk, and the shelter can't be handed over
+   *   Infinity Pool     needs the Deep Water Recycler running, or it is worth nothing
+   *   Same style        each neighbouring room in the same style adds +10% prestige, up to +30%
+   */
+  _roomRules(rooms, roomOf, { objs, isOn, powerReport, notes }) {
+    const RULE = ROOM_RULES;
+    const real = rooms.filter((r) => !r.touchesSky);
+    for (const r of real) { r.rule = null; r.neighbours = this.neighbours(r, roomOf, rooms); }
+    const powered = new Set();
+    for (const p of powerReport) if (p.supply > 0) for (const t of p.comp.tiles) powered.add(t);
+    const recycler = objs.some((o) => o.kind === 'recycler' && isOn(o));
+    this.artDecay ??= {};
+    for (const r of real) {
+      const id = r.type.id;
+      if (id === 'panic_room' && !r.neighbours.some((n) => n.type.id === 'master_suite')) {
+        r.prestige = 0; r.rule = 'Must touch the Master Suite';
+        notes.push(`The Panic Room at ${r.minY} m doesn't touch the Master Suite, so it's worth nothing.`);
+      }
+      if (id === 'art_vault') {
+        r.climate = r.tiles.some(([x, y]) => powered.has(this.idx(x, y)));
+        const weeks = this.artDecay[`${r.minX},${r.minY}`] ?? 0;
+        if (weeks) r.prestige *= (1 - RULE.artDecayPerWeek) ** weeks;
+        if (!r.climate) { r.rule = `No climate power: -${Math.round(RULE.artDecayPerWeek * 100)}% prestige a week`; notes.push(`The Art Vault has no climate power: the art loses ${Math.round(RULE.artDecayPerWeek * 100)}% of its prestige every week. Run a powered cable through it.`); }
+      }
+      if (id === 'fuel_depot' && r.neighbours.some((n) => n.beds > 0)) {
+        r.rule = 'Fire risk: beside a bedroom';
+        notes.push(`The Fuel Depot at ${r.minY} m is beside a bedroom. Fire risk: no client will take the shelter until it moves.`);
+      }
+      if (id === 'infinity_pool' && !recycler) {
+        r.prestige = 0; r.rule = 'Needs the Deep Water Recycler';
+        notes.push('The Infinity Pool needs a running Deep Water Recycler, or it stays drained.');
+      }
+    }
+    // same-style neighbours, after every other rule
+    const base = new Map(real.map((r) => [r, r.prestige]));
+    for (const r of real) {
+      if (!r.style || !base.get(r)) continue;
+      const same = r.neighbours.filter((n) => n.style === r.style).length;
+      r.styleBonus = Math.min(RULE.styleCap, RULE.stylePerNeighbour * same);
+      r.prestige = base.get(r) * (1 + r.styleBonus);
+    }
+  }
+
+  /** One week passes for the room rules: unpowered Art Vaults decay. */
+  _ruleWeek() {
+    const s = this.simulate();
+    this.artDecay ??= {};
+    for (const r of s.rooms) if (r.type.id === 'art_vault' && !r.climate) { const k = `${r.minX},${r.minY}`; this.artDecay[k] = (this.artDecay[k] ?? 0) + 1; }
+    this._cache = null;
   }
 
   _touching(a, b) {
@@ -793,8 +925,14 @@ export class BunkerSite {
   handOver(name = 'Shelter') {
     if (this.jobs.length) return { ok: false, reason: 'The crew is still working' };
     if (!this.objects.size) return { ok: false, reason: 'Build something first' };
+    const p = this.plot;
+    const used = this.floorsUsed();
+    const fire = this.simulate().rooms.find((r) => r.type.id === 'fuel_depot' && r.rule);
+    if (fire) return { ok: false, reason: 'The Fuel Depot sits beside a bedroom: fire risk' };
+    if (p && used.deepest < p.minFloors) return { ok: false, reason: `A ${p.name} needs at least ${p.minFloors} floors (it has ${used.deepest})` };
+    if (p?.households && (used.units < p.households.min || used.units > p.households.max)) return { ok: false, reason: `A ${p.name} is ${p.households.min}-${p.households.max} household units: floors with beds (it has ${used.units})` };
     const sh = this.toShelter();
-    const shelter = { name, rooms: sh.rooms, occupants: sh.occupants, sealed: sh.sealed, buildCost: this.spent ?? 0 };
+    const shelter = { name, rooms: sh.rooms, occupants: sh.occupants, sealed: sh.sealed, buildCost: this.spent ?? 0, product: this.product ?? null, floors: used.deepest, ...(p?.households ? { units: used.units } : {}) };
     this.spent = 0;
     this.handedOver += 1;
     this.reset(false);
@@ -807,7 +945,7 @@ export class BunkerSite {
       v: 2, W: this.W, H: this.H, S: this.S,
       dug: Array.from(this.dug), structure: this.structure, conduit: Array.from(this.conduits),
       objects: [...this.objects.values()], jobs: this.jobs, id: this._id, finish: this.finish,
-      surveyed: this.surveyed, surveyLeft: this.surveyLeft, pressureTest: this.pressureTest, day: this.day, handedOver: this.handedOver, stallDays: this.stallDays ?? 0, spent: this.spent ?? 0,
+      artDecay: this.artDecay ?? {}, product: this.product ?? null, surveyed: this.surveyed, surveyLeft: this.surveyLeft, pressureTest: this.pressureTest, day: this.day, handedOver: this.handedOver, stallDays: this.stallDays ?? 0, spent: this.spent ?? 0,
     };
   }
 
@@ -824,6 +962,8 @@ export class BunkerSite {
     this.jobs = d.jobs.map((j) => ({ ...j }));
     this._id = d.id;
     this.surveyed = d.surveyed;
+    this.product = d.product ?? null;
+    this.artDecay = d.artDecay ?? {};
     this.surveyLeft = d.surveyLeft;
     this.pressureTest = d.pressureTest;
     this.stallDays = d.stallDays ?? 0;

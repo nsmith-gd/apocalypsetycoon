@@ -20,6 +20,14 @@ export const TUNING = {
   collapseShove: { strong: 15, medium: 8, weak: 4 }, // tension
   doomClock: { startMinutes: 15, tensionDivisor: 40 },
   heatDecay: { perWeek: 1, perCommunicationsLevel: 1, notorietyFloorByTier: [0, 5, 10, 20, 30] },
+  // GDD Pushback systems > Heat: the five heat levels and their effects (#148).
+  heatBands: [
+    { id: 'unnoticed', name: 'Unnoticed', from: 0 },
+    { id: 'whispers', name: 'Whispers', from: 30, schemeCost: 0.10, story: true },
+    { id: 'investigation', name: 'Investigation', from: 55, auditsPerQuarter: 1, auditWeeks: 1, sabotageLocked: true, leverageGrowth: 1.5 },
+    { id: 'hearings', name: 'Hearings', from: 75, hearingsPerQuarter: 1, hearing: { reputation: -10, boardConfidence: -10 }, newLeads: -0.25 },
+    { id: 'exposed', name: 'Exposed', from: 95, indictmentWeeks: 4 },
+  ],
   whistleblowerChance: 0.25, // per quarter when eligible
   condoGossip: 0.1, // per week toward the highest resident
   retainer: 0.04, // of build price per quarter
@@ -172,10 +180,10 @@ export const PUSHBACK_DEFAULTS = {
     start: 5,
     decayPerQuarter: 8, // heat cools off on its own when you lay low
     decayPerWeek: 0, // the campaign uses weekly decay from the difficulty table instead (#92): weekTick()
-    investigationAt: 50, // crossing this mid-quarter opens an investigation (once per quarter)
-    fineAt: 65, // ending a quarter at or above this draws a regulator fine
+    investigationAt: 55, // GDD Investigation band: crossing it mid-quarter opens an investigation (once per quarter)
+    fineAt: Infinity, // (retired by #148: the GDD has no regulator fine; Hearings and Exposed are the high-heat costs)
     finePerPoint: 1_500 * PB, // fine = (heat - fineAt + 10) * finePerPoint
-    raidAt: 100, // maxing heat triggers a federal raid
+    raidAt: Infinity, // (retired by #148: at 95+ the GDD runs a 4-week indictment instead of a raid)
     raidFine: 150_000 * PB,
     raidHeatAfter: 55,
   },
@@ -219,6 +227,37 @@ export const PUSHBACK_DEFAULTS = {
 };
 
 // ---------------- Shelter life systems (src/shelter/life.js) ----------------
+// Megaprojects (#143): Compound (4:20) and Ark (5:00). GDD: Shelter canvas > Product lines. Plot widths, site count,
+// the Abyss depth and the Ark modules are GDD; the rest are this game's stand-ins until the GDD gives a number.
+export const MEGAPROJECTS = {
+  compound: {
+    unlockAt: '4:20',
+    sites: 3, // GDD: three linked bunkers
+    siteWidth: 24, siteDepth: 40, // (stand-in) each site is a Family Vault-sized plot
+    tunnels: [['A', 'B'], ['B', 'C']], // (stand-in) a chain; A-C can be added
+    tunnelCostPerMetre: 30_000, // GDD dollars (stand-in)
+    tunnelLength: 40, // metres between neighbouring sites (stand-in)
+    waterTable: 12, // m: tunnels below it can flood (same water table as the bunker)
+    floodChancePerWeek: 0.05, // per tunnel below the water table (stand-in)
+    breachChancePerWeekAtSiege: 0.15, // per tunnel while The Pitchforks besiege a linked site (stand-in)
+    pumpOutCost: 500_000, // GDD dollars (stand-in)
+  },
+  ark: {
+    unlockAt: '5:00',
+    width: 64, // GDD
+    depth: 130, // m: down past 120 m, the Abyss
+    abyssDepth: 120, // GDD: The Abyss is 120 m and below
+    // GDD: Ark modules. Greybox definition (stand-in): a room of at least this width holding these pieces.
+    modules: {
+      governance_hall: { name: 'Governance Hall', minW: 8, needs: { dining_table: 1, dining_chair: 6 } },
+      schoolhouse: { name: 'Schoolhouse', minW: 6, needs: { desk: 4, bookshelf: 1 } },
+    },
+    occupants: { min: 200, max: 500 }, // GDD
+    price: { min: 500_000_000 }, // GDD: $500M+ from a consortium
+    tableClass: 'C5', // The Table's leads
+  },
+};
+
 export const LIFE = {
   noiseRadius: 6, // tiles
   noiseComfort: 1, // comfort lost per noisy room within range of quarters (once per pair)

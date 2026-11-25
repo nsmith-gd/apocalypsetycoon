@@ -275,6 +275,26 @@ export class Press {
     return out;
   }
 
+  /**
+   * Heat reached Whispers (#148): a journalist starts a story now, if one is free (Iris first, then Gil) and it is
+   * past 1:00. Returns the journalist id, or null.
+   */
+  startStory() {
+    const minutes = this.getMinutes?.();
+    if (minutes != null && minutes < PRESS.story.firstStoryAt) return null;
+    for (const id of ['iris', 'gil']) {
+      const j = this.journalists[id];
+      if (j.story || j.restWeeks > 0) continue;
+      const list = ANGLES[id];
+      j.story = { id: ++this._ids, angle: list[Math.floor(this.rng() * list.length)], progress: 0, buries: 0 };
+      this._note('story', `Whispers: ${PRESS.journalists[id].name} starts digging: "${j.story.angle}"`, { journalist: id });
+      this._emit('storyStarted', { journalist: id, story: j.story });
+      this._changed();
+      return id;
+    }
+    return null;
+  }
+
   /** 1:00: Iris Kemp calls for comment and opens her first story, whatever the heat (GDD unlock row 12). */
   _firstCall() {
     this.firstCallDone = true;
