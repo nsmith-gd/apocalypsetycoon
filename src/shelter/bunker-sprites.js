@@ -4,6 +4,7 @@
 import { OBJECTS } from './bunker-catalog.js';
 import { hasFixture, drawFixture } from '../art/fixtures64.js';
 import { hasAmenity, drawAmenity } from '../art/hd/amenities64.js';
+import { DOOR_KINDS, drawDoor, drawResident64, residentLook } from '../art/hd/shelter-life64.js';
 
 const T = 16;
 const shade = (hex, f) => {
@@ -13,7 +14,9 @@ const shade = (hex, f) => {
 };
 
 /** Draw one object into its tile box (px, py = top-left). */
-export function drawObjectSprite(ctx, kind, px, py, { a, b }, { on = true, frame = 0, flip = false } = {}) {
+export function drawObjectSprite(ctx, kind, px, py, { a, b }, { on = true, frame = 0, flip = false, state = 'closed' } = {}) {
+  // Doors, airlocks and blast doors are authored at 64 px per metre with closed / open / sealed states (#122).
+  if (DOOR_KINDS.includes(kind)) { drawDoor(ctx, kind, px, py, { state, frame, flip, tile: T }); return; }
   // Air, water and food fixtures are authored at 64 px per metre (#119); here they draw at the editor's scale.
   if (hasFixture(kind)) { drawFixture(ctx, kind, px, py, { a, b }, { on, frame: Math.floor(frame / 6), flip, tile: T }); return; }
   // Luxury and comfort amenities are authored at 64 px per metre too (#118); same level-of-detail draw.
@@ -121,55 +124,25 @@ for (const k of ['blast_1', 'blast_2', 'blast_3']) {
 // ---------------------------------------------------------------------------------------------
 // Residents
 // ---------------------------------------------------------------------------------------------
-const OUTFITS = { C1: ['#7a6a4a', '#3a3a4a'], C2: ['#2a2a2e', '#5a8ab0'], C3: ['#1e2e5a', '#c8a040'], C4: ['#c8a040', '#ece8e0'] };
-const SKIN = ['#f0c8a0', '#d8a078', '#a8704a', '#7a4a2a'];
-const HAIR = ['#2a1a10', '#8a5a2a', '#d8c890', '#ece8e0', '#6a2a1a'];
 
-/** Draw a resident; (px, py) is the bottom-centre of their tile in canvas pixels. */
+/**
+ * Draw a resident; (px, py) is the bottom-centre of their tile in canvas pixels. The figure is the 64 px art
+ * (#122: 1 m = 64 px, about 1.75 m tall) drawn at the editor's scale; props, bubbles and steam sit on top.
+ */
 export function drawResident(ctx, r, px, py, frame, { selected = false } = {}) {
-  const n = r.name.length;
-  const [suit, accent] = OUTFITS[r.cls] ?? OUTFITS.C1;
-  const skin = SKIN[n % SKIN.length], hair = HAIR[(n * 3) % HAIR.length];
-  const pose = r.action?.started ? (r.action.admire ? 'admire' : r.action.chat ? 'chat' : r.action.use?.pose) : r.walking ? 'walk' : 'stand';
-  const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); };
-  ctx.save();
-  if (r.facing < 0) { ctx.translate(px * 2, 0); ctx.scale(-1, 1); }
-  const x = px - 4;
-  if (pose === 'sleep' || pose === 'bath') {
-    // lying down
-    const y = py - (pose === 'bath' ? 10 : 9);
-    R(x - 3, y, 5, 4, skin); R(x - 3, y - 1, 5, 2, hair);
-    if (pose !== 'bath') R(x + 2, y, 10, 4, suit);
-    if (pose === 'sleep' && Math.floor(frame / 20) % 2) { R(x + 6, y - 7, 3, 1, '#f2e6c9'); R(x + 8, y - 6, 1, 1, '#f2e6c9'); R(x + 6, y - 5, 3, 1, '#f2e6c9'); }
-    ctx.restore();
-    if (selected) outline(ctx, px - 8, py - 14, 16, 12);
-    return;
-  }
-  const sit = ['sit', 'watch', 'drink', 'read'].includes(pose) && r.action?.kind && r.action.kind !== 'bookshelf';
-  const bob = pose === 'walk' ? Math.floor(frame / 6) % 2 : pose === 'exercise' ? Math.floor(frame / 8) % 2 * 2 : 0;
-  const top = py - 15 + (sit ? 3 : 0) - bob;
-  R(x + 1, top, 6, 2, hair); // hair
-  R(x + 1, top + 2, 6, 4, skin); // face
-  R(x + 5, top + 3, 1, 1, '#1a1a1a'); // eye
-  R(x, top + 6, 8, 5, suit); // torso
-  R(x + 3, top + 6, 2, 3, accent); // tie / scarf
-  // arms
-  if (pose === 'cook' || pose === 'play' || pose === 'exercise') R(x + 7, top + 6 - (Math.floor(frame / 5) % 2), 3, 2, suit);
-  else if (pose === 'drink') { R(x + 7, top + 6, 2, 3, suit); R(x + 8, top + 4, 2, 3, '#bfe3ff'); }
-  else if (pose === 'read') { R(x + 6, top + 7, 4, 3, '#8a2a2a'); }
-  else if (pose === 'admire') R(x - 1, top + 7, 2, 3, suit);
-  else R(x + 7, top + 7, 2, 4, suit);
-  // legs
-  if (sit) { R(x + 1, top + 11, 7, 2, '#2a2a3a'); R(x + 6, top + 13, 2, 2, '#1a1a1a'); }
-  else if (pose === 'walk') { const s = Math.floor(frame / 6) % 2; R(x + 1 + s, top + 11, 2, 4, '#2a2a3a'); R(x + 5 - s, top + 11, 2, 4, '#2a2a3a'); }
-  else { R(x + 1, top + 11, 2, 4, '#2a2a3a'); R(x + 5, top + 11, 2, 4, '#2a2a3a'); }
-  if (pose === 'shower') for (let i = 0; i < 3; i++) R(x + 1 + i * 3, top - 3 + ((frame + i * 4) % 8), 1, 2, '#8ad8ff');
-  if (pose === 'cook' && Math.floor(frame / 8) % 2) R(x + 10, top + 2, 2, 2, '#e8e8e8');
-  ctx.restore();
-  // speech / thought bubbles (not mirrored)
-  if (pose === 'chat' && Math.floor(frame / 30) % 2) bubble(ctx, px + 2, top - 10, ['#f2e6c9', '...']);
-  if (pose === 'admire') heart(ctx, px - 2, top - 7);
-  if (selected) outline(ctx, px - 6, top - 2, 13, 19);
+  const act = r.action?.started ? (r.action.admire ? 'admire' : r.action.chat ? 'chat' : r.action.use?.pose) : r.walking ? 'walk' : 'stand';
+  const sitting = ['sit', 'watch', 'drink', 'read'].includes(act) && r.action?.kind && r.action.kind !== 'bookshelf';
+  const pose = act === 'sleep' || act === 'bath' ? 'lie'
+    : sitting && act !== 'drink' && act !== 'read' ? 'sit'
+      : act === 'cook' || act === 'play' || act === 'exercise' ? 'reach'
+        : ['walk', 'drink', 'read', 'admire'].includes(act) ? act : 'stand';
+  const look = residentLook(r);
+  const top = drawResident64(ctx, look, pose, px, py, { frame, flip: r.facing < 0, tile: T });
+  if (act === 'shower') for (let i = 0; i < 3; i++) { ctx.fillStyle = '#8ad8ff'; ctx.fillRect(px - 4 + i * 3, top - 3 + ((frame + i * 4) % 8), 1, 2); }
+  if (act === 'cook' && Math.floor(frame / 8) % 2) { ctx.fillStyle = '#e8e8e8'; ctx.fillRect(px + 6, top + 2, 2, 2); }
+  if (act === 'chat' && Math.floor(frame / 30) % 2) bubble(ctx, px + 2, top - 8);
+  if (act === 'admire') heart(ctx, px - 2, top - 6);
+  if (selected) outline(ctx, px - (pose === 'lie' ? 16 : 8), top - 1, pose === 'lie' ? 32 : 16, py - top + 1);
 }
 
 function outline(ctx, x, y, w, h) { ctx.strokeStyle = '#f5c542'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w, h); }
