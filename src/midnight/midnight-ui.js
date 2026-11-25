@@ -176,7 +176,7 @@ export function showMidnight({ root = document.body, result, onRestart } = {}) {
   fact(`Last Resort Holdings closes the books on ${money(result.cash)}.`);
 
   const actions = el('div', 'mn-actions');
-  const again = el('button', 'mn-btn', 'START A NEW CAMPAIGN');
+  const again = el('button', 'mn-btn', onRestart ? 'START A NEW CAMPAIGN' : 'CONTINUE'); // #32: no restart = the epilogues follow
   again.type = 'button';
   actions.append(again);
 

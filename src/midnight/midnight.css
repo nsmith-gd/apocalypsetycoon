@@ -110,3 +110,22 @@ tr[data-outcome='lost'] .mn-name { text-decoration: line-through; opacity: 0.7; 
 .mn-grade[data-grade='silver'] { color: #c8c8d8; } .mn-grade[data-grade='bronze'] { color: #d8904a; }
 .mn-grade[data-grade='tin'] { color: #8a8a8a; } .mn-grade[data-grade='gerald'] { color: var(--at-red); }
 .mn-pickup { color: var(--at-amber); font-size: 10px; font-weight: 700; }
+
+/* #32: epilogues, The Ledger and the ending card */
+.mn-title-s { font-size: clamp(18px, 4vw, 26px); }
+.mn-epis { display: grid; gap: 8px; text-align: left; margin-bottom: 14px; }
+.mn-epi { background: var(--at-panel); border: 3px solid var(--at-border); box-shadow: inset 2px 2px 0 var(--at-hi); padding: 8px 10px; animation: at-slide 0.4s steps(5) both; }
+.mn-epi-who { font-size: 11px; font-weight: 900; letter-spacing: 2px; color: var(--at-gold); }
+.mn-epi-line { font-size: 13px; line-height: 1.45; margin-top: 3px; }
+.mn-epi[data-outcome='rationing'] .mn-epi-who { color: var(--at-amber); }
+.mn-epi[data-outcome='lost'] .mn-epi-who { color: var(--at-red); }
+.mn-epi[data-outcome='elsewhere'] { border-style: dashed; }
+.mn-ledger { width: 100%; border-collapse: collapse; background: var(--at-panel); border: 3px solid var(--at-border); margin-bottom: 10px; }
+.mn-ledger th { text-align: left; font-size: 11px; letter-spacing: 2px; color: var(--at-dim); padding: 6px 10px; border-bottom: 1px solid var(--at-panel-2); }
+.mn-ledger td { text-align: right; font-size: 14px; font-weight: 900; padding: 6px 10px; border-bottom: 1px solid var(--at-panel-2); }
+.mn-scars { background: var(--at-panel); border: 3px solid var(--at-border); padding: 8px; margin-bottom: 12px; }
+.mn-scar { font-size: 12px; color: var(--at-red); margin-top: 3px; }
+.mn-scar-none { color: var(--at-dim); }
+.mn-closing { font-size: 16px; font-weight: 900; color: var(--at-gold); letter-spacing: 1px; margin: 10px 0 16px; }
+.mn-grade-final { font-size: 18px; font-weight: 900; letter-spacing: 3px; color: var(--at-gold); margin: 8px 0; }
+.mn-next { margin: 8px 0 24px; }
