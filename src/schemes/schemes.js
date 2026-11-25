@@ -103,7 +103,8 @@ export class SchemeBoard {
   }
 
   costOf(scheme) {
-    return Math.round(scheme.cost * (1 + this.rules.repeatCost * (this.runsThisWeek[scheme.id] ?? 0)));
+    // Whispers and above: schemes cost 10% more (#148).
+    return Math.round(scheme.cost * (1 + this.rules.repeatCost * (this.runsThisWeek[scheme.id] ?? 0)) * (this.pb?.schemeCostMultiplier ?? 1));
   }
 
   /** Everything the region panel needs to list schemes. */
@@ -120,6 +121,7 @@ export class SchemeBoard {
       else if (t.state === 'collapsed') reason = `${t.name} has collapsed`;
       else if (t.state === 'breach') reason = `${t.name} has breached`;
       else if (this.crisis.paused) reason = 'World paused';
+      else if ((s.id === 'sabotage' || s.id === 'blackout') && this.pb?.sabotageLocked) reason = 'Locked while under Investigation (heat 55+)';
       const cost = this.costOf(s);
       if (!reason && this.ledger && this.ledger.cash < cost) reason = 'Not enough cash';
       return { scheme: s, gain: this.gainIn(s, region), exposure: region?.exposure?.[t.id] ?? 'low', cost, heat: Math.round(s.heat * this.getHeatMultiplier()), locked, reason, track: this.trackView(t.id) };
