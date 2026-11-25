@@ -1,0 +1,32 @@
+{
+ "reference": {
+  "art_px": [
+   275,
+   168
+  ],
+  "colours": 29,
+  "edges_per_100": 13.7,
+  "land_edges_per_100": 20.6,
+  "land_run_px": 3.52,
+  "land_share": 0.244,
+  "coast_wiggle": 6.39,
+  "outlined_coast": 0.63,
+  "islands": 167,
+  "islands_per_10k_px": 36.15
+ },
+ "ours": {
+  "art_px": [
+   480,
+   288
+  ],
+  "colours": 20,
+  "edges_per_100": 10.4,
+  "land_edges_per_100": 21.4,
+  "land_run_px": 4.29,
+  "land_share": 0.278,
+  "coast_wiggle": 3.89,
+  "outlined_coast": 0.61,
+  "islands": 100,
+  "islands_per_10k_px": 7.23
+ }
+}
