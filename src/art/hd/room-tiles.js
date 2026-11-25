@@ -11,7 +11,7 @@
 //   renderRoomTile('bunk_room', { frame: 0 })  -> Raster (headless)   ROOM_TILE_IDS: every id with a tile
 //   drawRoomTile(ctx, 'bunk_room', x, y, { frame, scale })            (browser; cached per id and frame)
 
-import { Raster, col, K, box, hcyl, cone, glowAt, led, hash, bayer, text, textW, drawRaster } from './raster.js';
+import { Raster, col, rampLength, K, box, hcyl, cone, glowAt, led, hash, bayer, text, textW, drawRaster } from './raster.js';
 import { PROPS, WALL_PROPS, shadow } from './props.js';
 import { GDD_ROOMS } from '../../catalog/rooms.js';
 import { EXTRA_ROOMS, STOREROOM, EMPTY_ROOM } from '../../catalog/identify.js';
@@ -181,7 +181,7 @@ function signage(b, W, wallTop, style, label, tier) {
   if (!label) return;
   const s = style === 'surface' || style === 'garden' ? null : style;
   if (!s) return;
-  if (tier === 'survive' && s !== 'comfort') {
+  if (tier === 'survive' && s !== 'comfort' && s !== 'plaque') {
     const scale = textW(label, 3) <= W - 40 ? 3 : textW(label, 2) <= W - 30 ? 2 : 0;
     if (!scale) return;
     text(b, label, SIDE + 10, wallTop + 8, col(s === 'lab' ? 'teal' : s === 'concrete' ? 'concrete' : s === 'tile' ? 'marble' : 'steel', 0), scale, { worn: 0.12 });
@@ -331,10 +331,188 @@ function light(b, W, H, fy, lamps, kind, frame) {
     const d = Math.floor(a) + (bayer(x, y) < a - Math.floor(a) ? 1 : 0);
     if (d) b.shift(x, y, -d);
   }
-  if (kind !== 'none') for (const lx of lamps) cone(b, Math.round(lx), top, fy + FLOOR_H, kind === 'sconce' ? 10 : 8, kind === 'chandelier' ? 90 : 56, kind === 'chandelier' ? 2 : 1.7);
-  for (const lx of lamps) lampFixture(b, Math.round(lx), kind, frame);
+  if (kind !== 'none') for (const lx of lamps) cone(b, Math.round(lx), top, fy + FLOOR_H, kind === 'sconce' ? 10 : kind === 'led' ? 22 : 8, kind === 'chandelier' ? 90 : kind === 'led' ? 80 : 56, kind === 'chandelier' ? 2 : kind === 'led' ? 1.4 : 1.7);
+  for (const lx of lamps) designLamp(b, Math.round(lx), kind, frame);
   // the side walls: structure in front of the room
   for (let y = TRIM_H; y < H; y++) for (let i = 0; i < SIDE; i++) { b.set(i, y, i === SIDE - 1 ? K : col('steel', 1)); b.set(W - 1 - i, y, i === SIDE - 1 ? K : col('steel', 1)); }
+}
+
+// ------------------------------------------------------------------------------------------ design styles (#120)
+// The six design styles (GDD: Shelter canvas > The design layer; #34) at 64 px. A style re-skins a room: its own
+// back wall, floor, ceiling and lamps, and a material swap for the props (machines keep their outlines and accent
+// lights, so they stay recognisable). The tier trim along the top is never restyled (GDD Art: "the six styles
+// re-skin materials and props, but the tier trim always stays").
+export const DESIGN_STYLES = Object.freeze(['brutalist', 'gilded', 'biophilic', 'tech_minimal', 'retro_atomic', 'kitsch']);
+
+const DESIGN_WALLS = {
+  // board-formed concrete with tie holes and a stencilled band
+  brutal(b, x0, x1, y0, y1, s) {
+    WALLS.concrete(b, x0, x1, y0, y1, s);
+    for (let x = x0; x < x1; x++) for (let y = y1 - 30; y < y1 - 26; y++) b.set(x, y, col('concrete', 1));
+    for (let x = x0 + 6; x < x1 - 6; x += 10) b.rect(x, y1 - 25, 5, 3, col('concrete', 4));
+  },
+  // marble panels in gold frames over a velvet dado
+  gilded(b, x0, x1, y0, y1, s) {
+    const dado = y1 - 40, pw = 56;
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+      const px = (x - x0) % pw, py = y - y0;
+      if (y >= dado) { b.set(x, y, y < dado + 3 ? col('gold', y === dado ? 6 : 4) : col('velvet', 3 + (((x >> 2) + (y >> 2)) % 3 === 0 ? 1 : 0) - (y > y1 - 4 ? 1 : 0))); continue; }
+      const frame = px < 4 || px > pw - 5 || py < 4 || py > dado - y0 - 5;
+      const inner = px === 6 || px === pw - 7 || py === 6 || py === dado - y0 - 7;
+      if (frame) b.set(x, y, col('gold', px === 0 || py === 0 ? 6 : px === pw - 1 ? 2 : 4));
+      else if (inner) b.set(x, y, col('gold', 5));
+      else { const vein = Math.abs(Math.sin((x + s) * 0.09 + y * 0.05) + Math.sin(y * 0.13 - x * 0.02)) < 0.07; b.set(x, y, col('marble', vein ? 3 : 5 + (hash(x >> 3, y >> 3, s) < 0.2 ? 1 : 0))); }
+    }
+  },
+  // a living wall of moss and ferns above timber slats, with a trickle of water
+  living(b, x0, x1, y0, y1, s) {
+    const slats = y1 - 46;
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+      if (y >= slats) { const px = (x - x0) % 8; b.set(x, y, px === 0 ? col('walnut', 2) : col('walnut', 5 - (px === 7 ? 1 : 0) - (hash(x >> 3, y >> 4, s) < 0.25 ? 1 : 0))); continue; }
+      const n = hash(x >> 2, y >> 2, s) * 0.6 + hash(x >> 1, y >> 1, s + 1) * 0.4;
+      b.set(x, y, col('leaf', n > 0.75 ? 5 : n > 0.5 ? 4 : n > 0.25 ? 3 : 2));
+    }
+    for (let k = 0; k < (x1 - x0) / 22; k++) { // ferns: arcs of bright fronds
+      const cx = x0 + 8 + Math.floor(hash(k, s, 3) * (x1 - x0 - 16)), cy = y0 + 8 + Math.floor(hash(k, s, 4) * (slats - y0 - 16));
+      for (let a = -1.2; a <= 1.2; a += 0.4) for (let t = 0; t < 9; t++) b.set(Math.round(cx + Math.sin(a) * t), Math.round(cy - Math.cos(a) * t * 0.8 + t * t * 0.06), col('leaf', 6));
+    }
+    for (let k = 0; k < Math.max(1, (x1 - x0) / 160); k++) { const x = x0 + 30 + k * 160; for (let y = y0 + 4; y < slats; y++) b.set(x + ((y >> 3) % 2), y, col('water', 5 + ((y >> 2) % 3 === 0 ? 1 : 0)), 1); }
+    for (let x = x0; x < x1; x++) b.set(x, slats, col('walnut', 1));
+  },
+  // seamless white panels, a hidden screen and an LED reveal
+  panels(b, x0, x1, y0, y1, s) {
+    const pw = 48, ph = 64;
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+      const px = (x - x0) % pw, py = (y - y0) % ph;
+      const g = 6 - (y - y0) / (y1 - y0) * 1.2; // soft falloff toward the floor
+      b.set(x, y, px === 0 || py === 0 ? col('cloth', 4) : col('cloth', Math.round(g - (bayer(x, y) < g % 1 ? 0 : 0))));
+    }
+    const sx = x0 + Math.floor((x1 - x0) * 0.62), sw = Math.min(70, Math.floor((x1 - x0) * 0.25));
+    if (sw > 30) { b.rect(sx, y0 + 12, sw, 34, col('steel', 0)); for (let j = 0; j < 34; j += 3) b.rect(sx + 2, y0 + 13 + j, sw - 4, 1, col('water', 3), 1); b.rect(sx + 4, y0 + 18, Math.floor(sw * 0.4), 3, col('water', 6), 1); }
+    for (let x = x0; x < x1; x++) { b.set(x, y1 - 10, col('water', 6), 1); b.set(x, y1 - 9, col('water', 5), 1); }
+  },
+  // civil-defence mint tile, a chrome band and atomic starbursts
+  atomic(b, x0, x1, y0, y1, s) {
+    const band = y0 + Math.floor((y1 - y0) * 0.55);
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+      if (y >= band && y < band + 5) { b.set(x, y, col('steel', y === band ? 7 : y === band + 4 ? 3 : 6)); continue; }
+      if (y > band) { const px = (x - x0) % 12, py = (y - band) % 12; b.set(x, y, px === 0 || py === 0 ? col('plaster', 4) : col('teal', 6 + (hash(x >> 3, y >> 3, s) < 0.15 ? -1 : 0))); continue; }
+      b.set(x, y, col('plaster', 5 + ((x - x0) % 30 < 15 ? 0 : 1) - (hash(x >> 4, y >> 4, s) < 0.15 ? 1 : 0)));
+    }
+    for (let cx = x0 + 34; cx < x1 - 20; cx += 96) { // starbursts
+      const cy = y0 + Math.floor((band - y0) * 0.45);
+      for (let a = 0; a < 8; a++) for (let t = 3; t < 12; t++) b.set(Math.round(cx + Math.cos(a * 0.785) * t), Math.round(cy + Math.sin(a * 0.785) * t), col('amber', a % 2 ? 4 : 5));
+      for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) if (i * i + j * j <= 5) b.set(cx + i, cy + j, col('red', 5));
+    }
+  },
+  // hot-pink lacquer, a leopard-print band and a neon slogan
+  leopard(b, x0, x1, y0, y1, s) {
+    const band = y1 - 44;
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+      if (y >= band) {
+        const cx = Math.floor((x - x0) / 11), cy = Math.floor((y - band) / 9), ox = (x - x0) % 11 - 5 + (cy % 2 ? 3 : 0), oy = (y - band) % 9 - 4;
+        const r2 = ox * ox + oy * oy * 1.6;
+        b.set(x, y, r2 < 6 && r2 > 2 && hash(cx, cy, s) < 0.85 ? K : r2 <= 2 && hash(cx, cy, s) < 0.85 ? col('amber', 2) : col('amber', 4 + (hash(x >> 2, y >> 2, s) < 0.2 ? 1 : 0)));
+        continue;
+      }
+      b.set(x, y, col('velvet', 5 - (((x - x0) >> 3) % 2) + (y < y0 + 3 ? 1 : 0)));
+    }
+    for (let x = x0; x < x1; x++) { b.set(x, band - 1, col('gold', 6)); b.set(x, band - 2, col('gold', 4)); }
+  },
+};
+const DESIGN_FLOORS = {
+  concrete: FLOORS.concrete,
+  gilded: FLOORS.gilded,
+  timber: (b, x0, x1, fy, H) => { for (let y = fy; y < H; y++) for (let x = x0; x < x1; x++) { const row = (y - fy) >> 2, px = (x + row * 23) % 44; b.set(x, y, y === fy ? col('walnut', 6) : px === 0 ? col('walnut', 3) : col('walnut', 5 - ((y - fy) % 4 === 3 ? 1 : 0) - (y > fy + 8 ? 1 : 0))); } },
+  resin: (b, x0, x1, fy, H) => { for (let y = fy; y < H; y++) for (let x = x0; x < x1; x++) b.set(x, y, y === fy ? col('cloth', 6) : col('cloth', 5 - (y > fy + 7 ? 1 : 0) + (((x - y * 3) % 90 + 90) % 90 < 6 && y > fy + 2 ? 1 : 0))); },
+  checker: (b, x0, x1, fy, H) => { for (let y = fy; y < H; y++) for (let x = x0; x < x1; x++) b.set(x, y, y === fy ? col('steel', 7) : ((x >> 3) + ((y - fy) >> 2)) % 2 ? col('plaster', 6) : col('red', 4)); },
+  carpet: (b, x0, x1, fy, H) => { for (let y = fy; y < H; y++) for (let x = x0; x < x1; x++) b.set(x, y, y === fy ? col('gold', 5) : col('violet', 3 + ((x + (y - fy) * 2) % 10 < 2 ? 2 : 0) - (y > fy + 8 ? 1 : 0))); },
+};
+function designCeiling(b, W, kind) {
+  const y0 = TRIM_H;
+  for (let y = y0; y < y0 + CEIL_H; y++) for (let x = 0; x < W; x++) {
+    const last = y === y0 + CEIL_H - 1;
+    if (kind === 'concrete') b.set(x, y, col('concrete', last ? 4 : (x % 48 < 2 ? 1 : 2) + ((y - y0) % 6 === 0 ? -1 : 0)));
+    else if (kind === 'coffered') b.set(x, y, (x % 32 < 3 || last) ? col('gold', last ? 5 : 3) : col('marble', 4 + ((y - y0) < 3 ? 1 : 0)));
+    else if (kind === 'timber') b.set(x, y, col('walnut', last ? 6 : (y - y0) % 5 === 0 ? 2 : 4));
+    else if (kind === 'panels') b.set(x, y, col('cloth', last ? 5 : 6 - (x % 64 === 0 ? 2 : 0)));
+    else if (kind === 'atomic') b.set(x, y, col(last ? 'steel' : 'plaster', last ? 7 : 5 - ((x >> 3) % 2)));
+    else if (kind === 'mirror') { const d = (x + (y - y0) * 2) % 40; b.set(x, y, last ? col('gold', 5) : col('cloth', d < 3 ? 6 : d < 6 ? 5 : 2 + ((y - y0) % 4 === 0 ? 1 : 0))); }
+  }
+  if (kind === 'panels') for (let x = 0; x < W; x++) b.set(x, y0 + CEIL_H - 2, col('water', 6), 1); // LED cove
+}
+function designLamp(b, x, kind, frame) {
+  const y = TRIM_H + CEIL_H;
+  if (kind === 'led') { b.rect(x - 22, y - 1, 44, 2, col('water', 6), 1); glowAt(b, x, y + 2, 20, 1.2); return; }
+  if (kind === 'sputnik') {
+    b.rect(x, y - 2, 1, 10, col('steel', 6)); for (let j = -3; j <= 3; j++) for (let i = -3; i <= 3; i++) if (i * i + j * j <= 9) b.set(x + i, y + 12 + j, col('steel', 6 - (i + j > 1 ? 2 : 0)));
+    for (let a = 0; a < 8; a++) { const ex = Math.round(x + Math.cos(a * 0.785) * 10), ey = Math.round(y + 12 + Math.sin(a * 0.785) * 7); for (let t = 0; t <= 10; t++) b.set(Math.round(x + (ex - x) * t / 10), Math.round(y + 12 + (ey - y - 12) * t / 10), col('steel', 5)); b.set(ex, ey, col('amber', 6), 1); }
+    glowAt(b, x, y + 12, 22, 1.3); return;
+  }
+  if (kind === 'neon') {
+    const pink = ['velvet', 6], w = 28;
+    for (let i = 0; i < w; i++) { b.set(x - w / 2 + i, y + 6 + Math.round(Math.sin(i * 0.45 + frame) * 2), col(...pink), 1); b.set(x - w / 2 + i, y + 7 + Math.round(Math.sin(i * 0.45 + frame) * 2), col('neon', 4), 1); }
+    glowAt(b, x, y + 7, 24, 1.5); return;
+  }
+  lampFixture(b, x, kind, frame);
+}
+const DESIGN = {
+  brutalist: { wall: 'brutal', floor: 'concrete', ceil: 'concrete', lamp: 'sodium', sign: 'concrete',
+    swap: { walnut: 'concrete', plaster: 'concrete', marble: 'concrete', velvet: 'cloth', emerald: 'steel', gold: 'steel', teal: 'steel' } },
+  gilded: { wall: 'gilded', floor: 'gilded', ceil: 'coffered', lamp: 'chandelier', sign: 'plaque',
+    swap: { steel: 'gold', concrete: 'marble', cloth: 'velvet', plaster: 'marble', teal: 'emerald', rust: 'walnut' } },
+  biophilic: { wall: 'living', floor: 'timber', ceil: 'timber', lamp: 'pendant', sign: 'plaque',
+    swap: { steel: 'walnut', concrete: 'walnut', cloth: 'leaf', velvet: 'leaf', marble: 'plaster', gold: 'walnut', teal: 'leaf', rust: 'walnut' } },
+  tech_minimal: { wall: 'panels', floor: 'resin', ceil: 'panels', lamp: 'led', sign: 'plaque',
+    swap: { walnut: 'cloth', concrete: 'cloth', plaster: 'cloth', velvet: 'cloth', gold: 'steel', rust: 'steel', marble: 'cloth', teal: 'water' } },
+  retro_atomic: { wall: 'atomic', floor: 'checker', ceil: 'atomic', lamp: 'sputnik', sign: 'plaque',
+    swap: { steel: 'teal', concrete: 'plaster', walnut: 'red', cloth: 'teal', velvet: 'red', gold: 'steel', marble: 'plaster', rust: 'amber' } },
+  kitsch: { wall: 'leopard', floor: 'carpet', ceil: 'mirror', lamp: 'neon', sign: 'plaque',
+    swap: { walnut: 'velvet', cloth: 'velvet', steel: 'gold', concrete: 'violet', plaster: 'amber', marble: 'gold', teal: 'neon', rust: 'velvet' } },
+};
+const SWAP_TABLES = new Map();
+/** Colour-index remap for a style's material swap: ramp A step s -> ramp B at the same relative step. */
+// fixtures (blast doors, linings...) are all steel and concrete: each style gives them its own plating
+const FIXTURE_SWAP = { brutalist: { steel: 'concrete' }, gilded: { steel: 'gold', concrete: 'marble' }, biophilic: { steel: 'walnut', concrete: 'walnut' }, tech_minimal: { steel: 'cloth', concrete: 'cloth' }, retro_atomic: { steel: 'teal', concrete: 'plaster' }, kitsch: { steel: 'velvet', concrete: 'violet' } };
+function swapTable(design, fixture = false, outdoors = false) {
+  const key = `${design}:${fixture ? 'f' : ''}${outdoors ? 'o' : ''}`;
+  if (SWAP_TABLES.has(key)) return SWAP_TABLES.get(key);
+  const t = new Map();
+  const map = { ...DESIGN[design].swap, ...(fixture || outdoors ? FIXTURE_SWAP[design] : {}) };
+  if (outdoors) { delete map.walnut; delete map.leaf; } // trees stay trees under an open sky
+  for (const [from, to] of Object.entries(map)) {
+    const la = rampLength(from), lb = rampLength(to);
+    for (let s = 0; s < la; s++) t.set(col(from, s), col(to, Math.round((s * (lb - 1)) / Math.max(1, la - 1))));
+  }
+  SWAP_TABLES.set(key, t);
+  return t;
+}
+/** Draw with a style's material swap: everything painted inside fn() goes through the remap. */
+function swapped(b, design, fn, outdoors = false) {
+  if (!design) return fn();
+  const t = swapTable(design, false, outdoors);
+  const set = b.set;
+  b.set = function (x, y, ci, glow = 0) { return set.call(this, x, y, glow ? ci : (t.get(ci) ?? ci), glow); };
+  try { return fn(); } finally { b.set = set; }
+}
+/** Outdoors, a style shows in its terrace: the paving and a railing across the front, behind the props. */
+function terrace(b, W, H, fy, design) {
+  DESIGN_FLOORS[DESIGN[design].floor](b, SIDE, W - SIDE, fy, H);
+  const top = fy - 18;
+  for (let x = SIDE; x < W - SIDE; x++) {
+    const px = x % 16;
+    if (design === 'brutalist') for (let y = top + 6; y < fy; y++) b.set(x, y, col('concrete', y === top + 6 ? 5 : 3 - (hash(x >> 1, y, 5) < 0.2 ? 1 : 0)));
+    else if (design === 'gilded') { b.set(x, top, col('marble', 6)); b.set(x, top + 1, col('marble', 4)); if (px >= 5 && px <= 10) for (let y = top + 2; y < fy; y++) { const w = Math.abs(px - 7.5) < 1.5 + Math.sin((y - top) * 0.35) ; if (w) b.set(x, y, col('marble', px < 7 ? 6 : 4)); } b.set(x, fy - 1, col('gold', 4)); }
+    else if (design === 'biophilic') for (let y = top + 2; y < fy; y++) { const n = hash(x >> 1, y >> 1, 9); if (y > top + 2 + Math.round(n * 4)) b.set(x, y, col('leaf', 2 + Math.floor(n * 3.5))); }
+    else if (design === 'tech_minimal') { for (let y = top; y < fy; y++) if (y === top || px === 0) b.set(x, y, col('cloth', 6)); else if ((x + y) % 9 === 0) b.set(x, y, col('water', 6), 1); b.set(x, top + 1, col('water', 6), 1); }
+    else if (design === 'retro_atomic') { if (px < 3) for (let y = top + 2; y < fy; y++) b.set(x, y, col('steel', 7 - px * 2)); b.set(x, top, col('red', 4)); b.set(x, top + 1, col('red', 5)); b.set(x, top + 8, col('teal', 6)); }
+    else if (design === 'kitsch') { b.set(x, top + Math.round(Math.sin(x * 0.2) * 2) + 2, col('velvet', 6), 1); b.set(x, top + Math.round(Math.sin(x * 0.2) * 2) + 3, col('neon', 4), 1); if (px === 0) for (let y = top + 4; y < fy; y++) b.set(x, y, col('gold', 5)); }
+  }
+}
+/** Re-skin a finished fixture tile (blast doors, linings...) below its tier trim. */
+function swapBelowTrim(b, design) {
+  const t = swapTable(design, true);
+  for (let y = TRIM_H; y < b.h; y++) for (let x = 0; x < b.w; x++) { const i = y * b.w + x; if (b.glow[i]) continue; const n = t.get(b.c[i]); if (n) b.c[i] = n; }
 }
 
 // ------------------------------------------------------------------------------------------ public API
@@ -354,32 +532,38 @@ export function roomTileSize(id) {
 }
 
 /** Paint one room tile into a new Raster (headless). */
-export function renderRoomTile(id, { frame = 0 } = {}) {
+export function renderRoomTile(id, { frame = 0, design = null, size = null, tier: tierOverride = null } = {}) {
+  if (design && !DESIGN[design]) throw new Error(`unknown design style ${design}`);
   const spec = SPEC[id];
   if (!spec) throw new Error(`no room tile for ${id}`);
   const room = ROOM_BY_ID[id];
-  const { w, h } = roomTileSize(id);
+  const { w, h } = size ?? roomTileSize(id); // size: a cut of the room at another size (the design-layer cell)
   const W = w * TILE_PX_PER_M, H = h * TILE_PX_PER_M;
   const b = new Raster(W, H);
   const o = { frame: frame % 2, accent: spec.accent, seed: id.length };
-  if (spec.fixture) { drawFixture(b, W, H, spec, o); return b; }
-  const tier = room?.tier ?? 'survive';
+  if (spec.fixture) { drawFixture(b, W, H, spec, o); if (design) swapBelowTrim(b, design); return b; }
+  const tier = tierOverride ?? room?.tier ?? 'survive';
   const styleName = spec.style ?? TIER_STYLE[tier];
   const st = STYLE[styleName];
+  const outdoors = styleName === 'surface' || styleName === 'garden'; // open sky: the style shows in the props only
+  const ds = design && !outdoors ? DESIGN[design] : null;
   const fy = H - FLOOR_H, wallTop = TRIM_H + CEIL_H;
   const seed = [...id].reduce((s, c) => s + c.charCodeAt(0), 0);
-  WALLS[st.wall](b, 0, W, styleName === 'surface' || styleName === 'garden' ? 0 : wallTop, fy, seed);
-  ceiling(b, W, styleName);
-  (TRIMS[tier] ?? TRIMS.survive)(b, W, o.frame);
-  FLOORS[st.floor](b, 0, W, fy, H);
-  for (const [name, fx, dy] of spec.wall ?? []) { const p = WALL_PROPS[name]; const x = Math.round(fx * W - p.w / 2); p.draw(b, Math.max(SIDE + 2, Math.min(W - SIDE - 2 - p.w, x)), wallTop + dy, o); }
-  if (spec.extra) spec.extra(b, W, H, fy, o);
-  signage(b, W, wallTop, styleName, spec.label ?? (room?.name ?? id).toUpperCase(), tier);
-  layout(b, spec.floor ?? [], W, fy, o, spec.extra === airlockDoor || spec.extra === vaultDoor || spec.extra === wellShaft || spec.extra === liftDoor ? 130 : 0, spec.extra === infinityPool ? W - 150 : 0);
-  const lampKind = spec.lamp ?? st.lamp;
+  if (ds) { DESIGN_WALLS[ds.wall](b, 0, W, wallTop, fy, seed); designCeiling(b, W, ds.ceil); DESIGN_FLOORS[ds.floor](b, 0, W, fy, H); }
+  else { WALLS[st.wall](b, 0, W, outdoors ? 0 : wallTop, fy, seed); ceiling(b, W, styleName); FLOORS[st.floor](b, 0, W, fy, H); }
+  (TRIMS[tier] ?? TRIMS.survive)(b, W, o.frame); // never restyled
+  if (design && outdoors) terrace(b, W, H, fy, design);
+  swapped(b, design, () => {
+    for (const [name, fx, dy] of spec.wall ?? []) { const p = WALL_PROPS[name]; const x = Math.round(fx * W - p.w / 2); p.draw(b, Math.max(SIDE + 2, Math.min(W - SIDE - 2 - p.w, x)), wallTop + dy, o); }
+    if (spec.extra) spec.extra(b, W, H, fy, o);
+  }, outdoors);
+  signage(b, W, wallTop, ds ? ds.sign : styleName, spec.label ?? (room?.name ?? id).toUpperCase(), tier);
+  swapped(b, design, () => layout(b, spec.floor ?? [], W, fy, o, spec.extra === airlockDoor || spec.extra === vaultDoor || spec.extra === wellShaft || spec.extra === liftDoor ? 130 : 0, spec.extra === infinityPool ? W - 150 : 0), outdoors);
+  const lampKind = ds ? ds.lamp : spec.lamp ?? st.lamp;
   const n = Math.max(1, Math.round(W / 140));
   const lamps = Array.from({ length: n }, (_, i) => (W * (i + 0.5)) / n);
   light(b, W, H, fy, lamps, lampKind, o.frame);
+  (TRIMS[tier] ?? TRIMS.survive)(b, W, o.frame); // last: lamp glow never touches the tier trim
   return b;
 }
 
@@ -397,11 +581,11 @@ function layout(b, names, W, fy, o, reserveRight = 0, reserveRightPool = 0) {
 
 const tileCache = new Map();
 /** Draw a room tile on a canvas (browser). `scale` must be a whole number. */
-export function drawRoomTile(ctx, id, x, y, { frame = 0, scale = 1 } = {}) {
-  const key = `${id}:${frame % 2}`;
+export function drawRoomTile(ctx, id, x, y, { frame = 0, scale = 1, design = null } = {}) {
+  const key = `${id}:${frame % 2}:${design ?? ''}`;
   let cv = tileCache.get(key);
   if (!cv) {
-    const r = renderRoomTile(id, { frame });
+    const r = renderRoomTile(id, { frame, design });
     cv = document.createElement('canvas'); cv.width = r.w; cv.height = r.h;
     drawRaster(cv.getContext('2d'), r, 0, 0);
     tileCache.set(key, cv);
