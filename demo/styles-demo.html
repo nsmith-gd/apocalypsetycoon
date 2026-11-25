@@ -45,7 +45,7 @@
   <div class="hint">Click a room to switch it between Brutalist and Gilded. Satisfaction = style multiplier s × Σ (willingness-to-pay weight × tier met). Match ×1.25, clash ×0.8.</div>
   <aside class="panel"><h2>CLIENT</h2><div id="clients"></div></aside>
   <section class="stage">
-    <canvas id="shelter" width="320" height="192"></canvas>
+    <canvas id="shelter" width="1280" height="768"></canvas>
     <div class="btns">
       <button data-all="gilded" data-style="gilded">ALL GILDED</button>
       <button data-all="brutalist" data-style="brutalist">ALL BRUTALIST</button>
@@ -66,7 +66,6 @@ import { ShelterGrid } from '../src/shelter/grid.js';
 import { roomInfo } from '../src/clients/rooms.js';
 import { satisfaction, styledPrestige, nextStyle, STYLES, roomTier } from '../src/shelter/styles.js';
 import { drawStyledShelter } from '../src/art/styleView.js';
-import { fitIntegerScale } from '../src/art/render.js';
 
 // GDD hero clients (Characters table) for the two placeholder styles, plus a neutral one.
 const CLIENTS = [
@@ -136,7 +135,7 @@ cv.addEventListener('click', (e) => {
 });
 for (const b of document.querySelectorAll('[data-all]')) b.onclick = () => { for (const r of grid.rooms) grid.setStyle(r.col, r.row, b.dataset.all); render(true); };
 
-const fit = () => { cv.style.width = '320px'; fitIntegerScale(cv, Math.max(320, document.querySelector('.stage').clientWidth - 8), window.innerHeight - 160); };
+const fit = () => { cv.style.width = '1280px'; cv.style.height = '768px'; cv.style.maxWidth = 'none'; }; // 64 px art at 1x (whole-number scale); the stage scrolls on small screens
 window.addEventListener('resize', fit);
 setInterval(() => { frame++; draw(); }, 500);
 renderClients(); fit(); render();

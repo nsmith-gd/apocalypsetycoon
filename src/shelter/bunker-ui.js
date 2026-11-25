@@ -9,7 +9,7 @@
 import { OBJECTS, STRUCTURES, CONDUITS, STRATA, TIER_COLORS, WATER_TABLE_M, FINISHES, variantsFor, layerOf, STYLE_KITS } from './bunker-catalog.js';
 import { drawWallPiece, drawFloorPiece } from '../art/finish-art.js';
 import { drawText } from '../art/font.js';
-import { drawRoomTile, ROOM_TILE_IDS } from '../art/hd/room-tiles.js';
+import { drawRoomTile, ROOM_TILE_IDS, DESIGN_STYLES } from '../art/hd/room-tiles.js'; // the room card shows the room in its style (#120)
 import { drawStratumTile, drawDigStage, drawShellStage, drawFitoutStage } from '../art/bunker-tiles.js';
 import { drawObjectSprite, drawResident, drawThought, hasSprite } from './bunker-sprites.js';
 import { daysSealedCanvas } from '../art/hd/shelter-life64.js';
@@ -527,7 +527,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
       ${sys('FOOD', s.days.food, `${f.food.stock.toLocaleString()} meals · grows ${f.food.production} of ${f.food.need}/day`)}
       ${sys('POWER', s.days.power, `${f.power.supply ?? 0} kW for ${f.power.demand} kW · ${f.power.fuel ?? 0} L fuel · ${f.power.battery ?? 0} kWh`)}
       <div class="bk-rat">${['seal', 'blast', 'security'].map((key) => `<span>${key.toUpperCase()} <b>${s.ratings[key]}</b>/5</span>`).join('')}<span>MORALE <b>${s.ratings.morale}</b></span><span>PRESTIGE <b>${s.prestige}</b></span></div>
-      ${r ? `<div class="bk-room"><div class="bk-room-tile"><canvas data-room="${r.type.id}" title="${r.type.name}"></canvas></div><b style="color:${TIER_COLORS[r.type.tier]}">${r.type.name.toUpperCase()}</b> ${r.width}x${r.height} m · ${r.size} tiles<br>
+      ${r ? `<div class="bk-room"><div class="bk-room-tile"><canvas data-room="${r.type.id}" data-style="${r.style ?? ''}" title="${r.type.name}${r.style ? ` · ${STYLE_KITS[r.style].name}` : ''}"></canvas></div><b style="color:${TIER_COLORS[r.type.tier]}">${r.type.name.toUpperCase()}</b> ${r.width}x${r.height} m · ${r.size} tiles<br>
         Style <b>${r.style ? STYLE_KITS[r.style].name : 'none'}</b>${r.styleVotes ? ` <small>(${Object.entries(r.styleVotes).filter(([, v]) => v).map(([sid, v]) => `${STYLE_KITS[sid].name} ${v}`).join(' · ') || 'no style pieces'})</small>` : ''}<br>
         Impressiveness <b>${r.impressiveness}</b> · beauty ${r.beauty}${r.finishBeauty ? ` (finishes +${r.finishBeauty})` : ''} · prestige ${Math.round(r.prestige)}${r.beds ? ` · beds ${r.beds}` : ''}<br>
         ${[r.noise ? `noise -${r.noise}` : '', r.rough ? 'raw rock walls -3' : '', r.cramped ? `cramped (needs ${r.type.minW} wide)` : '', r.seeps ? 'SEEPING' : ''].filter(Boolean).join(' · ') || 'No complaints.'}<br>
@@ -536,7 +536,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
         <div class="bk-actions"><button class="bk-test" ${ph.id === 'ready' || ph.id === 'walkthrough' ? '' : 'disabled'}>30-DAY PRESSURE TEST</button>${onHandOver ? `<button class="bk-hand" ${site.jobs.length || !site.objects.size ? 'disabled' : ''}>HAND OVER</button>` : ''}</div></div>
       <div class="bk-notes">${s.notes.slice(0, 6).map((n) => `<div>${n}</div>`).join('')}</div>`;
     const tileCv = side.querySelector('.bk-room-tile canvas'); // #117: the room's 64 px tile
-    if (tileCv) { const id = tileCv.dataset.room; if (ROOM_TILE_IDS.includes(id)) { const t = drawRoomTile(tileCv.getContext('2d'), id, 0, 0, { frame: Math.floor(getFrame() / 30) }); if (tileCv.width !== t.width) { tileCv.width = t.width; tileCv.height = t.height; drawRoomTile(tileCv.getContext('2d'), id, 0, 0, { frame: Math.floor(getFrame() / 30) }); } } else tileCv.parentElement.remove(); }
+    if (tileCv) { const id = tileCv.dataset.room; const design = DESIGN_STYLES.includes(tileCv.dataset.style) ? tileCv.dataset.style : null; if (ROOM_TILE_IDS.includes(id)) { const t = drawRoomTile(tileCv.getContext('2d'), id, 0, 0, { frame: Math.floor(getFrame() / 30), design }); if (tileCv.width !== t.width) { tileCv.width = t.width; tileCv.height = t.height; drawRoomTile(tileCv.getContext('2d'), id, 0, 0, { frame: Math.floor(getFrame() / 30), design }); } } else tileCv.parentElement.remove(); }
     side.querySelector('.bk-rat').after(resBox);
     renderResidents();
     // Days Sealed emblem (#122): 64 px native, the ring fills toward twice the 30-day pressure test

@@ -90,8 +90,9 @@ export async function inventory() {
     proc('shelter-life/days-sealed-emblem', 'UI', 'src/art/hd/shelter-life64.js', em.w, em.h, 'Days Sealed readout emblem (#122)');
   }
   const style = await art('styleArt.js');
-  proc('styled-rooms/room', 'rooms and grid tiles', 'src/art/styleArt.js', style.ROOM_PX, style.ROOM_PX, 'one room template, every style');
+  proc('styled-rooms/room', 'rooms and grid tiles', 'src/art/styleArt.js', style.ROOM_PX, style.ROOM_PX, `design-layer room: a 2x2 m cut of its 64 px tile, in ${style.ROOM_STYLES_DRAWN.length} styles (#120)`);
   const rooms = await art('hd/room-tiles.js');
+  for (const id of rooms.ROOM_TILE_IDS) { const { w, h } = rooms.roomTileSize(id); for (const d of rooms.DESIGN_STYLES) proc(`room-styles/${id}/${d}`, 'rooms and grid tiles', 'src/art/hd/room-tiles.js', w * rooms.TILE_PX_PER_M, h * rooms.TILE_PX_PER_M, `${d} style of the ${id} tile (#120)`); }
   for (const id of rooms.ROOM_TILE_IDS) { const { w, h } = rooms.roomTileSize(id); proc(`room-tiles/${id}`, 'rooms and grid tiles', 'src/art/hd/room-tiles.js', w * rooms.TILE_PX_PER_M, h * rooms.TILE_PX_PER_M, `${w}x${h} m at ${rooms.TILE_PX_PER_M} px per metre (#117), 2 frames`); }
   const base = await art('map-base.js');
   proc('map-base/world', 'map', 'src/art/map-base.js', base.BASE_W, base.BASE_H, 'painted per pixel; terrain detail on an 8 px cell layout');
