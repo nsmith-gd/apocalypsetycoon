@@ -14,6 +14,7 @@
 //   quoteLead(sales, inventory, leadId, shelterId)   -> what this lead would pay vs a walk-in
 //   redeemLead(sales, inventory, leadId, shelterId)  -> sells, consumes the lead, adds referrals
 
+import { referralMultiplier } from '../clients/traits.js';
 import { TRACK_APOCALYPSE } from '../midnight/engineered.js';
 import { WEALTH } from '../demand/demand.js';
 import { salePrice } from '../worldmap/sales.js';
@@ -78,7 +79,8 @@ export function redeemLead(sales, inventory, leadId, shelterId, cfg = REDEMPTION
   if (q.error) throw new Error(q.error);
   const record = sales.sell(q.regionId, shelterId, { lead: inventory.asBuyer(q.lead), priceBonus: q.bonus.total });
   inventory.consume(q.lead.id, { saleId: record.id });
-  const fresh = q.referrals > 0 ? sales.market.addLeads(q.regionId, q.referrals) : [];
+  const refs = q.referrals * referralMultiplier(record.traits ?? []); // #163: Influencers double referral leads
+  const fresh = refs > 0 ? sales.market.addLeads(q.regionId, refs) : [];
   record.leadId = q.lead.id;
   record.leadBonus = q.bonus.total;
   return { record, quote: q, referrals: fresh.length };

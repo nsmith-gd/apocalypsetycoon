@@ -22,6 +22,15 @@ import { MONEY } from '../config/tuning.js';
 import { ROOM_CATALOG } from '../clients/rooms.js';
 import { CLIENT_TYPES } from '../clients/clients.js';
 import { gradeShelter } from '../midnight/midnight.js';
+import { rollTraits, consult, checkDemands, salePriceFor, tunedSealed, onSaleHooks } from '../clients/traits.js';
+import { seededRng } from '../campaign/rng.js';
+
+/** A lead's client traits (#163): rolled once from the lead's own id, so they never shift the demand dice. */
+export function leadTraits(lead) {
+  if (!lead) return [];
+  if (!lead.traits) lead.traits = rollTraits(seededRng(((lead.id ?? 0) * 7919 + String(lead.region ?? '').length * 104729) >>> 0));
+  return lead.traits;
+}
 
 export const SALES = Object.freeze({
   // GDD Contract pricing: base = the shelter's dig and room cost + a 40% margin, x panic premium x class.
@@ -84,8 +93,8 @@ export class MapSales {
   _emit(evt) { for (const fn of this._listeners) fn(evt, this); }
 
   /** A shelter has finished construction (handover) and can be sold on the map. */
-  addFinished({ name, rooms = [], occupants = 6, sealed = null, inspected = false } = {}) {
-    const s = { id: `spec${++this._ids}`, name: name ?? `Spec shelter #${this._ids}`, rooms: [...rooms], occupants, ...(sealed ? { sealed } : {}), ...(inspected ? { inspected: true } : {}) }; // inspected: an Inspector walked it (#151) // sealed: a tile-built bunker's simulated Days Sealed and ratings
+  addFinished({ name, rooms = [], occupants = 6, sealed = null, inspected = false, roomTypes = null } = {}) {
+    const s = { id: `spec${++this._ids}`, name: name ?? `Spec shelter #${this._ids}`, rooms: [...rooms], occupants, ...(roomTypes ? { roomTypes: [...roomTypes] } : {}), ...(sealed ? { sealed } : {}), ...(inspected ? { inspected: true } : {}) }; // inspected: an Inspector walked it (#151) // sealed: a tile-built bunker's simulated Days Sealed and ratings
     s.value = specValue(s, this.cfg);
     this.stock.push(s);
     this._emit({ type: 'stock', shelter: s });
@@ -120,10 +129,11 @@ export class MapSales {
     if (!row) return null;
     const buyers = this.buyers(regionId);
     const best = buyers[0] ?? null;
-    const quotes = this.stock.map((s) => ({
-      shelter: s,
-      price: best ? salePrice(s, best.wealth, row.premium, this.cfg) : null,
-    }));
+    const quotes = this.stock.map((s) => {
+      if (!best) return { shelter: s, price: null };
+      const q = this.quote(regionId, s.id); // #163: the consultation's price (traits, contract demands)
+      return { shelter: s, price: q.price ?? salePrice(s, best.wealth, row.premium, this.cfg), listPrice: q.listPrice, traits: q.traits, demands: q.demands };
+    });
     return { ...row, buyerList: buyers, best, quotes };
   }
 
@@ -139,9 +149,14 @@ export class MapSales {
     if (!lead) return { error: `No buyers in ${region.name}. Calm worlds don't buy bunkers.` };
     const premium = this.overview().find((r) => r.id === regionId).premium;
     // Hook (#58): redeeming a pipeline lead adds a price bonus (src/leads/redeem.js).
-    const base = salePrice(shelter, lead.wealth, premium, this.cfg);
-    const price = pipelineLead && priceBonus ? Math.round((base * (1 + priceBonus)) / 1000) * 1000 : base;
-    return { region, shelter, lead, premium, price };
+    const base0 = salePrice(shelter, lead.wealth, premium, this.cfg);
+    const bonused = pipelineLead && priceBonus ? Math.round((base0 * (1 + priceBonus)) / 1000) * 1000 : base0;
+    // #163: the consultation reveals every trait; the contract's demands are checked against the shelter's rooms,
+    // and haggling (Penny-Pincher) and missing demands (-10% each) set the price.
+    const traits = consult(leadTraits(lead));
+    const demands = checkDemands(shelter.roomTypes ?? shelter.rooms ?? [], traits);
+    const price = salePriceFor(bonused, traits, { missing: demands.missing.length });
+    return { region, shelter, lead, premium, price, listPrice: bonused, traits, demands };
   }
 
   canSell(regionId, shelterId) { return !this.quote(regionId, shelterId).error; }
@@ -150,7 +165,7 @@ export class MapSales {
   sell(regionId, shelterId, { lead: pipelineLead = null, priceBonus = 0 } = {}) {
     const q = this.quote(regionId, shelterId, { lead: pipelineLead, priceBonus });
     if (q.error) throw new Error(q.error);
-    const { region, shelter, lead, price, premium } = q;
+    const { region, shelter, lead, price, premium, traits, demands } = q;
     if (!pipelineLead) this.market.work(lead.id); // the buyer leaves the inbox: local demand falls
     this.stock = this.stock.filter((s) => s !== shelter);
     const type = CLIENT_TYPES[lead.type];
@@ -174,11 +189,17 @@ export class MapSales {
       ratings: { air: r2(graded.ratios.air), water: r2(graded.ratios.water), food: r2(graded.ratios.food) },
       grades: { ...graded.grades },
       prestige: graded.prestige,
-      ...(shelter.sealed ? { sealed: shelter.sealed } : {}), // Midnight grades tile-built bunkers on their own sim
+      ...(shelter.sealed ? { sealed: tunedSealed(shelter.sealed, traits, { occupants: shelter.occupants }) } : {}), // Midnight grades tile-built bunkers on their own sim; #163: for THIS client (Gourmand food, Dynast mouths...)
+      traits, demandsMissing: demands.missing.map((d) => d.room),
     };
+    const hooks = onSaleHooks(traits, { grades: graded.grades });
+    record.traitHooks = hooks;
+    if (hooks.payWeeksLate) record.payWeeksLate = hooks.payWeeksLate;
     this.sold.push(record);
     this.ledger?.record('sales', `${type?.label ?? 'Client'} shelter (${region.name}): ${owner}`, price);
-    this.pushback?.onSale?.({ client: owner, price, region: region.id, leverage: lead.leverage ?? 0, inspected: !!shelter.inspected });
+    this.pushback?.onSale?.({ client: owner, price, region: region.id, leverage: (lead.leverage ?? 0) + hooks.leverage, inspected: !!shelter.inspected });
+    if (hooks.heat) this.pushback?.addHeat?.(hooks.heat, `${owner} (${hooks.heat > 0 ? 'trait' : 'philanthropy'})`);
+    this.onTraitHooks?.(hooks, record); // the campaign applies reputation and the rest
     this._emit({ type: 'sale', record, lead });
     return record;
   }

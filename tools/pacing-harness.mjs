@@ -6,6 +6,8 @@
 //   node tools/pacing-harness.mjs --bot edge --seed 3 --log   # one run, full per-quarter table
 //   node tools/pacing-harness.mjs --out <dir>     # also write CSV logs and summary.json
 //   node tools/pacing-harness.mjs --breach [--no-nudge]   # when the first breach lands (real crisis tracks, #68)
+//   node tools/pacing-harness.mjs --cadence [--bot edge --seed 1] [--out dir]   # GDD cadence rules 1-3 and 8 (#164):
+//                                every violation with its campaign time, a pass/fail summary; exit 1 on any violation
 // Exit code 1 if a check fails.
 
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -30,6 +32,32 @@ function table(rows) {
   return cells.map((row) => row.map((c, i) => c.padStart(i === cols.length - 1 ? 0 : w[i])).join('  ')).join('\n');
 }
 
+const out = opt('out');
+if (out) mkdirSync(out, { recursive: true });
+
+if (flag('cadence')) {
+  const { cadenceHarness, replayCadence, RULES } = await import('../src/debug/cadence.js');
+  const one = opt('bot') ? [replayCadence({ bot: opt('bot'), seed: Number(opt('seed', 1)) })] : null;
+  const h = one ? { runs: one, summary: RULES.map(({ key, rule }) => ({ rule, key, violations: one[0].violations[key].length, runsWith: one[0].violations[key].length ? 1 : 0, runs: 1, ok: !one[0].violations[key].length })), goalsInFlightPct: one[0].stats.goalsInFlightPct } : cadenceHarness();
+  h.ok = h.summary.every((x) => x.ok);
+  const show = flag('all') || !!one ? Infinity : 6;
+  for (const r of h.runs) {
+    console.log(`\n=== ${r.bot} #${r.seed} (${Math.floor(r.minutes / 60)}:${String(r.minutes % 60).padStart(2, '0')} played) · goals in flight ${r.stats.goalsInFlightPct}% of the time · longest dead zone ${r.stats.longestDeadZone} min`);
+    const v = r.violations;
+    const list = (title, rows, fmt) => { if (!rows.length) return; console.log(`  ${title}: ${rows.length}`); for (const x of rows.slice(0, show)) console.log(`    ${fmt(x)}`); if (rows.length > show) console.log(`    ... ${rows.length - show} more (--all)`); };
+    list('DEAD ZONES', v.deadZones, (x) => `${x.at}-${x.to}  ${x.minutes} min with nothing new (limit ${x.limit}, chapter ${x.chapter})`);
+    list('GOALS IN FLIGHT', v.goals, (x) => `${x.at}-${x.to}  ${x.missing}`);
+    list('PAIN BEFORE TOOL', v.pain, (x) => `${x.at}  ${x.tool}: ${x.issue} (problem: ${x.problem})`);
+    list('NEW SYSTEMS', v.systems, (x) => `Q${x.quarter} ${x.at}  ${x.systems.length} new systems: ${x.systems.join(', ')}`);
+  }
+  console.log('\nCADENCE RULES (GDD Pacing)');
+  for (const x of h.summary) console.log(`  ${x.ok ? 'PASS' : 'FAIL'}  ${x.rule.padEnd(46)} ${String(x.violations).padStart(4)} violation${x.violations === 1 ? '' : 's'} in ${x.runsWith}/${x.runs} runs`);
+  console.log(`  goals in flight: ${h.goalsInFlightPct}% of sampled weeks (average over runs)`);
+  if (out) writeFileSync(join(out, 'cadence.json'), JSON.stringify({ ok: h.ok, summary: h.summary, runs: h.runs.map(({ timeline, ...r }) => r) }, null, 1));
+  console.log(h.ok ? '\nPASS' : '\nFAIL');
+  process.exit(h.ok ? 0 : 1);
+}
+
 if (flag('breach')) {
   const { firstBreachHarness } = await import('../src/debug/breach-sim.js');
   const h = firstBreachHarness({ nudge: !flag('no-nudge') });
@@ -45,8 +73,6 @@ if (flag('breach')) {
   process.exit(ok ? 0 : 1);
 }
 
-const out = opt('out');
-if (out) mkdirSync(out, { recursive: true });
 
 if (opt('bot')) {
   const bot = opt('bot');

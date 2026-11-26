@@ -919,7 +919,7 @@ export class BunkerSite {
     // morale: the layout's rating blended with how the residents actually feel living here
     const mood = this.people.averageMood;
     const morale = mood == null ? s.ratings.morale : Math.round((s.ratings.morale + mood) / 2);
-    return { id: 'hq', name: this.name, owner: 'your board', occupants: s.occupants, rooms: this.legacyRooms(), sold: false, sealed: { daysSealed: s.daysSealed, ratings: { ...s.ratings, morale: Math.round(morale / 20) }, prestige: s.prestige, visibility: Math.max(0, s.visibility ?? 0), decoy: [...this.objects.values()].some((o) => o.kind === 'decoy') } };
+    return { id: 'hq', name: this.name, owner: 'your board', occupants: s.occupants, rooms: this.legacyRooms(), sold: false, sealed: { daysSealed: s.daysSealed, days: { ...s.days }, flows: { food: { ...s.flows.food }, power: { ...s.flows.power } }, occupants: s.occupants, ratings: { ...s.ratings, morale: Math.round(morale / 20) }, prestige: s.prestige, visibility: Math.max(0, s.visibility ?? 0), decoy: [...this.objects.values()].some((o) => o.kind === 'decoy') } };
   }
 
   handOver(name = 'Shelter') {
@@ -932,7 +932,7 @@ export class BunkerSite {
     if (p && used.deepest < p.minFloors) return { ok: false, reason: `A ${p.name} needs at least ${p.minFloors} floors (it has ${used.deepest})` };
     if (p?.households && (used.units < p.households.min || used.units > p.households.max)) return { ok: false, reason: `A ${p.name} is ${p.households.min}-${p.households.max} household units: floors with beds (it has ${used.units})` };
     const sh = this.toShelter();
-    const shelter = { name, rooms: sh.rooms, occupants: sh.occupants, sealed: sh.sealed, buildCost: this.spent ?? 0, product: this.product ?? null, floors: used.deepest, ...(p?.households ? { units: used.units } : {}) };
+    const shelter = { name, rooms: sh.rooms, roomTypes: [...new Set(this.simulate().rooms.map((r) => r.type?.id).filter(Boolean))], occupants: sh.occupants, sealed: sh.sealed, buildCost: this.spent ?? 0, product: this.product ?? null, floors: used.deepest, ...(p?.households ? { units: used.units } : {}) };
     this.spent = 0;
     this.handedOver += 1;
     this.reset(false);
