@@ -36,6 +36,8 @@ import { CrisisConsequences } from '../crisis/consequences.js';
 import { createContainmentUI } from '../crisis/breach-ui.js';
 import { LeadMarket, attachCrisis } from '../demand/demand.js';
 import { SchemeBoard, researchCrisis } from '../schemes/schemes.js';
+import { GovernmentContracts } from '../demand/government.js';
+import { createRevenueMixReadout } from '../ledger/revenue-mix-ui.js';
 import { MapSales } from '../worldmap/sales.js';
 import { createWorldMapScreen } from '../worldmap/worldmap-ui.js';
 import { TRACK_BY_ID, CLASSIC_ROSTER, rosterLinks, rosterPicksFromParams, slotOf, resolveTrack, hm } from '../world/tracks.js';
@@ -385,6 +387,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   market.week({ tensions: tensions() });
   attachCrisis(market, crisis); // a market week runs after every crisis week
   const schemes = new SchemeBoard({ crisis, market, ledger, pushback: pb, isUnlocked: (id) => tree.isUnlocked(id), getHeatMultiplier: () => tree.schemeHeatMult });
+  const government = new GovernmentContracts({ crisis, regions: market.regions, ledger, pushback: pb }); // #161
   // Board Probation (#18): the Minder vetoes the first scheme you try each quarter (no cost, no effect).
   const runScheme = schemes.run.bind(schemes);
   schemes.run = (...args) => {
@@ -470,7 +473,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   projectsBtn.title = `Compound (unlocks ${MEGAPROJECTS.compound.unlockAt}) and the Ark (${MEGAPROJECTS.ark.unlockAt}, from a Table lead)`;
   projectsBtn.onclick = () => megaScreen.toggle();
   root.querySelector('.view-toggle')?.prepend(projectsBtn);
-  const mapScreen = createWorldMapScreen({ root: mapView, sales: mapSales, schemes, leads, initial: 'nam', getMood: () => mood(), onScheme: () => ui.update(hudState()), onSold: () => ui.update(hudState()),
+  const mapScreen = createWorldMapScreen({ root: mapView, sales: mapSales, schemes, leads, government, initial: 'nam', getMood: () => mood(), onScheme: () => ui.update(hudState()), onSold: () => ui.update(hudState()),
     onTableLead: (lead) => { const r = megas.startArk(lead); if (r.ok) toast(r.joined ? `${lead.guest.name} joins the Ark consortium.` : 'THE ARK IS COMMISSIONED. Open PROJECTS to build it.'); return r; } });
   createContainmentUI({ root: document.body, crisis, onAdvanceWeek: () => crisis.advanceWeek() });
   crisis.on('week', () => mapScreen.refresh());
@@ -483,6 +486,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   slot.register('consequences', consequences);
   slot.register('market', market);
   slot.register('schemes', schemes);
+  slot.register('government', government);
   // Telemetry (#78): weekly meters and every event, exportable as CSV (TELEMETRY button).
   const telemetry = new Telemetry({ getTime: () => ({ quarter: clock.quarter, week: crisis.week, minutes: (clock.total / clock.quarterSeconds) * 27 }) });
   telemetry.attach({ crisis, pushback: pb, ledger, tree, schemes, mapSales });
@@ -797,11 +801,14 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     setTimeout(() => t.remove(), 2800);
   }
 
+  const revenue = createRevenueMixReadout({ root: document.body, ledger, getChapter: () => chapterOf(clock.quarter) }); // #161 debug: $ key
   session = {
+    revenue, government,
     mood, setMood: (m) => { moodForce = m; }, // #130
     difficulty: diff, clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, megas, megaScreen, shelters, world, threats, campaignMinutes, crisis, press, board, consequences, market, schemes, mapSales, mapScreen, slot, leads, social, company, story, telemetry, firstBreach,
     endings: { watch: endingWatch, end: (id) => endCampaign(id) }, // #32 debug: __game.endings.end('indicted')
     destroy() {
+      revenue.destroy();
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);
       social.screens?.destroy();

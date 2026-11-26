@@ -16,6 +16,32 @@ export const CATEGORIES = Object.freeze({
   other: { label: 'Other', icon: '.' },
 });
 
+// Revenue streams (#161, GDD Company and board > Money): every INCOME entry is also tagged with the stream it comes
+// from, so the mix can be checked against the chapter 3 targets (TUNING.revenueMix). Expenses have no stream.
+export const STREAMS = Object.freeze({
+  contracts: { label: 'Contracts' },
+  retainers: { label: 'Retainers' },
+  changeOrders: { label: 'Change orders' },
+  government: { label: 'Government contracts' },
+  kickbacks: { label: 'Scheme kickbacks' },
+  investment: { label: 'Investment rounds' },
+  other: { label: 'Other' },
+});
+const INVESTMENT = /^Investment round/;
+
+/** The stream of an income entry when the caller didn't name one (older callers and saves). */
+export function inferStream(category, label = '', amount = 0) {
+  if (!(amount > 0)) return null;
+  const l = String(label);
+  if (INVESTMENT.test(l)) return 'investment';
+  if (/kickback|payback|\bpays .* back\b/i.test(l)) return 'kickbacks';
+  if (/^government/i.test(l)) return 'government';
+  if (/retainer/i.test(l)) return 'retainers';
+  if (/change order/i.test(l)) return 'changeOrders';
+  if (category === 'sales') return 'contracts';
+  return 'other';
+}
+
 export class Ledger {
   constructor({ startingCash = 0, quarter = 1 } = {}) {
     this.startingCash = startingCash;
@@ -36,10 +62,11 @@ export class Ledger {
     this.emit();
   }
 
-  record(category, label, amount) {
+  record(category, label, amount, { stream = null } = {}) {
     if (!CATEGORIES[category]) category = 'other';
     if (!Number.isFinite(amount) || amount === 0) return null;
     const entry = { quarter: this.quarter, category, label: String(label), amount: Math.round(amount) };
+    if (amount > 0) entry.stream = STREAMS[stream] ? stream : inferStream(category, label, amount); // #161
     this.entries.push(entry);
     this.emit(entry);
     return entry;
@@ -79,6 +106,23 @@ export class Ledger {
     const out = {};
     for (const e of this.entries) if (e.quarter === quarter) out[e.category] = (out[e.category] ?? 0) + e.amount;
     return out;
+  }
+
+  /**
+   * Income by revenue stream (#161) over quarters [from, to] (default: all), with each stream's share of income.
+   * -> { total, streams: { contracts: { amount, share }, ... } }
+   */
+  streamShares({ from = 1, to = Infinity } = {}) {
+    const streams = Object.fromEntries(Object.keys(STREAMS).map((k) => [k, { amount: 0, share: 0 }]));
+    let total = 0;
+    for (const e of this.entries) {
+      if (!(e.amount > 0) || e.quarter < from || e.quarter > to) continue;
+      const k = e.stream ?? inferStream(e.category, e.label, e.amount) ?? 'other';
+      streams[STREAMS[k] ? k : 'other'].amount += e.amount;
+      total += e.amount;
+    }
+    for (const v of Object.values(streams)) v.share = total ? Math.round((v.amount / total) * 1000) / 1000 : 0;
+    return { total, streams };
   }
 
   /** One row per quarter played so far: opening, income, expenses, net, closing. */
