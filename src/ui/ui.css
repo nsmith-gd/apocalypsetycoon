@@ -310,3 +310,18 @@
 .research-card[data-status='done'] .rc-effects { color: var(--at-green); }
 .research-card[data-afford='true'] { border-color: var(--at-gold); }
 .toast-fund .toast-title { color: #8a5a1a; }
+
+/* ---------- Revenue mix debug readout (#161) ---------- */
+.rev-mix { position: fixed; left: 12px; bottom: 56px; z-index: 130; background: rgba(10, 8, 7, 0.94); color: var(--at-ink); border: 1px solid #4fa391; padding: 8px 10px; font: 12px var(--at-font); }
+.rev-mix[hidden] { display: none; }
+.rev-head { color: #8fd0b8; letter-spacing: 2px; margin-bottom: 4px; }
+.rev-head small { color: var(--at-dim); letter-spacing: 0; margin-left: 6px; }
+.rev-mix table { border-collapse: collapse; }
+.rev-mix th, .rev-mix td { padding: 1px 8px 1px 0; text-align: right; white-space: nowrap; }
+.rev-mix th:first-child, .rev-mix td:first-child { text-align: left; }
+.rev-mix th { color: var(--at-dim); font-weight: 400; }
+.rev-mix tr[data-off='low'] td:nth-child(3) { color: #8fd3ff; }
+.rev-mix tr[data-off='high'] td:nth-child(3) { color: var(--at-amber); }
+.rev-mix tr[data-off='ok'] td:nth-child(3) { color: var(--at-green); }
+.rev-foot { color: var(--at-dim); margin-top: 4px; }
+.wm-kick { color: #7ed957; font-weight: 400; }

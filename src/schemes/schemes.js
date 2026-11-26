@@ -42,6 +42,10 @@ export const SCHEMES = Object.freeze([
   { id: 'deepfake', name: 'Deepfake broadcast', track: 'war', cost: 2_000_000, tension: 20, heat: 18, leads: 1.5, research: true, blurb: 'A president says the quiet part loud.' },
   { id: 'shortage', name: 'Engineered shortage', track: 'markets', cost: 3_000_000, tension: 26, heat: 20, leads: 2, research: true, blurb: 'Empty shelves sell full bunkers.' },
   { id: 'blackout', name: 'Grid blackout', track: 'unrest', cost: 5_000_000, tension: 35, heat: 30, leads: 3, research: true, blurb: 'Lights out. Phones ring.' },
+  // #161 scheme kickbacks (GDD Money: "Arms Broker, Gentrify and similar"; World > scheme catalogue): the money
+  // comes back the following week, booked in the 'kickbacks' revenue stream.
+  { id: 'armsbroker', name: 'Arms Broker', track: 'war', cost: 1_000_000, tension: 15, heat: 8, leads: 1, payback: 2_000_000, kickback: '$2M back', blurb: 'Both sides need ammunition. You take a cut.' },
+  { id: 'gentrify', name: 'Gentrify', track: 'unrest', cost: 2_000_000, tension: 10, heat: 6, leads: 0.5, payback: 3_000_000, kickback: '$3M in land', blurb: 'Buy the block. Price out the neighbours.' },
 ]);
 
 const clamp = (v, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
@@ -72,15 +76,27 @@ export class SchemeBoard {
     this.runsThisWeek = {}; // schemeId -> count, reset each crisis week
     this.log = [];
     this._listeners = new Set();
-    this._offWeek = crisis.on?.('week', () => { this.runsThisWeek = {}; this._emit({ type: 'week' }); });
+    this.pendingKickbacks = []; // #161: { scheme, label, amount, due } paid at the next crisis week
+    this._offWeek = crisis.on?.('week', () => { this.runsThisWeek = {}; this.payKickbacks(); this._emit({ type: 'week' }); });
   }
 
   onChange(fn) { this._listeners.add(fn); return () => this._listeners.delete(fn); }
   _emit(e) { for (const fn of this._listeners) fn(e, this); }
 
   /** Save slot (#80). */
-  toJSON() { return { runsThisWeek: { ...this.runsThisWeek }, log: this.log.map((x) => ({ ...x })) }; }
-  load(d = {}) { this.runsThisWeek = { ...(d.runsThisWeek ?? {}) }; this.log = (d.log ?? []).map((x) => ({ ...x })); this._emit({ type: 'load' }); }
+  toJSON() { return { runsThisWeek: { ...this.runsThisWeek }, log: this.log.map((x) => ({ ...x })), pendingKickbacks: this.pendingKickbacks.map((k) => ({ ...k })) }; }
+  load(d = {}) { this.runsThisWeek = { ...(d.runsThisWeek ?? {}) }; this.log = (d.log ?? []).map((x) => ({ ...x })); this.pendingKickbacks = (d.pendingKickbacks ?? []).map((k) => ({ ...k })); this._emit({ type: 'load' }); }
+
+  /** Pay kickbacks that are due (#161). */
+  payKickbacks() {
+    const week = this.crisis.week;
+    const due = this.pendingKickbacks.filter((k) => k.due <= week);
+    if (!due.length) return [];
+    this.pendingKickbacks = this.pendingKickbacks.filter((k) => k.due > week);
+    for (const k of due) this.ledger?.record('schemes', k.label, k.amount, { stream: 'kickbacks' });
+    this._emit({ type: 'kickback', paid: due });
+    return due;
+  }
 
   region(id) { return this.regions.find((r) => r.id === id) ?? null; }
   scheme(id) { return this.schemes.find((s) => s.id === id) ?? null; }
@@ -153,6 +169,7 @@ export class SchemeBoard {
       scheme: s, region, track: t.id, cost: offer.cost, gain: offer.gain, before, after: t.tension, leads,
       enteredEdge: !wasBrink && t.state === 'brink', breached, fled,
     };
+    if (s.payback) this.pendingKickbacks.push({ scheme: s.id, label: `${s.name} kickback (${region.name})`, amount: s.payback, due: this.crisis.week + 1 });
     this.log.push({ week: this.crisis.week, scheme: s.id, region: regionId, gain: offer.gain, breached });
     this._emit({ type: 'run', ...result });
     return result;
