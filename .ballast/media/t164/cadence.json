@@ -1,0 +1,5169 @@
+{
+ "ok": false,
+ "summary": [
+  {
+   "rule": "1. Pain before tool",
+   "key": "pain",
+   "violations": 51,
+   "runsWith": 9,
+   "runs": 9,
+   "ok": false
+  },
+  {
+   "rule": "2. No dead zones (8 min in ch. 1-2, 12 after)",
+   "key": "deadZones",
+   "violations": 198,
+   "runsWith": 9,
+   "runs": 9,
+   "ok": false
+  },
+  {
+   "rule": "3. Two goals in flight",
+   "key": "goals",
+   "violations": 504,
+   "runsWith": 9,
+   "runs": 9,
+   "ok": false
+  },
+  {
+   "rule": "8. One new system per quarter",
+   "key": "systems",
+   "violations": 0,
+   "runsWith": 0,
+   "runs": 9,
+   "ok": true
+  }
+ ],
+ "runs": [
+  {
+   "bot": "cautious",
+   "seed": 1,
+   "minutes": 324,
+   "violations": {
+    "pain": [
+     {
+      "at": "0:56",
+      "tool": "Spin doctors (scheme heat -25%)",
+      "problem": "heat reaches 50 (an investigation)",
+      "issue": "tool on the shelf, problem never appeared"
+     },
+     {
+      "at": "0:00",
+      "tool": "A second crew",
+      "problem": "buyers waiting with nothing in stock (a build backlog)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:27"
+     },
+     {
+      "at": "0:04",
+      "tool": "Tunnel boring machine",
+      "problem": "a build backlog with two crews",
+      "issue": "tool before pain: on the shelf at 0:04, problem at 0:27"
+     },
+     {
+      "at": "0:00",
+      "tool": "HEPA Scrubber Bay",
+      "problem": "The Bloom opens (spores)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:56"
+     },
+     {
+      "at": "0:00",
+      "tool": "Battery Bank, Solar Mast",
+      "problem": "Superstorm Season opens (fuel and grid failures)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 1:58"
+     },
+     {
+      "at": "0:00",
+      "tool": "Hydroponics Bay",
+      "problem": "The Hush opens (food chains fail)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 3:21"
+     }
+    ],
+    "deadZones": [
+     {
+      "at": "0:00",
+      "to": "0:13",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:13",
+      "to": "0:25",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:27",
+      "to": "0:37",
+      "minutes": 10.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:40",
+      "to": "0:50",
+      "minutes": 10.3,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "1:02",
+      "to": "1:15",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:15",
+      "to": "1:27",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:27",
+      "to": "1:40",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:40",
+      "to": "1:52",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "2:05",
+      "to": "2:17",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:17",
+      "to": "2:30",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:42",
+      "to": "2:55",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:55",
+      "to": "3:07",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:07",
+      "to": "3:19",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:32",
+      "to": "3:44",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:44",
+      "to": "3:57",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:57",
+      "to": "4:09",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:09",
+      "to": "4:22",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:22",
+      "to": "4:34",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:34",
+      "to": "4:47",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:47",
+      "to": "4:59",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:59",
+      "to": "5:12",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "5:12",
+      "to": "5:24",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     }
+    ],
+    "goals": [
+     {
+      "at": "0:00",
+      "to": "0:04",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:06",
+      "to": "0:06",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:08",
+      "to": "0:12",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:15",
+      "to": "0:19",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:21",
+      "to": "0:23",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:25",
+      "to": "0:31",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:33",
+      "to": "0:35",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:39",
+      "to": "0:39",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:42",
+      "to": "0:42",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:44",
+      "to": "0:44",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:50",
+      "to": "0:50",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:52",
+      "to": "0:52",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:54",
+      "to": "0:56",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:58",
+      "to": "1:00",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:02",
+      "to": "1:09",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:11",
+      "to": "1:15",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:17",
+      "to": "1:21",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:23",
+      "to": "1:23",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:27",
+      "to": "1:33",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:36",
+      "to": "1:40",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:42",
+      "to": "1:46",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:48",
+      "to": "1:52",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:54",
+      "to": "1:58",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:00",
+      "to": "2:03",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:05",
+      "to": "2:11",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:13",
+      "to": "2:17",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:19",
+      "to": "2:23",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:25",
+      "to": "2:27",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:30",
+      "to": "2:30",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "2:32",
+      "to": "2:32",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:34",
+      "to": "2:36",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "2:38",
+      "to": "2:40",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:42",
+      "to": "2:48",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:50",
+      "to": "2:54",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:57",
+      "to": "3:01",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:03",
+      "to": "3:05",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:07",
+      "to": "3:13",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:15",
+      "to": "3:19",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:21",
+      "to": "3:26",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:28",
+      "to": "3:30",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:32",
+      "to": "3:38",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:40",
+      "to": "3:42",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:44",
+      "to": "3:51",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:53",
+      "to": "3:57",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:59",
+      "to": "4:03",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:05",
+      "to": "4:07",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:09",
+      "to": "4:15",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:18",
+      "to": "4:22",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:24",
+      "to": "4:28",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:30",
+      "to": "4:34",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:36",
+      "to": "4:40",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:42",
+      "to": "4:45",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:47",
+      "to": "4:53",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:55",
+      "to": "4:59",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:01",
+      "to": "5:05",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:07",
+      "to": "5:09",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:12",
+      "to": "5:18",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:20",
+      "to": "5:22",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     }
+    ],
+    "systems": []
+   },
+   "stats": {
+    "goalsInFlightPct": 3,
+    "novelty": 110,
+    "firsts": [
+     {
+      "system": "Threat tracks",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Schemes",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Research",
+      "minute": 2.08,
+      "quarter": 1
+     },
+     {
+      "system": "Pushback cards (heat, leverage)",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Breaches and containment",
+      "minute": 151.62,
+      "quarter": 6
+     }
+    ],
+    "longestDeadZone": 12.5
+   }
+  },
+  {
+   "bot": "cautious",
+   "seed": 2,
+   "minutes": 324,
+   "violations": {
+    "pain": [
+     {
+      "at": "0:56",
+      "tool": "Spin doctors (scheme heat -25%)",
+      "problem": "heat reaches 50 (an investigation)",
+      "issue": "tool on the shelf, problem never appeared"
+     },
+     {
+      "at": "0:00",
+      "tool": "A second crew",
+      "problem": "buyers waiting with nothing in stock (a build backlog)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:27"
+     },
+     {
+      "at": "0:04",
+      "tool": "Tunnel boring machine",
+      "problem": "a build backlog with two crews",
+      "issue": "tool before pain: on the shelf at 0:04, problem at 0:27"
+     },
+     {
+      "at": "0:00",
+      "tool": "HEPA Scrubber Bay",
+      "problem": "The Bloom opens (spores)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:56"
+     },
+     {
+      "at": "0:00",
+      "tool": "Battery Bank, Solar Mast",
+      "problem": "Superstorm Season opens (fuel and grid failures)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 1:58"
+     },
+     {
+      "at": "0:00",
+      "tool": "Hydroponics Bay",
+      "problem": "The Hush opens (food chains fail)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 3:21"
+     }
+    ],
+    "deadZones": [
+     {
+      "at": "0:00",
+      "to": "0:13",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:13",
+      "to": "0:25",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:27",
+      "to": "0:37",
+      "minutes": 10.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:40",
+      "to": "0:50",
+      "minutes": 10.3,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "1:02",
+      "to": "1:15",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:15",
+      "to": "1:27",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:27",
+      "to": "1:40",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:40",
+      "to": "1:52",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "2:05",
+      "to": "2:17",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:17",
+      "to": "2:30",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:42",
+      "to": "2:55",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:55",
+      "to": "3:07",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:07",
+      "to": "3:19",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:32",
+      "to": "3:44",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:44",
+      "to": "3:57",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:57",
+      "to": "4:09",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:09",
+      "to": "4:22",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:22",
+      "to": "4:34",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:34",
+      "to": "4:47",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:47",
+      "to": "4:59",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:59",
+      "to": "5:12",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "5:12",
+      "to": "5:24",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     }
+    ],
+    "goals": [
+     {
+      "at": "0:00",
+      "to": "0:04",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:06",
+      "to": "0:06",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:08",
+      "to": "0:12",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:15",
+      "to": "0:19",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:21",
+      "to": "0:23",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:25",
+      "to": "0:31",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:33",
+      "to": "0:35",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:39",
+      "to": "0:39",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:42",
+      "to": "0:42",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:44",
+      "to": "0:44",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:50",
+      "to": "0:50",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:52",
+      "to": "0:52",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:54",
+      "to": "0:56",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:58",
+      "to": "1:00",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:02",
+      "to": "1:09",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:11",
+      "to": "1:15",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:17",
+      "to": "1:21",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:23",
+      "to": "1:23",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:27",
+      "to": "1:33",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:36",
+      "to": "1:40",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:42",
+      "to": "1:46",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:48",
+      "to": "1:52",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:54",
+      "to": "1:58",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:00",
+      "to": "2:03",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:05",
+      "to": "2:11",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:13",
+      "to": "2:17",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:19",
+      "to": "2:23",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:25",
+      "to": "2:27",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:30",
+      "to": "2:30",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "2:32",
+      "to": "2:32",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:34",
+      "to": "2:36",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "2:38",
+      "to": "2:40",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:42",
+      "to": "2:48",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:50",
+      "to": "2:54",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:57",
+      "to": "3:01",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:03",
+      "to": "3:05",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:07",
+      "to": "3:13",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:15",
+      "to": "3:19",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:21",
+      "to": "3:26",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:28",
+      "to": "3:30",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:32",
+      "to": "3:38",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:40",
+      "to": "3:42",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:44",
+      "to": "3:51",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:53",
+      "to": "3:57",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:59",
+      "to": "4:03",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:05",
+      "to": "4:07",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:09",
+      "to": "4:15",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:18",
+      "to": "4:22",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:24",
+      "to": "4:28",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:30",
+      "to": "4:34",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:36",
+      "to": "4:40",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:42",
+      "to": "4:45",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:47",
+      "to": "4:53",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:55",
+      "to": "4:59",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:01",
+      "to": "5:05",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:07",
+      "to": "5:09",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:12",
+      "to": "5:18",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:20",
+      "to": "5:22",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     }
+    ],
+    "systems": []
+   },
+   "stats": {
+    "goalsInFlightPct": 3,
+    "novelty": 110,
+    "firsts": [
+     {
+      "system": "Threat tracks",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Schemes",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Research",
+      "minute": 2.08,
+      "quarter": 1
+     },
+     {
+      "system": "Pushback cards (heat, leverage)",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Breaches and containment",
+      "minute": 151.62,
+      "quarter": 6
+     }
+    ],
+    "longestDeadZone": 12.5
+   }
+  },
+  {
+   "bot": "cautious",
+   "seed": 3,
+   "minutes": 324,
+   "violations": {
+    "pain": [
+     {
+      "at": "0:56",
+      "tool": "Spin doctors (scheme heat -25%)",
+      "problem": "heat reaches 50 (an investigation)",
+      "issue": "tool on the shelf, problem never appeared"
+     },
+     {
+      "at": "0:00",
+      "tool": "A second crew",
+      "problem": "buyers waiting with nothing in stock (a build backlog)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:27"
+     },
+     {
+      "at": "0:04",
+      "tool": "Tunnel boring machine",
+      "problem": "a build backlog with two crews",
+      "issue": "tool before pain: on the shelf at 0:04, problem at 0:27"
+     },
+     {
+      "at": "0:00",
+      "tool": "HEPA Scrubber Bay",
+      "problem": "The Bloom opens (spores)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:56"
+     },
+     {
+      "at": "0:00",
+      "tool": "Battery Bank, Solar Mast",
+      "problem": "Superstorm Season opens (fuel and grid failures)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 1:58"
+     },
+     {
+      "at": "0:00",
+      "tool": "Hydroponics Bay",
+      "problem": "The Hush opens (food chains fail)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 3:21"
+     }
+    ],
+    "deadZones": [
+     {
+      "at": "0:00",
+      "to": "0:13",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:13",
+      "to": "0:25",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:27",
+      "to": "0:37",
+      "minutes": 10.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:40",
+      "to": "0:50",
+      "minutes": 10.3,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "1:02",
+      "to": "1:15",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:15",
+      "to": "1:27",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:27",
+      "to": "1:40",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:40",
+      "to": "1:52",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "2:05",
+      "to": "2:17",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:17",
+      "to": "2:30",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:42",
+      "to": "2:55",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:55",
+      "to": "3:07",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:07",
+      "to": "3:19",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:32",
+      "to": "3:44",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:44",
+      "to": "3:57",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:57",
+      "to": "4:09",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:09",
+      "to": "4:22",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:22",
+      "to": "4:34",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:34",
+      "to": "4:47",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:47",
+      "to": "4:59",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:59",
+      "to": "5:12",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "5:12",
+      "to": "5:24",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     }
+    ],
+    "goals": [
+     {
+      "at": "0:00",
+      "to": "0:04",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:06",
+      "to": "0:06",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:08",
+      "to": "0:12",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:15",
+      "to": "0:19",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:21",
+      "to": "0:23",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:25",
+      "to": "0:31",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:33",
+      "to": "0:35",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:39",
+      "to": "0:39",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:42",
+      "to": "0:42",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:44",
+      "to": "0:44",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:50",
+      "to": "0:50",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:52",
+      "to": "0:52",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:54",
+      "to": "0:56",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:58",
+      "to": "1:00",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:02",
+      "to": "1:09",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:11",
+      "to": "1:15",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:17",
+      "to": "1:21",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:23",
+      "to": "1:23",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:27",
+      "to": "1:33",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:36",
+      "to": "1:40",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:42",
+      "to": "1:46",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:48",
+      "to": "1:52",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:54",
+      "to": "1:58",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:00",
+      "to": "2:03",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:05",
+      "to": "2:11",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:13",
+      "to": "2:17",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:19",
+      "to": "2:23",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:25",
+      "to": "2:27",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:30",
+      "to": "2:30",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "2:32",
+      "to": "2:32",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:34",
+      "to": "2:36",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "2:38",
+      "to": "2:40",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:42",
+      "to": "2:48",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:50",
+      "to": "2:54",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:57",
+      "to": "3:01",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:03",
+      "to": "3:05",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:07",
+      "to": "3:13",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:15",
+      "to": "3:19",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:21",
+      "to": "3:26",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:28",
+      "to": "3:30",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:32",
+      "to": "3:38",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:40",
+      "to": "3:42",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:44",
+      "to": "3:51",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:53",
+      "to": "3:57",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:59",
+      "to": "4:03",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:05",
+      "to": "4:07",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:09",
+      "to": "4:15",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:18",
+      "to": "4:22",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:24",
+      "to": "4:28",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:30",
+      "to": "4:34",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:36",
+      "to": "4:40",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:42",
+      "to": "4:45",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:47",
+      "to": "4:53",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:55",
+      "to": "4:59",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:01",
+      "to": "5:05",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:07",
+      "to": "5:09",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:12",
+      "to": "5:18",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:20",
+      "to": "5:22",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     }
+    ],
+    "systems": []
+   },
+   "stats": {
+    "goalsInFlightPct": 3,
+    "novelty": 110,
+    "firsts": [
+     {
+      "system": "Threat tracks",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Schemes",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Research",
+      "minute": 2.08,
+      "quarter": 1
+     },
+     {
+      "system": "Pushback cards (heat, leverage)",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Breaches and containment",
+      "minute": 151.62,
+      "quarter": 6
+     }
+    ],
+    "longestDeadZone": 12.5
+   }
+  },
+  {
+   "bot": "edge",
+   "seed": 1,
+   "minutes": 324,
+   "violations": {
+    "pain": [
+     {
+      "at": "0:33",
+      "tool": "Spin doctors (scheme heat -25%)",
+      "problem": "heat reaches 50 (an investigation)",
+      "issue": "tool on the shelf, problem never appeared"
+     },
+     {
+      "at": "0:00",
+      "tool": "A second crew",
+      "problem": "buyers waiting with nothing in stock (a build backlog)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:27"
+     },
+     {
+      "at": "0:00",
+      "tool": "HEPA Scrubber Bay",
+      "problem": "The Bloom opens (spores)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:56"
+     },
+     {
+      "at": "0:00",
+      "tool": "Battery Bank, Solar Mast",
+      "problem": "Superstorm Season opens (fuel and grid failures)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 1:58"
+     },
+     {
+      "at": "0:00",
+      "tool": "Hydroponics Bay",
+      "problem": "The Hush opens (food chains fail)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 3:21"
+     }
+    ],
+    "deadZones": [
+     {
+      "at": "0:00",
+      "to": "0:13",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:13",
+      "to": "0:25",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:29",
+      "to": "0:37",
+      "minutes": 8.3,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:37",
+      "to": "0:50",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "1:02",
+      "to": "1:15",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:15",
+      "to": "1:27",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:27",
+      "to": "1:40",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:40",
+      "to": "1:52",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "2:05",
+      "to": "2:17",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:17",
+      "to": "2:30",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:42",
+      "to": "2:55",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:55",
+      "to": "3:07",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:07",
+      "to": "3:19",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:32",
+      "to": "3:44",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:44",
+      "to": "3:57",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:57",
+      "to": "4:09",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:09",
+      "to": "4:22",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:22",
+      "to": "4:34",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:34",
+      "to": "4:47",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:47",
+      "to": "4:59",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:59",
+      "to": "5:12",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "5:12",
+      "to": "5:24",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     }
+    ],
+    "goals": [
+     {
+      "at": "0:00",
+      "to": "0:06",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:08",
+      "to": "0:12",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:15",
+      "to": "0:19",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:21",
+      "to": "0:23",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:25",
+      "to": "0:25",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:27",
+      "to": "0:31",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:39",
+      "to": "0:42",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:44",
+      "to": "0:44",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:46",
+      "to": "0:46",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:50",
+      "to": "0:56",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:58",
+      "to": "1:00",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:02",
+      "to": "1:09",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:11",
+      "to": "1:15",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:17",
+      "to": "1:21",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:23",
+      "to": "1:25",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:27",
+      "to": "1:33",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:36",
+      "to": "1:40",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:42",
+      "to": "1:46",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:48",
+      "to": "1:52",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:54",
+      "to": "1:58",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:00",
+      "to": "2:03",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:05",
+      "to": "2:11",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:13",
+      "to": "2:17",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:19",
+      "to": "2:23",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:25",
+      "to": "2:27",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:30",
+      "to": "2:32",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:34",
+      "to": "2:36",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "2:40",
+      "to": "2:40",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:42",
+      "to": "2:48",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:50",
+      "to": "2:54",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:57",
+      "to": "3:01",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:03",
+      "to": "3:05",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:07",
+      "to": "3:13",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:15",
+      "to": "3:19",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:21",
+      "to": "3:26",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:28",
+      "to": "3:30",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:32",
+      "to": "3:38",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:40",
+      "to": "3:42",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:44",
+      "to": "3:51",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:53",
+      "to": "3:57",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:59",
+      "to": "4:03",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:05",
+      "to": "4:07",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:09",
+      "to": "4:15",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:18",
+      "to": "4:22",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:24",
+      "to": "4:28",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:30",
+      "to": "4:34",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:36",
+      "to": "4:40",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:42",
+      "to": "4:45",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:47",
+      "to": "4:53",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:55",
+      "to": "4:59",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:01",
+      "to": "5:05",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:07",
+      "to": "5:09",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:12",
+      "to": "5:18",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:20",
+      "to": "5:22",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     }
+    ],
+    "systems": []
+   },
+   "stats": {
+    "goalsInFlightPct": 3,
+    "novelty": 119,
+    "firsts": [
+     {
+      "system": "Threat tracks",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Schemes",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Research",
+      "minute": 33.23,
+      "quarter": 2
+     },
+     {
+      "system": "Pushback cards (heat, leverage)",
+      "minute": 135,
+      "quarter": 5
+     },
+     {
+      "system": "Breaches and containment",
+      "minute": 151.62,
+      "quarter": 6
+     }
+    ],
+    "longestDeadZone": 12.5
+   }
+  },
+  {
+   "bot": "edge",
+   "seed": 2,
+   "minutes": 324,
+   "violations": {
+    "pain": [
+     {
+      "at": "0:33",
+      "tool": "Spin doctors (scheme heat -25%)",
+      "problem": "heat reaches 50 (an investigation)",
+      "issue": "tool on the shelf, problem never appeared"
+     },
+     {
+      "at": "0:00",
+      "tool": "A second crew",
+      "problem": "buyers waiting with nothing in stock (a build backlog)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:27"
+     },
+     {
+      "at": "0:00",
+      "tool": "HEPA Scrubber Bay",
+      "problem": "The Bloom opens (spores)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:56"
+     },
+     {
+      "at": "0:00",
+      "tool": "Battery Bank, Solar Mast",
+      "problem": "Superstorm Season opens (fuel and grid failures)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 1:58"
+     },
+     {
+      "at": "0:00",
+      "tool": "Hydroponics Bay",
+      "problem": "The Hush opens (food chains fail)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 3:21"
+     }
+    ],
+    "deadZones": [
+     {
+      "at": "0:00",
+      "to": "0:13",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:13",
+      "to": "0:25",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:29",
+      "to": "0:37",
+      "minutes": 8.3,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:37",
+      "to": "0:50",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "1:02",
+      "to": "1:15",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:15",
+      "to": "1:27",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:27",
+      "to": "1:40",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:40",
+      "to": "1:52",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "2:05",
+      "to": "2:17",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:17",
+      "to": "2:30",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:42",
+      "to": "2:55",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:55",
+      "to": "3:07",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:07",
+      "to": "3:19",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:32",
+      "to": "3:44",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:44",
+      "to": "3:57",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:57",
+      "to": "4:09",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:09",
+      "to": "4:22",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:22",
+      "to": "4:34",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:34",
+      "to": "4:47",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:47",
+      "to": "4:59",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:59",
+      "to": "5:12",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "5:12",
+      "to": "5:24",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     }
+    ],
+    "goals": [
+     {
+      "at": "0:00",
+      "to": "0:06",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:08",
+      "to": "0:12",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:15",
+      "to": "0:19",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:21",
+      "to": "0:23",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:25",
+      "to": "0:25",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:27",
+      "to": "0:31",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:39",
+      "to": "0:42",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:44",
+      "to": "0:44",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:46",
+      "to": "0:46",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:50",
+      "to": "0:56",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:58",
+      "to": "1:00",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:02",
+      "to": "1:09",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:11",
+      "to": "1:15",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:17",
+      "to": "1:21",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:23",
+      "to": "1:25",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:27",
+      "to": "1:33",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:36",
+      "to": "1:40",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:42",
+      "to": "1:46",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:48",
+      "to": "1:52",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:54",
+      "to": "1:58",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:00",
+      "to": "2:03",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:05",
+      "to": "2:11",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:13",
+      "to": "2:17",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:19",
+      "to": "2:23",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:25",
+      "to": "2:27",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:30",
+      "to": "2:32",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:34",
+      "to": "2:36",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "2:40",
+      "to": "2:40",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:42",
+      "to": "2:48",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:50",
+      "to": "2:54",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:57",
+      "to": "3:01",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:03",
+      "to": "3:05",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:07",
+      "to": "3:13",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:15",
+      "to": "3:19",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:21",
+      "to": "3:26",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:28",
+      "to": "3:30",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:32",
+      "to": "3:38",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:40",
+      "to": "3:42",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:44",
+      "to": "3:51",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:53",
+      "to": "3:57",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:59",
+      "to": "4:03",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:05",
+      "to": "4:07",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:09",
+      "to": "4:15",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:18",
+      "to": "4:22",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:24",
+      "to": "4:28",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:30",
+      "to": "4:34",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:36",
+      "to": "4:40",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:42",
+      "to": "4:45",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:47",
+      "to": "4:53",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:55",
+      "to": "4:59",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:01",
+      "to": "5:05",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:07",
+      "to": "5:09",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:12",
+      "to": "5:18",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:20",
+      "to": "5:22",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     }
+    ],
+    "systems": []
+   },
+   "stats": {
+    "goalsInFlightPct": 3,
+    "novelty": 119,
+    "firsts": [
+     {
+      "system": "Threat tracks",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Schemes",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Research",
+      "minute": 33.23,
+      "quarter": 2
+     },
+     {
+      "system": "Pushback cards (heat, leverage)",
+      "minute": 135,
+      "quarter": 5
+     },
+     {
+      "system": "Breaches and containment",
+      "minute": 151.62,
+      "quarter": 6
+     }
+    ],
+    "longestDeadZone": 12.5
+   }
+  },
+  {
+   "bot": "edge",
+   "seed": 3,
+   "minutes": 324,
+   "violations": {
+    "pain": [
+     {
+      "at": "0:33",
+      "tool": "Spin doctors (scheme heat -25%)",
+      "problem": "heat reaches 50 (an investigation)",
+      "issue": "tool on the shelf, problem never appeared"
+     },
+     {
+      "at": "0:00",
+      "tool": "A second crew",
+      "problem": "buyers waiting with nothing in stock (a build backlog)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:27"
+     },
+     {
+      "at": "0:00",
+      "tool": "HEPA Scrubber Bay",
+      "problem": "The Bloom opens (spores)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:56"
+     },
+     {
+      "at": "0:00",
+      "tool": "Battery Bank, Solar Mast",
+      "problem": "Superstorm Season opens (fuel and grid failures)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 1:58"
+     },
+     {
+      "at": "0:00",
+      "tool": "Hydroponics Bay",
+      "problem": "The Hush opens (food chains fail)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 3:21"
+     }
+    ],
+    "deadZones": [
+     {
+      "at": "0:00",
+      "to": "0:13",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:13",
+      "to": "0:25",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:29",
+      "to": "0:37",
+      "minutes": 8.3,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:37",
+      "to": "0:50",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "1:02",
+      "to": "1:15",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:15",
+      "to": "1:27",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:27",
+      "to": "1:40",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:40",
+      "to": "1:52",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "2:05",
+      "to": "2:17",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:17",
+      "to": "2:30",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:42",
+      "to": "2:55",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:55",
+      "to": "3:07",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:07",
+      "to": "3:19",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:32",
+      "to": "3:44",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:44",
+      "to": "3:57",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:57",
+      "to": "4:09",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:09",
+      "to": "4:22",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:22",
+      "to": "4:34",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:34",
+      "to": "4:47",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:47",
+      "to": "4:59",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:59",
+      "to": "5:12",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "5:12",
+      "to": "5:24",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     }
+    ],
+    "goals": [
+     {
+      "at": "0:00",
+      "to": "0:06",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:08",
+      "to": "0:12",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:15",
+      "to": "0:19",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:21",
+      "to": "0:23",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:25",
+      "to": "0:25",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:27",
+      "to": "0:31",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:39",
+      "to": "0:42",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:44",
+      "to": "0:44",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:46",
+      "to": "0:46",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:50",
+      "to": "0:56",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:58",
+      "to": "1:00",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:02",
+      "to": "1:09",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:11",
+      "to": "1:15",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:17",
+      "to": "1:21",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:23",
+      "to": "1:25",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:27",
+      "to": "1:33",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:36",
+      "to": "1:40",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:42",
+      "to": "1:46",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:48",
+      "to": "1:52",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:54",
+      "to": "1:58",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:00",
+      "to": "2:03",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:05",
+      "to": "2:11",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:13",
+      "to": "2:17",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:19",
+      "to": "2:23",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:25",
+      "to": "2:27",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:30",
+      "to": "2:32",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:34",
+      "to": "2:36",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "2:40",
+      "to": "2:40",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:42",
+      "to": "2:48",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:50",
+      "to": "2:54",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:57",
+      "to": "3:01",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:03",
+      "to": "3:05",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:07",
+      "to": "3:13",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:15",
+      "to": "3:19",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:21",
+      "to": "3:26",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:28",
+      "to": "3:30",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:32",
+      "to": "3:38",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:40",
+      "to": "3:42",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:44",
+      "to": "3:51",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:53",
+      "to": "3:57",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:59",
+      "to": "4:03",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:05",
+      "to": "4:07",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:09",
+      "to": "4:15",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:18",
+      "to": "4:22",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:24",
+      "to": "4:28",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:30",
+      "to": "4:34",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:36",
+      "to": "4:40",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:42",
+      "to": "4:45",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:47",
+      "to": "4:53",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:55",
+      "to": "4:59",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:01",
+      "to": "5:05",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:07",
+      "to": "5:09",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:12",
+      "to": "5:18",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:20",
+      "to": "5:22",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     }
+    ],
+    "systems": []
+   },
+   "stats": {
+    "goalsInFlightPct": 3,
+    "novelty": 119,
+    "firsts": [
+     {
+      "system": "Threat tracks",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Schemes",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Research",
+      "minute": 33.23,
+      "quarter": 2
+     },
+     {
+      "system": "Pushback cards (heat, leverage)",
+      "minute": 135,
+      "quarter": 5
+     },
+     {
+      "system": "Breaches and containment",
+      "minute": 151.62,
+      "quarter": 6
+     }
+    ],
+    "longestDeadZone": 12.5
+   }
+  },
+  {
+   "bot": "luxury",
+   "seed": 1,
+   "minutes": 324,
+   "violations": {
+    "pain": [
+     {
+      "at": "0:33",
+      "tool": "Spin doctors (scheme heat -25%)",
+      "problem": "heat reaches 50 (an investigation)",
+      "issue": "tool on the shelf, problem never appeared"
+     },
+     {
+      "at": "0:00",
+      "tool": "A second crew",
+      "problem": "buyers waiting with nothing in stock (a build backlog)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:27"
+     },
+     {
+      "at": "0:04",
+      "tool": "Tunnel boring machine",
+      "problem": "a build backlog with two crews",
+      "issue": "tool before pain: on the shelf at 0:04, problem at 0:27"
+     },
+     {
+      "at": "0:00",
+      "tool": "HEPA Scrubber Bay",
+      "problem": "The Bloom opens (spores)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:56"
+     },
+     {
+      "at": "0:00",
+      "tool": "Battery Bank, Solar Mast",
+      "problem": "Superstorm Season opens (fuel and grid failures)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 1:58"
+     },
+     {
+      "at": "0:00",
+      "tool": "Hydroponics Bay",
+      "problem": "The Hush opens (food chains fail)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 3:21"
+     }
+    ],
+    "deadZones": [
+     {
+      "at": "0:00",
+      "to": "0:13",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:13",
+      "to": "0:25",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:29",
+      "to": "0:37",
+      "minutes": 8.3,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:37",
+      "to": "0:50",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "1:02",
+      "to": "1:15",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:15",
+      "to": "1:27",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:27",
+      "to": "1:40",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:40",
+      "to": "1:52",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "2:05",
+      "to": "2:17",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:17",
+      "to": "2:30",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:42",
+      "to": "2:55",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:55",
+      "to": "3:07",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:07",
+      "to": "3:19",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:32",
+      "to": "3:44",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:44",
+      "to": "3:57",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:57",
+      "to": "4:09",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:09",
+      "to": "4:22",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:22",
+      "to": "4:34",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:34",
+      "to": "4:47",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:47",
+      "to": "4:59",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:59",
+      "to": "5:12",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "5:12",
+      "to": "5:24",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     }
+    ],
+    "goals": [
+     {
+      "at": "0:00",
+      "to": "0:04",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:06",
+      "to": "0:06",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:08",
+      "to": "0:12",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:15",
+      "to": "0:19",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:21",
+      "to": "0:23",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:25",
+      "to": "0:25",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:27",
+      "to": "0:31",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:33",
+      "to": "0:33",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:39",
+      "to": "0:39",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:42",
+      "to": "0:44",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:46",
+      "to": "0:46",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:50",
+      "to": "0:56",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:58",
+      "to": "1:00",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:02",
+      "to": "1:09",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:11",
+      "to": "1:15",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:17",
+      "to": "1:21",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:23",
+      "to": "1:25",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:27",
+      "to": "1:33",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:36",
+      "to": "1:40",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:42",
+      "to": "1:46",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:48",
+      "to": "1:52",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:54",
+      "to": "1:58",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:00",
+      "to": "2:03",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:05",
+      "to": "2:11",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:13",
+      "to": "2:17",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:19",
+      "to": "2:23",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:25",
+      "to": "2:27",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:30",
+      "to": "2:32",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:34",
+      "to": "2:36",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "2:40",
+      "to": "2:40",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:42",
+      "to": "2:48",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:50",
+      "to": "2:54",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:57",
+      "to": "3:01",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:03",
+      "to": "3:05",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:07",
+      "to": "3:13",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:15",
+      "to": "3:19",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:21",
+      "to": "3:26",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:28",
+      "to": "3:30",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:32",
+      "to": "3:38",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:40",
+      "to": "3:42",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:44",
+      "to": "3:51",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:53",
+      "to": "3:57",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:59",
+      "to": "4:03",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:05",
+      "to": "4:07",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:09",
+      "to": "4:15",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:18",
+      "to": "4:22",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:24",
+      "to": "4:28",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:30",
+      "to": "4:34",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:36",
+      "to": "4:40",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:42",
+      "to": "4:45",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:47",
+      "to": "4:53",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:55",
+      "to": "4:59",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:01",
+      "to": "5:05",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:07",
+      "to": "5:09",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:12",
+      "to": "5:18",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:20",
+      "to": "5:22",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     }
+    ],
+    "systems": []
+   },
+   "stats": {
+    "goalsInFlightPct": 3,
+    "novelty": 119,
+    "firsts": [
+     {
+      "system": "Threat tracks",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Schemes",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Research",
+      "minute": 2.08,
+      "quarter": 1
+     },
+     {
+      "system": "Pushback cards (heat, leverage)",
+      "minute": 135,
+      "quarter": 5
+     },
+     {
+      "system": "Breaches and containment",
+      "minute": 151.62,
+      "quarter": 6
+     }
+    ],
+    "longestDeadZone": 12.5
+   }
+  },
+  {
+   "bot": "luxury",
+   "seed": 2,
+   "minutes": 324,
+   "violations": {
+    "pain": [
+     {
+      "at": "0:33",
+      "tool": "Spin doctors (scheme heat -25%)",
+      "problem": "heat reaches 50 (an investigation)",
+      "issue": "tool on the shelf, problem never appeared"
+     },
+     {
+      "at": "0:00",
+      "tool": "A second crew",
+      "problem": "buyers waiting with nothing in stock (a build backlog)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:27"
+     },
+     {
+      "at": "0:04",
+      "tool": "Tunnel boring machine",
+      "problem": "a build backlog with two crews",
+      "issue": "tool before pain: on the shelf at 0:04, problem at 0:27"
+     },
+     {
+      "at": "0:00",
+      "tool": "HEPA Scrubber Bay",
+      "problem": "The Bloom opens (spores)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:56"
+     },
+     {
+      "at": "0:00",
+      "tool": "Battery Bank, Solar Mast",
+      "problem": "Superstorm Season opens (fuel and grid failures)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 1:58"
+     },
+     {
+      "at": "0:00",
+      "tool": "Hydroponics Bay",
+      "problem": "The Hush opens (food chains fail)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 3:21"
+     }
+    ],
+    "deadZones": [
+     {
+      "at": "0:00",
+      "to": "0:13",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:13",
+      "to": "0:25",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:29",
+      "to": "0:37",
+      "minutes": 8.3,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:37",
+      "to": "0:50",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "1:02",
+      "to": "1:15",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:15",
+      "to": "1:27",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:27",
+      "to": "1:40",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:40",
+      "to": "1:52",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "2:05",
+      "to": "2:17",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:17",
+      "to": "2:30",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:42",
+      "to": "2:55",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:55",
+      "to": "3:07",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:07",
+      "to": "3:19",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:32",
+      "to": "3:44",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:44",
+      "to": "3:57",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:57",
+      "to": "4:09",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:09",
+      "to": "4:22",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:22",
+      "to": "4:34",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:34",
+      "to": "4:47",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:47",
+      "to": "4:59",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:59",
+      "to": "5:12",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "5:12",
+      "to": "5:24",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     }
+    ],
+    "goals": [
+     {
+      "at": "0:00",
+      "to": "0:04",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:06",
+      "to": "0:06",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:08",
+      "to": "0:12",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:15",
+      "to": "0:19",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:21",
+      "to": "0:23",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:25",
+      "to": "0:25",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:27",
+      "to": "0:31",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:33",
+      "to": "0:33",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:39",
+      "to": "0:39",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:42",
+      "to": "0:44",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:46",
+      "to": "0:46",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:50",
+      "to": "0:56",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:58",
+      "to": "1:00",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:02",
+      "to": "1:09",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:11",
+      "to": "1:15",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:17",
+      "to": "1:21",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:23",
+      "to": "1:25",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:27",
+      "to": "1:33",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:36",
+      "to": "1:40",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:42",
+      "to": "1:46",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:48",
+      "to": "1:52",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:54",
+      "to": "1:58",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:00",
+      "to": "2:03",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:05",
+      "to": "2:11",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:13",
+      "to": "2:17",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:19",
+      "to": "2:23",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:25",
+      "to": "2:27",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:30",
+      "to": "2:32",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:34",
+      "to": "2:36",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "2:40",
+      "to": "2:40",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:42",
+      "to": "2:48",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:50",
+      "to": "2:54",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:57",
+      "to": "3:01",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:03",
+      "to": "3:05",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:07",
+      "to": "3:13",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:15",
+      "to": "3:19",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:21",
+      "to": "3:26",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:28",
+      "to": "3:30",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:32",
+      "to": "3:38",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:40",
+      "to": "3:42",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:44",
+      "to": "3:51",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:53",
+      "to": "3:57",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:59",
+      "to": "4:03",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:05",
+      "to": "4:07",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:09",
+      "to": "4:15",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:18",
+      "to": "4:22",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:24",
+      "to": "4:28",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:30",
+      "to": "4:34",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:36",
+      "to": "4:40",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:42",
+      "to": "4:45",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:47",
+      "to": "4:53",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:55",
+      "to": "4:59",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:01",
+      "to": "5:05",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:07",
+      "to": "5:09",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:12",
+      "to": "5:18",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:20",
+      "to": "5:22",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     }
+    ],
+    "systems": []
+   },
+   "stats": {
+    "goalsInFlightPct": 3,
+    "novelty": 119,
+    "firsts": [
+     {
+      "system": "Threat tracks",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Schemes",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Research",
+      "minute": 2.08,
+      "quarter": 1
+     },
+     {
+      "system": "Pushback cards (heat, leverage)",
+      "minute": 135,
+      "quarter": 5
+     },
+     {
+      "system": "Breaches and containment",
+      "minute": 151.62,
+      "quarter": 6
+     }
+    ],
+    "longestDeadZone": 12.5
+   }
+  },
+  {
+   "bot": "luxury",
+   "seed": 3,
+   "minutes": 324,
+   "violations": {
+    "pain": [
+     {
+      "at": "0:33",
+      "tool": "Spin doctors (scheme heat -25%)",
+      "problem": "heat reaches 50 (an investigation)",
+      "issue": "tool on the shelf, problem never appeared"
+     },
+     {
+      "at": "0:00",
+      "tool": "A second crew",
+      "problem": "buyers waiting with nothing in stock (a build backlog)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:27"
+     },
+     {
+      "at": "0:04",
+      "tool": "Tunnel boring machine",
+      "problem": "a build backlog with two crews",
+      "issue": "tool before pain: on the shelf at 0:04, problem at 0:27"
+     },
+     {
+      "at": "0:00",
+      "tool": "HEPA Scrubber Bay",
+      "problem": "The Bloom opens (spores)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 0:56"
+     },
+     {
+      "at": "0:00",
+      "tool": "Battery Bank, Solar Mast",
+      "problem": "Superstorm Season opens (fuel and grid failures)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 1:58"
+     },
+     {
+      "at": "0:00",
+      "tool": "Hydroponics Bay",
+      "problem": "The Hush opens (food chains fail)",
+      "issue": "tool before pain: on the shelf at 0:00, problem at 3:21"
+     }
+    ],
+    "deadZones": [
+     {
+      "at": "0:00",
+      "to": "0:13",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:13",
+      "to": "0:25",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:29",
+      "to": "0:37",
+      "minutes": 8.3,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "0:37",
+      "to": "0:50",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 1
+     },
+     {
+      "at": "1:02",
+      "to": "1:15",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:15",
+      "to": "1:27",
+      "minutes": 12.4,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:27",
+      "to": "1:40",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "1:40",
+      "to": "1:52",
+      "minutes": 12.5,
+      "limit": 8,
+      "chapter": 2
+     },
+     {
+      "at": "2:05",
+      "to": "2:17",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:17",
+      "to": "2:30",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:42",
+      "to": "2:55",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "2:55",
+      "to": "3:07",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:07",
+      "to": "3:19",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 3
+     },
+     {
+      "at": "3:32",
+      "to": "3:44",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:44",
+      "to": "3:57",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "3:57",
+      "to": "4:09",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:09",
+      "to": "4:22",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:22",
+      "to": "4:34",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 4
+     },
+     {
+      "at": "4:34",
+      "to": "4:47",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:47",
+      "to": "4:59",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "4:59",
+      "to": "5:12",
+      "minutes": 12.4,
+      "limit": 12,
+      "chapter": 5
+     },
+     {
+      "at": "5:12",
+      "to": "5:24",
+      "minutes": 12.5,
+      "limit": 12,
+      "chapter": 5
+     }
+    ],
+    "goals": [
+     {
+      "at": "0:00",
+      "to": "0:04",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:06",
+      "to": "0:06",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:08",
+      "to": "0:12",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:15",
+      "to": "0:19",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:21",
+      "to": "0:23",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:25",
+      "to": "0:25",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:27",
+      "to": "0:31",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:33",
+      "to": "0:33",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:39",
+      "to": "0:39",
+      "minutes": 2.1,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "0:42",
+      "to": "0:44",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:46",
+      "to": "0:46",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:50",
+      "to": "0:56",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "0:58",
+      "to": "1:00",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:02",
+      "to": "1:09",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:11",
+      "to": "1:15",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:17",
+      "to": "1:21",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:23",
+      "to": "1:25",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:27",
+      "to": "1:33",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:36",
+      "to": "1:40",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:42",
+      "to": "1:46",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:48",
+      "to": "1:52",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "1:54",
+      "to": "1:58",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:00",
+      "to": "2:03",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:05",
+      "to": "2:11",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:13",
+      "to": "2:17",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:19",
+      "to": "2:23",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:25",
+      "to": "2:27",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:30",
+      "to": "2:32",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:34",
+      "to": "2:36",
+      "minutes": 4.2,
+      "missing": "no contract deadline within 5 min"
+     },
+     {
+      "at": "2:40",
+      "to": "2:40",
+      "minutes": 2.1,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:42",
+      "to": "2:48",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:50",
+      "to": "2:54",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "2:57",
+      "to": "3:01",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:03",
+      "to": "3:05",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:07",
+      "to": "3:13",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:15",
+      "to": "3:19",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:21",
+      "to": "3:26",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:28",
+      "to": "3:30",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:32",
+      "to": "3:38",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:40",
+      "to": "3:42",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:44",
+      "to": "3:51",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:53",
+      "to": "3:57",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "3:59",
+      "to": "4:03",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:05",
+      "to": "4:07",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:09",
+      "to": "4:15",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:18",
+      "to": "4:22",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:24",
+      "to": "4:28",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:30",
+      "to": "4:34",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:36",
+      "to": "4:40",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:42",
+      "to": "4:45",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:47",
+      "to": "4:53",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "4:55",
+      "to": "4:59",
+      "minutes": 6.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:01",
+      "to": "5:05",
+      "minutes": 6.2,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:07",
+      "to": "5:09",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:12",
+      "to": "5:18",
+      "minutes": 8.3,
+      "missing": "no contract deadline within 5 min; no research node or band edge within 3 min"
+     },
+     {
+      "at": "5:20",
+      "to": "5:22",
+      "minutes": 4.2,
+      "missing": "no research node or band edge within 3 min"
+     }
+    ],
+    "systems": []
+   },
+   "stats": {
+    "goalsInFlightPct": 3,
+    "novelty": 119,
+    "firsts": [
+     {
+      "system": "Threat tracks",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Schemes",
+      "minute": 27,
+      "quarter": 1
+     },
+     {
+      "system": "Research",
+      "minute": 2.08,
+      "quarter": 1
+     },
+     {
+      "system": "Pushback cards (heat, leverage)",
+      "minute": 135,
+      "quarter": 5
+     },
+     {
+      "system": "Breaches and containment",
+      "minute": 151.62,
+      "quarter": 6
+     }
+    ],
+    "longestDeadZone": 12.5
+   }
+  }
+ ]
+}
