@@ -102,7 +102,7 @@ function layersAt(s) {
 }
 
 // onTableLead(lead) -> { ok, reason }: The Table's (C5) leads can commission the Ark (#143).
-export function createWorldMapScreen({ root, sales, schemes = null, leads = null, onSold, onScheme, initial = null, getMood = () => moodOf(), onTableLead = null }) {
+export function createWorldMapScreen({ root, sales, schemes = null, leads = null, government = null, onSold, onScheme, initial = null, getMood = () => moodOf(), onTableLead = null }) {
   root.classList.add('wm');
   const mapWrap = el('div', 'wm-map');
   // #109: two stacked canvases. Underneath, the terrain painted at a higher resolution (each terrain pixel is 2
@@ -341,6 +341,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     if (v.buyerList.length > shown) buyers.append(el('li', 'wm-dim', `+${v.buyerList.length - shown} more`));
     if (!v.buyerList.length) buyers.append(el('li', 'wm-dim', "Nobody here is scared enough to buy. Calm worlds don't buy bunkers."));
     panel.append(buyers);
+    if (government) { government.refresh(); const g = governmentBlock(v); if (g) panel.append(g); }
     if (schemes) panel.append(schemesBlock(v));
     if (leads) panel.append(leadsBlock(v));
     panel.append(stockBlock(v));
@@ -389,6 +390,31 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
     return wrap;
   }
 
+  // #161: government shelter contracts, offered while a track this region is exposed to sits at its Brink
+  function governmentBlock(v) {
+    const offers = government.offersIn(v.id);
+    if (!offers.length) return null;
+    const wrap = el('div', 'wm-gov');
+    wrap.append(el('h3', 'wm-h3', 'GOVERNMENT CONTRACT'));
+    for (const o of offers) {
+      const row = el('div', 'wm-scheme wm-gov-row');
+      const left = Math.max(0, o.expires - government.week);
+      row.innerHTML = `<div><div class="wm-card-name">${o.shelters} volume shelters for the state</div><div class="wm-dim">${o.trackName} is at the Brink · low prestige · heat ${o.heat} · offer ends in ${left}wk</div></div>`;
+      const b = el('button', 'wm-fund wm-sign');
+      b.type = 'button';
+      b.innerHTML = `SIGN <b>+${formatMoney(o.price)}</b>`;
+      b.onclick = () => {
+        const r = government.sign(o.id);
+        if (r.ok) flash = { kind: 'ok', msg: `Signed: ${o.shelters} government shelters in ${o.regionName}. +${formatMoney(o.price)}, heat ${o.heat}.` };
+        onSold?.(r);
+        refresh();
+      };
+      row.append(b);
+      wrap.append(row);
+    }
+    return wrap;
+  }
+
   function schemesBlock(v) {
     const wrap = el('div', 'wm-schemes');
     wrap.append(el('h3', 'wm-h3', `SCHEMES IN ${v.name.toUpperCase()}`));
@@ -397,7 +423,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       const row = el('div', 'wm-scheme');
       row.dataset.locked = String(o.locked);
       const risky = !o.reason && o.track.tension + o.gain >= o.track.tipLow;
-      row.innerHTML = `<div><div class="wm-card-name">${o.scheme.name}</div><div class="wm-dim">${o.track.name} <b class="wm-gain">+${o.gain}</b> here (${o.exposure}) · heat +${o.heat}${risky ? ' · <b class="wm-risk">MAY TIP IT</b>' : ''}</div></div>`;
+      row.innerHTML = `<div><div class="wm-card-name">${o.scheme.name}</div><div class="wm-dim">${o.track.name} <b class="wm-gain">+${o.gain}</b> here (${o.exposure}) · heat +${o.heat}${o.scheme.kickback ? ` · <span class="wm-kick">kickback ${o.scheme.kickback} next week</span>` : ''}${risky ? ' · <b class="wm-risk">MAY TIP IT</b>' : ''}</div></div>`;
       const b = el('button', 'wm-fund');
       b.type = 'button';
       if (o.reason) { b.disabled = true; b.textContent = o.locked ? 'R&D' : 'BLOCKED'; b.title = o.reason; }
@@ -566,6 +592,7 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
   const offLeads = leads?.onChange?.(() => refresh());
   const offMarket = sales.market.on('week', () => { flash = null; refresh(); });
   const offSchemes = schemes?.onChange((e) => { if (e.type !== 'run') refresh(); });
+  const offGov = government?.onChange((e) => { if (e.type === 'offer') refresh(); });
   refresh();
   raf = requestAnimationFrame(loop);
   requestAnimationFrame?.(() => fitMap());
@@ -605,6 +632,6 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       x.drawImage(canvas, 0, 0);
       return c;
     },
-    destroy() { cancelAnimationFrame(raf); clearTimeout(baseTimer); ro?.disconnect(); removeEventListener('resize', fitMap); offDpr(); off(); offLeads?.(); offMarket(); offSchemes?.(); root.replaceChildren(); },
+    destroy() { cancelAnimationFrame(raf); clearTimeout(baseTimer); ro?.disconnect(); removeEventListener('resize', fitMap); offDpr(); off(); offLeads?.(); offMarket(); offSchemes?.(); offGov?.(); root.replaceChildren(); },
   };
 }

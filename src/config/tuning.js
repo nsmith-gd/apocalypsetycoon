@@ -32,6 +32,11 @@ export const TUNING = {
   condoGossip: 0.1, // per week toward the highest resident
   retainer: 0.04, // of build price per quarter
   changeOrderMarkup: 0.15,
+  // GDD Company and board > Money (#161): target share of income in chapter 3, per revenue stream
+  revenueMix: { contracts: 0.55, retainers: 0.15, changeOrders: 0.10, government: 0.10, kickbacks: 0.05, investment: 0.05 },
+  // GDD Core loop (#161): government shelter contracts in regions exposed to a Brink track: high volume, low
+  // prestige, heat -1 each. Size and price are stand-ins (the GDD gives none): a block of plain volume shelters.
+  government: { shelters: 6, pricePerShelter: 350_000, heat: -1, prestige: 0, exposures: ['high', 'medium'], offerWeeks: 4, maxOpen: 3 },
   brinkCosts: { heatPerWeekPerTrack: 1, volatility: 3, volatilityLastResort: 6 },
   repeatCalming: { penalty: 0.25, windowWeeks: 8 },
   fragility: { perFloorMinute: 1, tippingFloor: 72 },
