@@ -46,6 +46,8 @@ import { finaleArgs } from '../midnight/finale.js';
 import { EndingWatch } from '../midnight/endings.js';
 import { epilogues, buildLedger } from '../midnight/epilogues.js';
 import { showFinale } from '../midnight/endings-ui.js';
+import { quarterHooks } from '../clients/traits.js';
+import { seededRng } from './rng.js';
 import { Company } from '../company/company.js';
 import { createCompanyPanel } from '../company/company-panel.js';
 import { StoryBeats } from '../story/beats.js';
@@ -410,6 +412,29 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     });
     if (id) endCampaign(id);
   });
+  // Client traits (#163): reputation from a sale, Penny-Pincher's late balance, and the quarterly pushback hooks.
+  mapSales.onTraitHooks = (hooks, rec) => {
+    if (hooks.reputation) crisis.reputation = Math.max(0, Math.min(100, crisis.reputation + hooks.reputation));
+    if (hooks.payWeeksLate) { // pays late: half now (already in the sale), the rest when the weeks are up
+      const owed = Math.round(rec.price / 2);
+      ledger.record('sales', `${rec.owner} pays late: ${hooks.payWeeksLate} weeks`, -owed);
+      rec.owed = owed; rec.owedWeeks = hooks.payWeeksLate;
+    }
+  };
+  crisis.on('week', () => {
+    for (const rec of mapSales.sold) if (rec.owed && --rec.owedWeeks <= 0) { ledger.record('sales', `${rec.owner} finally pays the balance`, rec.owed); rec.owed = 0; }
+  });
+  const traitRng = seededRng(worldSeed + 163);
+  const traitQuarter = () => {
+    const notes = [];
+    for (const rec of mapSales.sold) {
+      if (!rec.traits?.length) continue;
+      const q = quarterHooks(rec, { rng: traitRng });
+      if (q.heat) { pb.addHeat(q.heat, `${rec.owner} leaks to followers`); notes.push(`${rec.owner} posted about the shelter: heat +${q.heat}. An NDA stops it.`); }
+      if (q.defaulted) { rec.retainerDefaults = (rec.retainerDefaults ?? 0) + 1; const c = pb.clients?.find((x) => x.name === rec.owner); if (c) c.leverage = Math.max(0, c.leverage - 10); notes.push(`${rec.owner} quietly missed the retainer. Secretly broke: their leverage over you drops.`); }
+    }
+    return notes;
+  };
   // Your leads: people met at events (director note D2). Redeemed on the world map for better sales (#58).
   const leads = new LeadInventory({ getQuarter: () => clock.quarter, getReputation: () => crisis.reputation });
   slot.register('leads', leads);
@@ -565,7 +590,7 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     const r = pb.endQuarter({ quarter, profit: ledger.summary(quarter).net });
     telemetry.quota(quarter, { met: review.met, target: review.quota, profit: review.revenue, strikes: 0 });
     audio.play(review.met ? 'boardMet' : 'boardMiss');
-    await ui.showQuarterReport({ quarter, heat: pb.heat, tension: pb.tension, notes: [...consequences.drainNotes(), ...review.lines.slice(1), ...r.lines],
+    await ui.showQuarterReport({ quarter, heat: pb.heat, tension: pb.tension, notes: [...consequences.drainNotes(), ...review.lines.slice(1), ...r.lines, ...traitQuarter()],
       board: { met: review.met, revenue: review.revenue, target: review.quota, state: review.stateLabel, average: review.average } });
     await pbui.drain();
     if (board.ousted) { endCampaign('ousted'); return; } // #32: the Ousted ending card (was showOusted)

@@ -93,3 +93,10 @@
 /* Controlled burn (#93) */
 .wm-burn { margin-top: 3px; font: 900 10px var(--at-font); padding: 3px 6px; color: #fff1a8; background: #6b1f1a; border: 2px solid var(--at-border); cursor: pointer; letter-spacing: 1px; }
 .wm-burn:hover { background: var(--at-red); color: var(--at-paper-ink); }
+
+/* #163 client traits */
+.wm-traits { font-size: 10px; color: var(--at-dim); letter-spacing: 1px; width: 100%; }
+.wm-buyers li { flex-wrap: wrap; }
+.wm-contract { margin: 4px 0; font-size: 11px; }
+.wm-contract .wm-miss { color: var(--at-red); }
+.wm-contract .wm-met { color: var(--at-green); }

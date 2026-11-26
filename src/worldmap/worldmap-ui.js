@@ -9,6 +9,9 @@
 // Draws on the shared art renderer (src/art/worldmap.js) and splits its placeholder "Asia" into
 // Middle East / South Asia / East Asia, so all eight demand regions are clickable.
 
+import { TRAITS, visibleTraits } from '../clients/traits.js';
+import { leadTraits } from './sales.js';
+import { GDD_ROOM_BY_ID } from '../catalog/rooms.js';
 import { quoteLead, redeemLead } from '../leads/redeem.js';
 import { regionAt as artRegionAt, crisisOverlay, MAP_W, MAP_H, MAP_COLS, MAP_ROWS, CELL } from '../art/worldmap.js';
 import { MAP_MARKERS, CRISIS_OVERLAYS } from '../art/sprites-map.js';
@@ -336,6 +339,9 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       const li = el('li');
       const weeksLeft = sales.market.cfg.rivalAfterWeeks - (sales.market.weekNo - l.week);
       li.innerHTML = `<span>${i === 0 ? '▶ ' : ''}${CLIENT_TYPES[l.type]?.label ?? l.type} <em class="wm-w-${l.wealth}">${l.wealth}</em></span><small data-late="${weeksLeft <= 1}">${weeksLeft}wk</small>`;
+      const tr = visibleTraits(leadTraits(l)); // #163: traits seen before the consultation; hidden ones show as ???
+      li.append(el('div', 'wm-traits', tr.map((t) => t.name).join(' · ')));
+      li.title = tr.filter((t) => t.id).map((t) => `${t.name}: ${t.effect}. ${t.hook}.`).join('\n');
       buyers.append(li);
     }
     if (v.buyerList.length > shown) buyers.append(el('li', 'wm-dim', `+${v.buyerList.length - shown} more`));
@@ -445,6 +451,14 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       if (v) {
         const btn = el('button', 'wm-sell');
         btn.type = 'button';
+        if (quote?.price && quote.traits) { // #163: the consultation: every trait, and what the contract demands
+          const d = quote.demands;
+          const info = el('div', 'wm-contract');
+          info.innerHTML = `<div class="wm-dim">Consultation: ${quote.traits.map((t) => `<b title="${TRAITS[t.id].effect}. ${TRAITS[t.id].hook}.">${TRAITS[t.id].name}</b>`).join(' · ')}</div>`
+            + (d.demands.length ? `<div class="wm-dim">Contract demands: ${d.demands.map((x) => `<span class="${d.missing.includes(x) ? 'wm-miss' : 'wm-met'}">${GDD_ROOM_BY_ID[x.room]?.name ?? x.room} ${d.missing.includes(x) ? '✗' : '✓'}</span>`).join(', ')}${d.missing.length ? ` <em>(-${d.missing.length * 10}%)</em>` : ''}</div>` : '')
+            + (quote.listPrice && quote.listPrice !== quote.price ? `<div class="wm-dim">List ${formatMoney(quote.listPrice)}, agreed ${formatMoney(quote.price)}</div>` : '');
+          card.append(info);
+        }
         if (quote?.price) {
           btn.innerHTML = `SELL <b>${formatMoney(quote.price)}</b>`;
           btn.title = `Sell to the ${CLIENT_TYPES[v.best.type]?.label ?? 'client'} (${v.best.wealth})`;
@@ -535,7 +549,8 @@ export function createWorldMapScreen({ root, sales, schemes = null, leads = null
       const p = MAP_PLACES[selected];
       floaters.push({ text: formatMoney(rec.price), x: p.at[0] * CELL, y: p.at[1] * CELL - 10, color: HEX.L, t: 0 });
       floaters.push({ text: '-1', x: p.at[0] * CELL + 10, y: p.at[1] * CELL + 10, color: HEX.R, t: 0 });
-      flash = { kind: 'ok', msg: `Sold ${rec.name} to ${rec.owner} (${CLIENT_TYPES[rec.clientType]?.label ?? rec.clientType}) for ${formatMoney(rec.price)}.` };
+      const ta = rec.sealed?.traitAdjusted; // #163: the shelter's Days Sealed for THIS client
+      flash = { kind: 'ok', msg: `Sold ${rec.name} to ${rec.owner} (${CLIENT_TYPES[rec.clientType]?.label ?? rec.clientType}) for ${formatMoney(rec.price)}.${ta ? ` With their household it lasts ${Math.round(rec.sealed.daysSealed)} days sealed, not ${Math.round(ta.before)}${ta.foodMult > 1 ? ` (they eat ${ta.foodMult}× the food)` : ''}${ta.extraMouths ? ` (+${ta.extraMouths} mouths)` : ''}.` : ''}${rec.payWeeksLate ? ` They'll pay the balance ${rec.payWeeksLate} weeks late.` : ''}` };
       onSold?.(rec);
     } catch (err) {
       flash = { kind: 'err', msg: err.message };

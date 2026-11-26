@@ -12,3 +12,14 @@
 - Demo: `demo/clients-demo.html`.
 - Integration: the world map should call `generateOrder` per region and pass its crisis price curve as `priceMultiplier`;
   the shelter grid can hand its placed room ids to `deliver`.
+
+## Client traits (#163)
+- `traits.js`: the GDD's sixteen traits as data (`TRAITS`: effect, pushback hook and the numbers), `rollTraits` (1-3, no
+  clashing pairs, Control Freak / Secretly Broke / Knows Too Much / Feuding hidden until the consultation), and the rules:
+  `contractDemands` / `checkDemands`, `tunedSealed` (Days Sealed for this client: Gourmand 1.5x food, Dynast and Pet
+  Parent extra mouths, Collector climate power), `salePriceFor` (Penny-Pincher -15%, Doomer Romantic -20%, -10% per
+  missing demand), `onSaleHooks` (leverage, heat, reputation, late payment...), `quarterHooks` (Influencer leaks,
+  Secretly Broke defaults), `fearWeight`, `referralMultiplier`, `daysRequirement`, `sharedSiloMorale`.
+- World map (`src/worldmap/sales.js`): every map lead gets traits from its own id (`leadTraits`), so the demand dice
+  don't move. The quote is the consultation (all traits revealed, demands checked); the sale applies price, Days Sealed
+  and the hooks. Campaign: reputation, late balances (half paid when the weeks are up) and the quarterly hooks.
