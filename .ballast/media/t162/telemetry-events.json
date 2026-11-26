@@ -1,0 +1,107 @@
+[
+ {
+  "quarter": 1,
+  "week": 0,
+  "minutes": 0.02,
+  "type": "tutorial_step",
+  "step": "dig",
+  "seconds": 3
+ },
+ {
+  "quarter": 1,
+  "week": 0,
+  "minutes": 0.02,
+  "type": "tutorial_step",
+  "step": "airlock",
+  "seconds": 4
+ },
+ {
+  "quarter": 1,
+  "week": 0,
+  "minutes": 0.02,
+  "type": "milestone",
+  "milestone": "firstRoom",
+  "seconds": 5,
+  "target": 60,
+  "met": true,
+  "tutorial": true
+ },
+ {
+  "quarter": 1,
+  "week": 0,
+  "minutes": 0.02,
+  "type": "tutorial_step",
+  "step": "bunk",
+  "seconds": 5
+ },
+ {
+  "quarter": 1,
+  "week": 0,
+  "minutes": 0.02,
+  "type": "milestone",
+  "milestone": "firstContract",
+  "seconds": 5,
+  "target": 180,
+  "met": true,
+  "tutorial": true
+ },
+ {
+  "quarter": 1,
+  "week": 0,
+  "minutes": 0.02,
+  "type": "tutorial_step",
+  "step": "sign",
+  "seconds": 5
+ },
+ {
+  "quarter": 1,
+  "week": 0,
+  "minutes": 0.02,
+  "type": "tutorial_step",
+  "step": "survive",
+  "seconds": 6
+ },
+ {
+  "quarter": 1,
+  "week": 0,
+  "minutes": 0.02,
+  "type": "tutorial_step",
+  "step": "hookup",
+  "seconds": 7
+ },
+ {
+  "quarter": 1,
+  "week": 0,
+  "minutes": 0.02,
+  "type": "tutorial_step",
+  "step": "build",
+  "seconds": 8
+ },
+ {
+  "quarter": 1,
+  "week": 0,
+  "minutes": 0.02,
+  "type": "milestone",
+  "milestone": "firstHandover",
+  "seconds": 9,
+  "target": 720,
+  "met": true,
+  "tutorial": true
+ },
+ {
+  "quarter": 1,
+  "week": 0,
+  "minutes": 0.02,
+  "type": "tutorial_step",
+  "step": "handover",
+  "seconds": 9
+ },
+ {
+  "quarter": 1,
+  "week": 0,
+  "minutes": 0.02,
+  "type": "tutorial_step",
+  "step": "sell",
+  "seconds": 12
+ }
+]
