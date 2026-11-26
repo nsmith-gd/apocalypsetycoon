@@ -59,6 +59,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
   const toolBtns = {};
   for (const [id, label, key] of TOOLS) {
     const b = el('button', 'bk-tool', label);
+    b.dataset.tool = id;
     b.title = `${label} [${key}]`;
     b.onclick = () => { tool = id; sync(); };
     toolBtns[id] = b;
@@ -130,6 +131,7 @@ export function createBunkerUI({ mount, grid: site, getFrame = () => 0, onToast 
     for (const id of ids) {
       const o = OBJECTS[id];
       const b = el('button', 'bk-obj');
+      b.dataset.kind = id; // tutorial highlight (#162)
       b.innerHTML = `<i style="background:${CAT_COLORS[o.cat]}"></i><span>${o.name}</span><small>${o.w}x${o.h} ${k(o.cost)}${o.minDepth ? ` ${o.minDepth}m+` : o.surface ? ' top' : ''}</small>`;
       b.title = describe(o);
       b.onclick = () => { tool = id; sync(); };

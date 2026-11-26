@@ -38,6 +38,8 @@ import { LeadMarket, attachCrisis } from '../demand/demand.js';
 import { SchemeBoard, researchCrisis } from '../schemes/schemes.js';
 import { GovernmentContracts } from '../demand/government.js';
 import { createRevenueMixReadout } from '../ledger/revenue-mix-ui.js';
+import { Tutorial } from '../tutorial/tutorial.js';
+import { createTutorialUI } from '../tutorial/tutorial-ui.js';
 import { MapSales } from '../worldmap/sales.js';
 import { createWorldMapScreen } from '../worldmap/worldmap-ui.js';
 import { TRACK_BY_ID, CLASSIC_ROSTER, rosterLinks, rosterPicksFromParams, slotOf, resolveTrack, hm } from '../world/tracks.js';
@@ -491,6 +493,11 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
   const telemetry = new Telemetry({ getTime: () => ({ quarter: clock.quarter, week: crisis.week, minutes: (clock.total / clock.quarterSeconds) * 27 }) });
   telemetry.attach({ crisis, pushback: pb, ledger, tree, schemes, mapSales });
   slot.register('telemetry', telemetry);
+  // First-hour tutorial (#162): new campaigns only; ?tutorial=off or a debug preset turns it off. A resumed save
+  // without tutorial data (from before #162) starts with it skipped.
+  const tutorial = new Tutorial({ telemetry, enabled: !resume && params.get('tutorial') !== 'off' && !params.get('preset'), handedOverAtStart: grid.handedOver });
+  if (resume && !slot.peek()?.parts?.tutorial) tutorial.skipped = true;
+  slot.register('tutorial', tutorial);
   // Crisis profits fund the labs too: the panic-premium share of every map sale becomes RP (#16).
   mapSales.onChange((e) => { if (e.type === 'sale' && e.record.premium > 1) tree.fundFromIncome(e.record.price * (1 - 1 / e.record.premium), `${e.record.owner}'s panic premium`); });
   const WEEK_SECONDS = clock.quarterSeconds / 13; // 13 in-game weeks a quarter
@@ -801,14 +808,16 @@ function startCampaign({ resume, roster = [...CLASSIC_ROSTER], difficulty = chos
     setTimeout(() => t.remove(), 2800);
   }
 
+  const tutorialUI = createTutorialUI({ root: document.body, tutorial, site: grid, leads, schemes, mapSales });
   const revenue = createRevenueMixReadout({ root: document.body, ledger, getChapter: () => chapterOf(clock.quarter) }); // #161 debug: $ key
   session = {
-    revenue, government,
+    revenue, government, tutorial, tutorialUI,
     mood, setMood: (m) => { moodForce = m; }, // #130
     difficulty: diff, clock, doom, gauge, ledger, pb, tree, ui, grid, gridUI, megas, megaScreen, shelters, world, threats, campaignMinutes, crisis, press, board, consequences, market, schemes, mapSales, mapScreen, slot, leads, social, company, story, telemetry, firstBreach,
     endings: { watch: endingWatch, end: (id) => endCampaign(id) }, // #32 debug: __game.endings.end('indicted')
     destroy() {
       revenue.destroy();
+      tutorialUI.destroy();
       cancelAnimationFrame(raf);
       removeEventListener('keydown', onKey);
       social.screens?.destroy();
